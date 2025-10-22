@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./.specify/scripts/bash/collaboration-enhanced.sh:*)",
+      "Bash(./.specify/scripts/bash/collaboration-recorder.sh:*)",
+      "Bash(./.specify/scripts/bash/collaboration-session-automation.sh:*)",
+      "Bash(./core-files/collaboration-enhanced.sh:*)",
+      "Bash(./scripts/migrate.sh:*)",
+      "Bash(./scripts/path-adapter.sh:*)",
+      "Bash(./scripts/validator.sh:*)",
+      "Bash(./verify-migration.sh:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(bash:*)",
+      "Bash(chmod:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout:*)",
+      "Bash(tree:*)",
+      "WebSearch",
+      "mcp__web-search-prime__webSearchPrime",
+      "Bash(./.specify/optimization/enhanced-collaboration.sh start first-principles \"分析MindNote项目从规划阶段到MVP阶段的具体实施路径\")",
+      "Bash(./.specify/scripts/bash/collaboration-quick-start.sh:*)",
+      "Bash(./.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(git branch:*)",
+      "Bash(./.specify/scripts/bash/check-prerequisites.sh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash .claude/scripts/status_line_script.sh"
+  },
+  "outputStyle": "ai-collaboration"
+}

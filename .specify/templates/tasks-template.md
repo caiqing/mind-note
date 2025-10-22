@@ -157,6 +157,26 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
+### MindNote-Specific AI Integration Tasks
+
+**AI Performance & Observability (Constitution Principle V)**:
+- [ ] TXXX [P] Implement AI performance monitoring (<3s response target)
+- [ ] TXXX [P] Add AI service cost tracking and reporting
+- [ ] TXXX [P] Configure AI quality metrics and user feedback collection
+- [ ] TXXX [P] Setup AI service health checks and fallback mechanisms
+
+**AI Testing & Validation (Constitution Principle III)**:
+- [ ] TXXX [P] Create mock AI services for unit testing
+- [ ] TXXX [P] Implement integration tests for AI service endpoints
+- [ ] TXXX [P] Setup AI output quality validation tests
+- [ ] TXXX [P] Configure user acceptance testing for AI features
+
+**Data Intelligence (Constitution Principle IV)**:
+- [ ] TXXX [P] Implement vector embedding storage and retrieval
+- [ ] TXXX [P] Setup graph relationship mapping for note connections
+- [ ] TXXX [P] Configure AI metadata tracking and audit trails
+- [ ] TXXX [P] Implement privacy controls for AI-processed content
+
 ---
 
 ## Dependencies & Execution Order

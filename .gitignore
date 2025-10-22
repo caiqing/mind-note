@@ -1,0 +1,107 @@
+# 历史记录
+.history/
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE 和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 依赖目录
+node_modules/
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# 临时文件
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出
+dist/
+build/
+out/
+*.tgz
+*.tar.gz
+
+# 测试覆盖率报告
+coverage/
+.nyc_output
+lcov/
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 缓存
+.cache/
+.parcel-cache/
+.eslintcache
+
+# 导出目录
+.export/
+
+# Next.js specific
+.next/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma
+prisma/migrations/dev.db*
+
+# Redis dump
+dump.rdb
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# AI model files
+ai-services/local/models/*.bin
+ai-services/local/models/*.gguf
+
+# Docker
+.dockerignore
+
+# Additional Node.js
+.yarn-integrity
+.pnpm-debug.log*
+.pnpm-lock.yaml
+.yarn.lock

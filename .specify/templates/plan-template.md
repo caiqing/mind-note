@@ -31,7 +31,37 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Required Gates (MindNote Constitution v1.0.0)
+
+**AI-First Development (Principle I)**
+- [ ] Feature includes explicit AI integration points
+- [ ] Fallback mechanisms defined for AI service unavailability
+- [ ] AI decision transparency for users is documented
+- [ ] Data preparation strategy for AI processing is specified
+
+**Specification-Driven Engineering (Principle II)**
+- [ ] Complete specification exists via `/speckit.specify`
+- [ ] All user stories are prioritized (P1, P2, P3)
+- [ ] Measurable success criteria are defined
+- [ ] Acceptance scenarios are explicit and testable
+
+**Test-First with AI Validation (Principle III)**
+- [ ] Unit test strategy defined for business logic (>90% coverage)
+- [ ] AI-specific validation approach documented
+- [ ] Integration test plan for AI services included
+- [ ] Mock AI service strategy for unit testing specified
+
+**Data Intelligence Integration (Principle IV)**
+- [ ] Data models support vector embeddings
+- [ ] Graph structures for relationship mapping included
+- [ ] AI processing metadata fields defined
+- [ ] Audit trails for AI decisions incorporated
+
+**Observability & AI Performance (Principle V)**
+- [ ] AI performance metrics defined (<3s responses)
+- [ ] Latency targets specified (see Performance Standards)
+- [ ] Logging strategy for AI interactions documented
+- [ ] Cost tracking mechanisms planned
 
 ## Project Structure
 

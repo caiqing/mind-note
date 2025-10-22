@@ -100,6 +100,33 @@
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
+### AI Integration Requirements *(mandatory for MindNote)*
+
+<!--
+  ACTION REQUIRED: Every MindNote feature must consider AI integration aspects
+  as specified in Constitution Principle I: AI-First Development
+-->
+
+**AI Processing Requirements**:
+- [ ] Content needs automatic categorization and tagging
+- [ ] Text analysis for semantic understanding required
+- [ ] Relationship mapping with other notes needed
+- [ ] Summary generation capability required
+- [ ] AI conversation integration needed
+
+**Data Structure Requirements** (Constitution Principle IV):
+- [ ] Vector embeddings support for semantic search
+- [ ] Metadata fields for AI processing results
+- [ ] Version history tracking for AI decisions
+- [ ] User feedback mechanisms for AI quality
+- [ ] Privacy controls for AI-processed content
+
+**Performance Considerations** (Constitution Principle V):
+- [ ] AI response time targets (<3 seconds)
+- [ ] Batch processing strategy for large note sets
+- [ ] Caching strategy for AI responses
+- [ ] Fallback mechanisms when AI services unavailable
+
 ## Success Criteria *(mandatory)*
 
 <!--
