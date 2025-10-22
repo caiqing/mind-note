@@ -9,11 +9,13 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://mindnote:dev_password@postgres:5432/mindnote_dev
+      - DATABASE_URL=postgresql://mindnote:${POSTGRES_PASSWORD}@postgres:5432/mindnote_dev
       - REDIS_URL=redis://redis:6379
       - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=dev-secret-key-change-in-production
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - OLLAMA_BASE_URL=http://ollama:11434
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - .:/app
       - /app/node_modules
@@ -31,39 +33,60 @@ services:
     environment:
       POSTGRES_DB: mindnote_dev
       POSTGRES_USER: mindnote
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"  # Only bind to localhost for security
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - docker/postgres/security.sql:/docker-entrypoint-initdb.d/02-security.sql
     restart: unless-stopped
     networks:
-      - mindnote-network
+      - mindnote-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mindnote -d mindnote_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"  # Only bind to localhost for security
     volumes:
       - redis_data:/data
       - docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
+      - docker/redis/security.conf:/usr/local/etc/redis/security.conf
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
     restart: unless-stopped
     networks:
-      - mindnote-network
+      - mindnote-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
 
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"  # Only bind to localhost for security
     volumes:
       - ollama_data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=http://localhost:3000,http://localhost:3001
     restart: unless-stopped
     networks:
-      - mindnote-network
+      - mindnote-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     # Uncomment if you have GPU support
     # deploy:
     #   resources:
@@ -93,3 +116,12 @@ volumes:
 networks:
   mindnote-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  mindnote-internal:
+    driver: bridge
+    internal: true  # Internal network for database and cache services
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

@@ -4,12 +4,81 @@ This guide helps you resolve common issues when setting up and working with the 
 
 ## Table of Contents
 
+- [🔐 Security Setup](#security-setup)
 - [Quick Diagnostics](#quick-diagnostics)
 - [Common Issues](#common-issues)
 - [Service-Specific Problems](#service-specific-problems)
 - [Performance Issues](#performance-issues)
 - [Cross-Platform Issues](#cross-platform-issues)
 - [Getting Help](#getting-help)
+
+## 🔐 Security Setup
+
+### Generate Secure Secrets
+
+Before starting development, generate secure secrets:
+
+```bash
+# Generate all security secrets
+./scripts/generate-secrets.sh --all
+
+# Or generate specific secrets
+./scripts/generate-secrets.sh --jwt
+./scripts/generate-secrets.sh --db
+./scripts/generate-secrets.sh --redis
+```
+
+### Security Best Practices
+
+- **Never commit `.env` file** to version control
+- **Use strong passwords** (minimum 16 characters)
+- **Rotate secrets regularly** for production environments
+- **Use different secrets** for development and production
+
+### Common Security Issues
+
+#### Missing Environment Variables
+
+**Problem**: `NEXTAUTH_SECRET`, `POSTGRES_PASSWORD`, or `REDIS_PASSWORD` are empty
+
+**Solution**:
+```bash
+# Generate all required secrets
+./scripts/generate-secrets.sh --all
+
+# Validate the configuration
+./scripts/validate-env.sh
+```
+
+#### Weak Passwords
+
+**Problem**: Using default or weak passwords
+
+**Solution**:
+```bash
+# Generate new secure passwords
+openssl rand -base64 32  # For JWT secret
+openssl rand -base64 24  # For database passwords
+```
+
+#### Docker Security Issues
+
+**Problem**: Services exposed to external network
+
+**Solution**: The updated Docker configuration binds services to localhost only:
+
+```yaml
+# Services now bind to localhost only
+ports:
+  - "127.0.0.1:5432:5432"  # PostgreSQL
+  - "127.0.0.1:6379:6379"  # Redis
+  - "127.0.0.1:11434:11434" # Ollama
+
+# Internal network for database services
+networks:
+  mindnote-internal:
+    internal: true
+```
 
 ## Quick Diagnostics
 
@@ -149,6 +218,49 @@ curl http://localhost:3000/api/health/ai
 
 **Solutions**:
 
+1. **Database authentication failed**:
+   ```bash
+   # Check if database password is set
+   if [ -z "$POSTGRES_PASSWORD" ]; then
+     echo "Error: POSTGRES_PASSWORD not set"
+     ./scripts/generate-secrets.sh --db
+   fi
+   ```
+
+2. **Database not running**:
+   ```bash
+   # Check Docker containers
+   docker-compose ps postgres
+
+   # Start database services
+   docker-compose up postgres redis ollama
+
+   # Check logs
+   docker-compose logs postgres
+   ```
+
+3. **Database schema not created**:
+   ```bash
+   # Generate Prisma client
+   npx prisma generate
+
+   # Run database migrations
+   npx prisma migrate dev
+
+   # Reset database if needed
+   npx prisma migrate reset
+   ```
+
+4. **Vector search not working**:
+   ```bash
+   # Check if pgvector extension is enabled
+   docker-compose exec postgres psql -U mindnote -d mindnote_dev -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
+
+   # If not installed, reinstall with vector support
+   docker-compose down
+   docker-compose up postgres
+   ```
+
 1. **Check if PostgreSQL is running**:
    ```bash
    # With Docker
@@ -193,33 +305,54 @@ curl http://localhost:3000/api/health/ai
 
 **Solutions**:
 
-1. **Check if Redis is running**:
+1. **Redis authentication failed**:
    ```bash
-   # With Docker
-   docker-compose ps redis
+   # Check if Redis password is set
+   if [ -z "$REDIS_PASSWORD" ]; then
+     echo "Error: REDIS_PASSWORD not set"
+     ./scripts/generate-secrets.sh --redis
+   fi
 
-   # Test connection
-   redis-cli ping
+   # Test with password
+   redis-cli -a "$REDIS_PASSWORD" ping
    ```
 
-2. **Start Redis**:
+2. **Redis not running**:
    ```bash
+   # Check Docker containers
+   docker-compose ps redis
+
+   # Start Redis with security
    docker-compose up redis
+
+   # Check logs
+   docker-compose logs redis
    ```
 
 3. **Check Redis URL format**:
    ```bash
-   # Should be: redis://host:port
+   # Should be: redis://:password@host:port
    echo $REDIS_URL
+
+   # Should include password
+   grep -q "REDIS_PASSWORD" .env && echo "Password is set" || echo "Error: Redis password not configured"
    ```
 
 4. **Clear Redis cache if corrupted**:
    ```bash
-   # With Docker
-   docker-compose exec redis redis-cli FLUSHALL
+   # With Docker and password
+   docker-compose exec redis redis-cli -a "$REDIS_PASSWORD" FLUSHALL
 
    # Local Redis
-   redis-cli FLUSHALL
+   redis-cli -a "$REDIS_PASSWORD" FLUSHALL
+   ```
+
+5. **Redis security commands disabled**:
+   ```bash
+   # Check if dangerous commands are disabled
+   docker-compose exec redis redis-cli CONFIG GET rename-command
+
+   # This should return empty or modified command names
    ```
 
 ## Service-Specific Problems

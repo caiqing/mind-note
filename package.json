@@ -65,7 +65,8 @@
     "winston": "^3.17.0",
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
@@ -86,6 +87,7 @@
     "@playwright/test": "^1.49.0",
     "supertest": "^7.0.0",
     "@types/supertest": "^6.0.2",
+    "@types/bcryptjs": "^2.4.6",
     "tsx": "^4.19.2",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",

@@ -48,7 +48,7 @@ model Note {
   tags            String[]  @default("{}")
   metadata        Json      @default("{}")
   aiProcessed     Boolean   @default(false) @map("ai_processed")
-  aiSummary       String?   @map("ai_summary")
+  aiSummary       String?   @map("ai_summary") @db.Text
   aiKeywords      String[]  @default("{}") @map("ai_keywords")
   version         Int       @default(1)
   status          NoteStatus @default(DRAFT)
@@ -57,6 +57,29 @@ model Note {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   aiProcessedAt   DateTime? @map("ai_processed_at")
+
+  // Add constraints (will be applied in migration)
+  @@map("notes")
+  @@Raw("""
+    ALTER TABLE notes ADD CONSTRAINT check_title_not_empty
+    CHECK (LENGTH(TRIM(title)) > 0)
+  """)
+  @@Raw("""
+    ALTER TABLE notes ADD CONSTRAINT check_content_not_empty
+    CHECK (LENGTH(TRIM(content)) > 0)
+  """)
+  @@Raw("""
+    ALTER TABLE notes ADD CONSTRAINT check_content_hash_not_empty
+    CHECK (LENGTH(TRIM(content_hash)) > 0)
+  """)
+  @@Raw("""
+    ALTER TABLE notes ADD CONSTRAINT check_version_positive
+    CHECK (version > 0)
+  """)
+  @@Raw("""
+    ALTER TABLE notes ADD CONSTRAINT check_view_count_positive
+    CHECK (view_count >= 0)
+  """)
 
   // Relations
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -71,7 +94,15 @@ model Note {
   @@index([status])
   @@index([categoryId])
   @@index([contentHash])
+  @@index([aiProcessed, aiProcessedAt])
+  @@index([isPublic, status])
+  @@index([viewCount(sort: Desc)])
+  @@index([aiProcessedAt])
   @@map("notes")
+
+  // Vector search index for pgvector (for AI functionality)
+  @@index([contentVector], map: "idx_content_vector_hnsw", using: HNSW)
+  @@index([contentVector], map: "idx_content_vector_l2", using: IVFFlat, options: { listCount: 100 })
 }
 
 // 标签表
@@ -90,6 +121,9 @@ model Tag {
   noteTags NoteTag[]
 
   @@index([usageCount(sort: Desc)])
+  @@index([category])
+  @@index([createdBy])
+  @@index([createdAt])
   @@map("tags")
 }
 
@@ -112,6 +146,9 @@ model Category {
   notes    Note[]
 
   @@index([parentId, sortOrder])
+  @@index([createdBy])
+  @@index([name])
+  @@index([createdAt])
   @@map("categories")
 }
 
@@ -127,6 +164,7 @@ model NoteTag {
   @@id([noteId, tagId])
   @@index([noteId])
   @@index([tagId])
+  @@index([noteId, tagId])
   @@map("note_tags")
 }
 
@@ -149,6 +187,8 @@ model NoteRelationship {
   @@index([sourceNoteId])
   @@index([targetNoteId])
   @@index([relationshipType, strengthScore(sort: Desc)])
+  @@index([aiGenerated, relationshipType])
+  @@index([createdAt(sort: Desc)])
   @@map("note_relationships")
 }
 
@@ -174,8 +214,11 @@ model AiProcessingLog {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([noteId])
+  @@index([userId])
+  @@index([processingType])
+  @@index([provider, status])
   @@index([createdAt(sort: Desc)])
-  @@index([status])
+  @@index([status, createdAt(sort: Desc)])
   @@map("ai_processing_logs")
 }
 
@@ -195,6 +238,8 @@ model UserFeedback {
 
   @@index([noteId, feedbackType])
   @@index([userId])
+  @@index([feedbackType, rating(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
   @@map("user_feedback")
 }
 
@@ -243,4 +288,16 @@ enum FeedbackType {
   SUMMARY_QUALITY
   CLASSIFICATION
   RELATIONSHIP
+}
+
+// Add database constraints for data integrity
+model DatabaseConstraints {
+  // This model represents database constraints
+  // In PostgreSQL, these will be added as table constraints
+
+  // Example of constraints that would be added:
+  // - CHECK (strength_score >= 0 AND strength_score <= 1) for NoteRelationship
+  // - CHECK (rating >= 1 AND rating <= 5) for UserFeedback
+  // - CHECK (LENGTH(title) > 0) for Note
+  // - CHECK (LENGTH(content) > 0) for Note
 }
