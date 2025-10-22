@@ -1,7 +1,7 @@
 # MindNote - AI驱动的智能笔记应用
 
 [![MindNote Logo](https://img.shields.io/badge/MindNote-AI%20智能笔记-blue?style=flat-square)](https://github.com/mindnote/mindnote)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.0.0-orange?style=flat-square)](CHANGELOG.md)
 [![Framework](https://img.shields.io/badge/Framework-Next.js%2015%20%2B%20React%2019-black?style=flat-square)](https://nextjs.org/)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2B%20Apache%20AGE%20%2B%20Neo4j-blue?style=flat-square)](https://www.postgresql.org/)
@@ -439,7 +439,15 @@ gh pr create --title "Add graph visualization feature" --body "Description of ch
 
 ## 📄 许可证
 
-本项目采用 [MIT 许可证](LICENSE)，允许自由使用、修改和分发。
+本项目采用 [Apache License 2.0](LICENSE)，允许自由使用、修改和分发。
+
+### Apache 2.0 许可证特点
+
+- **商业友好**: 允许在商业项目中使用和修改
+- **专利授权**: 提供明确的专利授权保护
+- **贡献者协议**: 贡献者自动授予相同许可证
+- **无需相同许可证**: 修改后的作品可以使用不同许可证
+- **免责声明**: 明确责任限制，保护贡献者权益
 
 ## 🙏 致谢
 
@@ -473,4 +481,4 @@ gh pr create --title "Add graph visualization feature" --body "Description of ch
 
 [![GitHub stars](https://img.shields.io/github/stars/mindnote/mindnote?style=social)](https://github.com/mindnote/mindnote/stargazers)
 
-*最后更新: 2025-10-22*
+*最后更新: 2025-10-23*
