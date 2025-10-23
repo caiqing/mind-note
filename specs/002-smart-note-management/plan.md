@@ -1,7 +1,7 @@
 # Implementation Plan: 智能笔记管理
 
 **Branch**: `002-smart-note-management` | **Date**: 2025-10-23 | **Spec**: [智能笔记管理功能规格](./spec.md)
-**Input**: Feature specification from `/specs/002-feature/spec.md`
+**Input**: Feature specification from `/specs/002-smart-note-management/spec.md`
 
 ## Summary
 
@@ -83,7 +83,7 @@
 ### Documentation (this feature)
 
 ```text
-specs/002-feature/
+specs/002-smart-note-management/
 ├── plan.md              # This file (implementation plan)
 ├── research.md          # AI集成研究和第三方服务分析
 ├── data-model.md        # 数据模型设计和关系定义
