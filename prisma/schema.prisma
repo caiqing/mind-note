@@ -124,6 +124,7 @@ model Tag {
   @@index([category])
   @@index([createdBy])
   @@index([createdAt])
+  @@index([createdBy, usageCount(sort: Desc)])
   @@map("tags")
 }
 
