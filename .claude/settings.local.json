@@ -74,7 +74,11 @@
       "Bash(npx prisma db push:*)",
       "Bash(./scripts/vector-setup.sh:*)",
       "Bash(git diff:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(./scripts/run-ai-migration.sh:*)",
+      "Bash(psql:*)",
+      "Bash(npx prisma generate:*)"
     ],
     "deny": [],
     "ask": []
