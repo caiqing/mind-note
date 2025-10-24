@@ -27,7 +27,7 @@
       "Bash(./.specify/scripts/bash/create-new-feature.sh:*)",
       "Bash(git branch:*)",
       "Bash(./.specify/scripts/bash/check-prerequisites.sh:*)",
-    "Bash(git pull:*)",
+      "Bash(git pull:*)",
       "Bash(./.specify/scripts/bash/setup-plan.sh:*)",
       "Bash(npm test:*)",
       "Bash(npm install:*)",
@@ -79,8 +79,9 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(./scripts/run-ai-migration.sh:*)",
       "Bash(psql:*)",
-      "Bash(npx prisma generate:*)"
-  ],
+      "Bash(npx prisma generate:*)",
+      "Bash(git merge:*)"
+    ],
     "deny": [],
     "ask": []
   },
