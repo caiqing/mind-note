@@ -1,128 +1,134 @@
 /**
- * AI服务状态API路由
+ * AI服务状态检查API
  *
- * GET /api/v1/ai/status - 获取AI服务提供商状态
+ * GET /api/v1/ai/status - 检查AI服务配置和可用性
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { AIServiceOrchestrator } from '@/lib/ai/orchestrator';
+import { aiService } from '@/lib/ai/ai-service';
+import { AI_CONFIG, AI_FEATURES } from '@/lib/ai/ai-config';
 
-// 创建AI服务编排器
-const aiOrchestrator = new AIServiceOrchestrator({
-  primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'openai',
-  fallbackProviders: (
-    process.env.AI_FALLBACK_PROVIDERS || 'zhipu,deepseek'
-  ).split(','),
-  maxRetries: 3,
-  timeoutMs: 30000,
-  enableLoadBalancing: true,
-  costOptimization: true,
-  qualityThreshold: 0.8,
-});
-
-/**
- * 获取AI服务提供商状态
- */
 export async function GET(request: NextRequest) {
   try {
-    // 1. 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
-        },
-        { status: 401 },
-      );
+    // 验证AI服务配置
+    const configValidation = aiService.validateConfig();
+
+    // 获取服务统计
+    const stats = aiService.getStats();
+
+    // 检查各AI提供商的可用性
+    const providers = {
+      openai: {
+        available: !!process.env.OPENAI_API_KEY,
+        model: AI_CONFIG.models.openai.chat,
+        embeddingModel: AI_CONFIG.models.openai.embedding,
+        features: ['text-generation', 'embedding'],
+      },
+      anthropic: {
+        available: !!process.env.ANTHROPIC_API_KEY,
+        model: AI_CONFIG.models.anthropic.chat,
+        embeddingModel: null, // Anthropic不提供嵌入服务
+        features: ['text-generation'],
+      },
+      ollama: {
+        available: true, // Ollama总是可用的（如果本地运行）
+        model: AI_CONFIG.models.ollama.chat,
+        embeddingModel: AI_CONFIG.models.ollama.embedding,
+        features: ['text-generation', 'embedding'],
+        local: true,
+      },
+    };
+
+    // 计算配置健康度
+    const healthScore = calculateHealthScore(configValidation, providers, stats);
+
+    const status = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      config: {
+        enabled: AI_CONFIG.enabled,
+        primaryProvider: AI_CONFIG.primaryProvider,
+        fallbackProvider: AI_CONFIG.fallbackProvider,
+        validation: configValidation,
+        healthScore,
+      },
+      features: AI_FEATURES,
+      providers,
+      stats: {
+        ...stats,
+        successRate: stats.totalRequests > 0
+          ? (stats.successfulRequests / stats.totalRequests * 100).toFixed(2) + '%'
+          : '0%',
+        averageCost: stats.successfulRequests > 0
+          ? '$' + (stats.totalCost / stats.successfulRequests).toFixed(6)
+          : '$0',
+      },
+      limits: {
+        maxTokens: AI_CONFIG.maxTokens,
+        timeout: AI_CONFIG.timeout + 'ms',
+        dailyBudget: '$' + AI_CONFIG.dailyBudgetUSD,
+        costPerNote: '$' + AI_CONFIG.costPerNoteLimit,
+        rateLimit: AI_CONFIG.rateLimitRPM + '/min',
+      },
+    };
+
+    // 如果配置无效，标记为不健康
+    if (!configValidation.isValid) {
+      status.status = 'unhealthy';
     }
 
-    // 2. 获取提供商状态
-    const providerStatus = await aiOrchestrator.getProviderStatus();
+    // 如果没有可用的提供商，标记为降级
+    const availableProviders = Object.values(providers).filter(p => p.available);
+    if (availableProviders.length === 0) {
+      status.status = 'degraded';
+    }
 
-    // 3. 获取使用统计
-    const period =
-      (new URL(request.url).searchParams.get('period') as
-        | 'day'
-        | 'week'
-        | 'month') || 'day';
-    const usageStats = aiOrchestrator.getUsageStats(period);
+    return NextResponse.json(status);
 
-    // 4. 测试所有提供商
-    const testResults = await aiOrchestrator.testProviders();
-
-    // 5. 获取推荐提供商
-    const recommendedProvider = aiOrchestrator.getRecommendedProvider();
-
-    // 6. 返回成功响应
-    return NextResponse.json({
-      success: true,
-      data: {
-        providers: providerStatus,
-        usage: usageStats,
-        testResults,
-        recommendedProvider,
-        timestamp: new Date().toISOString(),
-      },
-      message: 'AI service status retrieved successfully',
-    });
   } catch (error) {
-    console.error('Error getting AI service status:', error);
+    console.error('AI status check failed:', error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message:
-            'An unexpected error occurred while retrieving AI service status',
-        },
+    return NextResponse.json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      config: {
+        enabled: AI_CONFIG.enabled,
+        primaryProvider: AI_CONFIG.primaryProvider,
       },
-      { status: 500 },
-    );
+    }, { status: 500 });
   }
 }
 
 /**
- * 重置AI服务统计
+ * 计算配置健康度分数
  */
-export async function DELETE(request: NextRequest) {
-  try {
-    // 1. 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
-        },
-        { status: 401 },
-      );
-    }
+function calculateHealthScore(
+  validation: { isValid: boolean; errors: string[] },
+  providers: any,
+  stats: any
+): number {
+  let score = 100;
 
-    // 2. 重置统计
-    aiOrchestrator.resetStats();
-
-    // 3. 返回成功响应
-    return NextResponse.json({
-      success: true,
-      data: { message: 'AI service statistics reset successfully' },
-      message: 'Statistics reset successfully',
-    });
-  } catch (error) {
-    console.error('Error resetting AI service statistics:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'An unexpected error occurred while resetting statistics',
-        },
-      },
-      { status: 500 },
-    );
+  // 配置验证扣分
+  if (!validation.isValid) {
+    score -= validation.errors.length * 10;
   }
+
+  // 提供商可用性扣分
+  const availableProviders = Object.values(providers).filter((p: any) => p.available);
+  score -= (3 - availableProviders.length) * 15;
+
+  // 成功率扣分
+  if (stats.totalRequests > 0) {
+    const successRate = stats.successfulRequests / stats.totalRequests;
+    score -= (1 - successRate) * 20;
+  }
+
+  // 成本控制检查
+  if (stats.dailyCost > AI_CONFIG.dailyBudgetUSD * 0.8) {
+    score -= 10;
+  }
+
+  return Math.max(0, Math.min(100, score));
 }

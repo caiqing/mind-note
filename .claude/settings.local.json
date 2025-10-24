@@ -73,7 +73,8 @@
       "Bash(node:*)",
       "Bash(npx prisma db push:*)",
       "Bash(./scripts/vector-setup.sh:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []
