@@ -12,16 +12,12 @@ import crypto from 'crypto';
 import {
   TextAnalysisRequest,
   TextAnalysisResult,
-  TextAnalysisOptions,
   SentimentAnalysis,
-  AnalysisMetadata,
   AnalysisProgress,
   AnalysisError,
   AnalysisErrorCode,
   AnalysisProvider,
-  AnalysisCapabilities,
 } from './text-analysis-types';
-import { aiService } from '../ai/ai-service';
 
 export class TextAnalysisService {
   private static instance: TextAnalysisService;

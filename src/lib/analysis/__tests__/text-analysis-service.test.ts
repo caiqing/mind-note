@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TextAnalysisService } from '../text-analysis-service';
-import { TextAnalysisRequest, AnalysisErrorCode } from '../text-analysis-types';
+import { TextAnalysisRequest } from '../text-analysis-types';
 
 // Mock AI SDK
 vi.mock('@ai-sdk/openai', () => ({

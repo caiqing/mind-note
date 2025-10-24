@@ -42,7 +42,8 @@ export class VectorStorageService {
   public async storeVector(
     noteId: string,
     vector: number[],
-    metadata?: any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _metadata?: any
   ): Promise<boolean> {
     try {
       // 验证向量维度
@@ -217,7 +218,12 @@ export class VectorStorageService {
   /**
    * 构建搜索查询
    */
-  private buildSearchQuery(queryVector: number[], limit: number, minSimilarity: number): string {
+  private buildSearchQuery(
+    queryVector: number[],
+    limit: number,
+    minSimilarity: number
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ): string {
     const vectorStr = `[${queryVector.join(',')}]`;
     const threshold = 1 - minSimilarity;
 
