@@ -10,6 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        primary: 'bg-blue-600 text-white hover:bg-blue-700',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         outline:
@@ -25,10 +26,15 @@ const buttonVariants = cva(
         lg: 'h-11 rounded-md px-8',
         icon: 'h-10 w-10',
       },
+      loading: {
+        true: 'relative',
+        false: '',
+      },
     },
     defaultVariants: {
       variant: 'default',
       size: 'default',
+      loading: false,
     },
   },
 );
@@ -37,17 +43,40 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, loading, asChild = false, disabled, children, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
+
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant, size, loading, className }))}
         ref={ref}
+        disabled={disabled || loading}
+        data-variant={variant || 'default'}
+        data-size={size || 'default'}
+        data-disabled={disabled || loading || false}
+        data-loading={loading}
+        tabIndex={disabled ? -1 : 0}
         {...props}
-      />
+      >
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          </div>
+        )}
+        <span className={loading ? 'opacity-0' : ''}>
+          {children}
+        </span>
+        {loading && (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span className="ml-2">{typeof children === 'string' ? 'Loading...' : children}</span>
+          </span>
+        )}
+      </Comp>
     );
   },
 );

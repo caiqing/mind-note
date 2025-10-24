@@ -197,19 +197,31 @@ async function main() {
 // 清理数据库
 async function clearDatabase() {
   const tables = [
-    'userFeedback', 'vectorEmbedding', 'aiProcessingLog',
+    'userFeedback', 'aiProcessingLog',
     'noteRelationship', 'noteTag', 'note', 'tag',
     'category', 'systemConfig', 'user'
   ];
 
+  console.log('🧹 开始清理数据库...');
+
   for (const table of tables) {
     try {
-      await (prisma as any)[table].deleteMany();
-      console.log(`  ✓ 清理表: ${table}`);
+      // 检查表是否存在
+      const model = (prisma as any)[table];
+      if (model && typeof model.deleteMany === 'function') {
+        const result = await model.deleteMany();
+        console.log(`  ✓ 清理表: ${table} (删除 ${result.count} 条记录)`);
+      } else {
+        console.warn(`  ⚠️ 表不存在或无法访问: ${table}`);
+      }
     } catch (error) {
-      console.warn(`  ⚠️ 清理表失败: ${table}`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.warn(`  ⚠️ 清理表失败: ${table} - ${errorMessage}`);
+      // 继续执行其他表的清理，不要因为一个表失败而停止
     }
   }
+
+  console.log('🧹 数据库清理完成');
 }
 
 // 创建系统配置
@@ -313,9 +325,8 @@ async function createUsers() {
       username: 'demo',
       passwordHash: hashedPassword,
       fullName: 'Demo User',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
+      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
       emailVerified: true,
-      isActive: true,
       aiPreferences: {
         preferredProvider: 'openai',
         analysisLevel: 'detailed' as const,
@@ -338,10 +349,8 @@ async function createUsers() {
       username: 'admin',
       passwordHash: hashedPassword,
       fullName: 'Admin User',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
+      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
       emailVerified: true,
-      isActive: true,
-      role: 'ADMIN',
       aiPreferences: {
         preferredProvider: 'openai',
         analysisLevel: 'comprehensive' as const,
@@ -366,10 +375,8 @@ async function createUsers() {
       username: 'developer',
       passwordHash: hashedPassword,
       fullName: 'Developer User',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=developer',
+      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=developer',
       emailVerified: true,
-      isActive: true,
-      role: 'DEVELOPER',
       aiPreferences: {
         preferredProvider: 'anthropic',
         analysisLevel: 'comprehensive' as const,
@@ -391,78 +398,100 @@ async function createUsers() {
     },
   ];
 
-  const users = await Promise.all(
-    usersData.map(userData =>
-      prisma.user.create({ data: userData })
-    )
-  );
+  const users = [];
+  for (const userData of usersData) {
+    try {
+      const user = await prisma.user.create({ data: userData });
+      users.push(user);
+      console.log(`  ✓ 创建用户: ${user.username} (${user.email})`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`  ❌ 创建用户失败: ${userData.email} - ${errorMessage}`);
+      // 继续创建其他用户
+    }
+  }
 
-  console.log(`  ✓ 创建了 ${users.length} 个用户`);
+  console.log(`  ✓ 成功创建了 ${users.length} 个用户`);
+  if (users.length === 0) {
+    throw new Error('没有成功创建任何用户，种子数据初始化失败');
+  }
   return users;
 }
 
 // 创建分类和标签
 async function createCategoriesAndTags(createdBy: string) {
   const categoriesData = [
-    { name: '工作', description: '工作相关笔记', color: '#3B82F6', icon: '💼', isDefault: true, createdBy },
-    { name: '学习', description: '学习资料和笔记', color: '#10B981', icon: '📚', isDefault: true, createdBy },
-    { name: '生活', description: '日常生活记录', color: '#F59E0B', icon: '🌟', isDefault: true, createdBy },
-    { name: '技术', description: '技术文档和代码', color: '#8B5CF6', icon: '💻', isDefault: true, createdBy },
-    { name: '创意', description: '创意和想法记录', color: '#EC4899', icon: '🎨', isDefault: true, createdBy },
-    { name: '项目', description: '项目管理和进展', color: '#14B8A6', icon: '📊', isDefault: false, createdBy },
-    { name: '会议', description: '会议记录和决策', color: '#F97316', icon: '📅', isDefault: false, createdBy },
-    { name: '研究', description: '研究和调研资料', color: '#6366F1', icon: '🔬', isDefault: false, createdBy },
+    { name: '工作', description: '工作相关笔记', color: '#3B82F6', icon: '💼', createdBy },
+    { name: '学习', description: '学习资料和笔记', color: '#10B981', icon: '📚', createdBy },
+    { name: '生活', description: '日常生活记录', color: '#F59E0B', icon: '🌟', createdBy },
+    { name: '技术', description: '技术文档和代码', color: '#8B5CF6', icon: '💻', createdBy },
+    { name: '创意', description: '创意和想法记录', color: '#EC4899', icon: '🎨', createdBy },
+    { name: '项目', description: '项目管理和进展', color: '#14B8A6', icon: '📊', createdBy },
+    { name: '会议', description: '会议记录和决策', color: '#F97316', icon: '📅', createdBy },
+    { name: '研究', description: '研究和调研资料', color: '#6366F1', icon: '🔬', createdBy },
   ];
 
-  const categories = await Promise.all(
-    categoriesData.map(catData =>
-      prisma.category.create({ data: catData })
-    )
-  );
+  const categories = [];
+  for (const catData of categoriesData) {
+    try {
+      const category = await prisma.category.create({ data: catData });
+      categories.push(category);
+      console.log(`  ✓ 创建分类: ${category.name}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`  ❌ 创建分类失败: ${catData.name} - ${errorMessage}`);
+    }
+  }
 
   const tagsData = [
     // 优先级标签
-    { name: '重要', color: '#EF4444', category: 'priority', description: '重要内容', isDefault: true, createdBy },
-    { name: '紧急', color: '#DC2626', category: 'priority', description: '紧急处理', isDefault: true, createdBy },
-    { name: '一般', color: '#6B7280', category: 'priority', description: '一般优先级', isDefault: true, createdBy },
+    { name: '重要', color: '#EF4444', category: 'priority', description: '重要内容', createdBy },
+    { name: '紧急', color: '#DC2626', category: 'priority', description: '紧急处理', createdBy },
+    { name: '一般', color: '#6B7280', category: 'priority', description: '一般优先级', createdBy },
 
     // 状态标签
-    { name: '进行中', color: '#3B82F6', category: 'status', description: '正在处理', isDefault: true, createdBy },
-    { name: '已完成', color: '#10B981', category: 'status', description: '已完成事项', isDefault: true, createdBy },
-    { name: '待办', color: '#F59E0B', category: 'status', description: '待处理事项', isDefault: true, createdBy },
-    { name: '暂停', color: '#8B5CF6', category: 'status', description: '暂时搁置', isDefault: false, createdBy },
+    { name: '进行中', color: '#3B82F6', category: 'status', description: '正在处理', createdBy },
+    { name: '已完成', color: '#10B981', category: 'status', description: '已完成事项', createdBy },
+    { name: '待办', color: '#F59E0B', category: 'status', description: '待处理事项', createdBy },
+    { name: '暂停', color: '#8B5CF6', category: 'status', description: '暂时搁置', createdBy },
 
     // 类型标签
-    { name: '想法', color: '#8B5CF6', category: 'type', description: '创意想法', isDefault: true, createdBy },
-    { name: '参考资料', color: '#6B7280', category: 'type', description: '参考和资料', isDefault: true, createdBy },
-    { name: '问题', color: '#EF4444', category: 'type', description: '问题和疑问', isDefault: true, createdBy },
-    { name: '解决方案', color: '#10B981', category: 'type', description: '解决方案', isDefault: true, createdBy },
+    { name: '想法', color: '#8B5CF6', category: 'type', description: '创意想法', createdBy },
+    { name: '参考资料', color: '#6B7280', category: 'type', description: '参考和资料', createdBy },
+    { name: '问题', color: '#EF4444', category: 'type', description: '问题和疑问', createdBy },
+    { name: '解决方案', color: '#10B981', category: 'type', description: '解决方案', createdBy },
 
     // 上下文标签
-    { name: '项目', color: '#3B82F6', category: 'context', description: '项目相关', isDefault: true, createdBy },
-    { name: '会议', color: '#EC4899', category: 'context', description: '会议记录', isDefault: true, createdBy },
-    { name: '个人', color: '#14B8A6', category: 'context', description: '个人事务', isDefault: true, createdBy },
-    { name: '团队', color: '#F97316', category: 'context', description: '团队协作', isDefault: true, createdBy },
+    { name: '项目', color: '#3B82F6', category: 'context', description: '项目相关', createdBy },
+    { name: '会议', color: '#EC4899', category: 'context', description: '会议记录', createdBy },
+    { name: '个人', color: '#14B8A6', category: 'context', description: '个人事务', createdBy },
+    { name: '团队', color: '#F97316', category: 'context', description: '团队协作', createdBy },
 
     // 技术标签
-    { name: '前端', color: '#3B82F6', category: 'technology', description: '前端开发', isDefault: false, createdBy },
-    { name: '后端', color: '#10B981', category: 'technology', description: '后端开发', isDefault: false, createdBy },
-    { name: '数据库', color: '#8B5CF6', category: 'technology', description: '数据库相关', isDefault: false, createdBy },
-    { name: 'DevOps', color: '#F59E0B', category: 'technology', description: '运维部署', isDefault: false, createdBy },
+    { name: '前端', color: '#3B82F6', category: 'technology', description: '前端开发', createdBy },
+    { name: '后端', color: '#10B981', category: 'technology', description: '后端开发', createdBy },
+    { name: '数据库', color: '#8B5CF6', category: 'technology', description: '数据库相关', createdBy },
+    { name: 'DevOps', color: '#F59E0B', category: 'technology', description: '运维部署', createdBy },
 
     // 其他常用标签
-    { name: '灵感', color: '#14B8A6', category: 'other', description: '灵感记录', isDefault: true, createdBy },
-    { name: '待研究', color: '#6366F1', category: 'other', description: '需要深入研究', isDefault: false, createdBy },
-    { name: '已验证', color: '#10B981', category: 'other', description: '已验证可行', isDefault: false, createdBy },
+    { name: '灵感', color: '#14B8A6', category: 'other', description: '灵感记录', createdBy },
+    { name: '待研究', color: '#6366F1', category: 'other', description: '需要深入研究', createdBy },
+    { name: '已验证', color: '#10B981', category: 'other', description: '已验证可行', createdBy },
   ];
 
-  const tags = await Promise.all(
-    tagsData.map(tagData =>
-      prisma.tag.create({ data: tagData })
-    )
-  );
+  const tags = [];
+  for (const tagData of tagsData) {
+    try {
+      const tag = await prisma.tag.create({ data: tagData });
+      tags.push(tag);
+      console.log(`  ✓ 创建标签: ${tag.name}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`  ❌ 创建标签失败: ${tagData.name} - ${errorMessage}`);
+    }
+  }
 
-  console.log(`  ✓ 创建了 ${categories.length} 个分类和 ${tags.length} 个标签`);
+  console.log(`  ✓ 成功创建了 ${categories.length} 个分类和 ${tags.length} 个标签`);
   return { categories, tags };
 }
 
@@ -493,21 +522,23 @@ async function createSampleNotes(
     const createdAt = generator.generateTimestamp(30);
     const updatedAt = new Date(createdAt.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000); // 创建后1周内更新
 
+    // 生成contentHash
+    const crypto = require('crypto');
+    const contentHash = crypto.createHash('sha256').update(content).digest('hex');
+
     const note = await prisma.note.create({
       data: {
         title,
         content,
+        contentHash,
         status,
         userId: user.id,
         categoryId: category.id,
-        wordCount: content.length,
-        readingTime: Math.ceil(content.length / 200), // 假设200字/分钟
         createdAt,
         updatedAt,
         aiProcessed: Math.random() > 0.3, // 70%的笔记经过AI处理
         isPublic: Math.random() > 0.8, // 20%公开
         viewCount: Math.floor(Math.random() * 100),
-        lastViewedAt: Math.random() > 0.5 ? new Date(createdAt.getTime() + Math.random() * (Date.now() - createdAt.getTime())) : null,
         tags: {
           create: selectedTags.map(tag => ({
             tagId: tag.id,
@@ -516,7 +547,7 @@ async function createSampleNotes(
         }
       },
       include: {
-        tags: {
+        noteTags: {
           include: {
             tag: true
           }

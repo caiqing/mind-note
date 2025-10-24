@@ -86,30 +86,30 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action') || 'config';
 
     switch (action) {
-      case 'config':
-        return handleGetConfig();
+    case 'config':
+      return handleGetConfig();
 
-      case 'metrics':
-        return handleGetMetrics();
+    case 'metrics':
+      return handleGetMetrics();
 
-      case 'trends':
-        return handleGetTrends();
+    case 'trends':
+      return handleGetTrends();
 
-      case 'export':
-        return handleExportConfig();
+    case 'export':
+      return handleExportConfig();
 
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: '不支持的操作',
-            error: {
-              code: 'INVALID_ACTION',
-              message: `不支持的操作: ${action}`
-            }
+    default:
+      return NextResponse.json(
+        {
+          success: false,
+          message: '不支持的操作',
+          error: {
+            code: 'INVALID_ACTION',
+            message: `不支持的操作: ${action}`,
           },
-          { status: 400 }
-        );
+        },
+        { status: 400 },
+      );
     }
   } catch (error) {
     Logger.error('连接池管理API错误:', error);
@@ -121,11 +121,11 @@ export async function GET(request: NextRequest) {
         error: {
           code: 'POOL_ERROR',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error
+          details: error,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -146,7 +146,7 @@ async function handleGetConfig(): Promise<NextResponse<PoolConfigResponse>> {
       lastOptimization: report.lastOptimization?.toISOString() || null,
     },
     message: '连接池配置获取成功',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -169,7 +169,7 @@ async function handleGetMetrics(): Promise<NextResponse<PoolMetricsResponse>> {
       trends,
       performanceInsights,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -187,7 +187,7 @@ async function handleGetTrends(): Promise<NextResponse> {
     success: true,
     data: trends,
     message: '连接池性能趋势获取成功',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -206,7 +206,7 @@ async function handleExportConfig(): Promise<NextResponse<PoolExportResponse>> {
       exportTime: new Date().toISOString(),
     },
     message: '连接池配置导出成功',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -217,27 +217,27 @@ export async function POST(request: NextRequest) {
     const { action } = body;
 
     switch (action) {
-      case 'update':
-        return handleUpdateConfig(body.config);
+    case 'update':
+      return handleUpdateConfig(body.config);
 
-      case 'optimize':
-        return handleOptimizePool(body);
+    case 'optimize':
+      return handleOptimizePool(body);
 
-      case 'import':
-        return handleImportConfig(body.configuration);
+    case 'import':
+      return handleImportConfig(body.configuration);
 
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: '不支持的操作',
-            error: {
-              code: 'INVALID_ACTION',
-              message: `不支持的操作: ${action}`
-            }
+    default:
+      return NextResponse.json(
+        {
+          success: false,
+          message: '不支持的操作',
+          error: {
+            code: 'INVALID_ACTION',
+            message: `不支持的操作: ${action}`,
           },
-          { status: 400 }
-        );
+        },
+        { status: 400 },
+      );
     }
   } catch (error) {
     Logger.error('连接池配置更新API错误:', error);
@@ -249,11 +249,11 @@ export async function POST(request: NextRequest) {
         error: {
           code: 'CONFIG_UPDATE_ERROR',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error
+          details: error,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -269,9 +269,9 @@ async function handleUpdateConfig(configUpdate: any): Promise<NextResponse> {
       success: true,
       message: '连接池配置更新成功',
       data: {
-        updatedConfig: poolConfigManager.getCurrentConfiguration()
+        updatedConfig: poolConfigManager.getCurrentConfiguration(),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     return NextResponse.json(
@@ -280,10 +280,10 @@ async function handleUpdateConfig(configUpdate: any): Promise<NextResponse> {
         message: '配置更新失败',
         error: {
           code: 'VALIDATION_ERROR',
-          message: error instanceof Error ? error.message : 'Validation failed'
-        }
+          message: error instanceof Error ? error.message : 'Validation failed',
+        },
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -312,7 +312,7 @@ async function handleOptimizePool(request: PoolOptimizationRequest): Promise<Nex
         applied,
       },
       message: applied ? '连接池优化已应用' : '连接池优化建议生成成功',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     return NextResponse.json(
@@ -321,10 +321,10 @@ async function handleOptimizePool(request: PoolOptimizationRequest): Promise<Nex
         message: '连接池优化失败',
         error: {
           code: 'OPTIMIZATION_ERROR',
-          message: error instanceof Error ? error.message : 'Optimization failed'
-        }
+          message: error instanceof Error ? error.message : 'Optimization failed',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -340,9 +340,9 @@ async function handleImportConfig(configJson: string): Promise<NextResponse> {
       success: true,
       message: '连接池配置导入成功',
       data: {
-        currentConfig: poolConfigManager.getCurrentConfiguration()
+        currentConfig: poolConfigManager.getCurrentConfiguration(),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     return NextResponse.json(
@@ -351,10 +351,10 @@ async function handleImportConfig(configJson: string): Promise<NextResponse> {
         message: '配置导入失败',
         error: {
           code: 'IMPORT_ERROR',
-          message: error instanceof Error ? error.message : 'Import failed'
-        }
+          message: error instanceof Error ? error.message : 'Import failed',
+        },
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -380,7 +380,7 @@ export async function PUT(request: NextRequest) {
           resetConfig: poolConfigManager.getCurrentConfiguration(),
           environment,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -390,10 +390,10 @@ export async function PUT(request: NextRequest) {
         message: '不支持的操作',
         error: {
           code: 'INVALID_ACTION',
-          message: `不支持的操作: ${action}`
-        }
+          message: `不支持的操作: ${action}`,
+        },
       },
-      { status: 400 }
+      { status: 400 },
     );
   } catch (error) {
     Logger.error('连接池重置API错误:', error);
@@ -404,10 +404,10 @@ export async function PUT(request: NextRequest) {
         message: '连接池重置失败',
         error: {
           code: 'RESET_ERROR',
-          message: error instanceof Error ? error.message : 'Reset failed'
-        }
+          message: error instanceof Error ? error.message : 'Reset failed',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

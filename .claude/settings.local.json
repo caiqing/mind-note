@@ -58,7 +58,21 @@
       "Bash(npm run test:unit:*)",
       "Bash(./.specify/optimization/enhanced-collaboration.sh:*)",
       "Bash(find:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(pg_isready:*)",
+      "Bash(brew services:*)",
+      "Bash(brew list:*)",
+      "Bash(open:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker:*)",
+      "Bash(source:*)",
+      "Bash(POSTGRES_PASSWORD=mindnote_dev_123 NEXTAUTH_SECRET=dev-secret-key-32-chars REDIS_PASSWORD=redis_dev_123 docker-compose:*)",
+      "Bash(POSTGRES_PASSWORD=mindnote_dev_123 POSTGRES_USER=mindnote POSTGRES_DB=mindnote_dev docker run:*)",
+      "Bash(pgvector/pgvector:pg15)",
+      "Bash(export:*)",
+      "Bash(node:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(./scripts/vector-setup.sh:*)"
     ],
     "deny": [],
     "ask": []

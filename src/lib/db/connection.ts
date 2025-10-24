@@ -161,7 +161,7 @@ class ConnectionManager {
     isConnected: boolean;
     lastHealthCheck: Date | null;
     reconnectAttempts: number;
-  } {
+    } {
     return {
       isConnected: this.isConnected,
       lastHealthCheck: this.lastHealthCheck,
@@ -213,7 +213,7 @@ const databaseConfig: DatabaseConfig = {
 const connectionManager = new ConnectionManager(databaseConfig);
 
 // 全局 Prisma 实例
-let prisma: PrismaClient | null = null;
+const prisma: PrismaClient | null = null;
 
 /**
  * 获取 Prisma 客户端实例
@@ -230,7 +230,7 @@ export async function withTransaction<T>(
   options?: {
     timeout?: number;
     isolationLevel?: any;
-  }
+  },
 ): Promise<T> {
   const client = await getPrismaClient();
 
@@ -252,13 +252,13 @@ export async function withRetry<T>(
     retryDelay?: number;
     timeout?: number;
     errorMessage?: string;
-  } = {}
+  } = {},
 ): Promise<T> {
   const {
     maxRetries = 3,
     retryDelay = 1000,
     timeout = 10000,
-    errorMessage = 'Database operation failed'
+    errorMessage = 'Database operation failed',
   } = options;
 
   let lastError: Error | null = null;
@@ -271,7 +271,7 @@ export async function withRetry<T>(
 
       return await Promise.race([
         operation(),
-        timeoutPromise
+        timeoutPromise,
       ]);
 
     } catch (error) {
@@ -301,26 +301,26 @@ export async function withDatabase<T>(
     maxRetries?: number;
     timeout?: number;
     errorMessage?: string;
-  }
+  },
 ): Promise<T> {
   const {
     useTransaction = false,
     maxRetries = 3,
     timeout = 10000,
-    errorMessage = 'Database operation failed'
+    errorMessage = 'Database operation failed',
   } = options;
 
   if (useTransaction) {
     return withRetry(
       () => withTransaction(operation, { timeout }),
-      { maxRetries, timeout, errorMessage }
+      { maxRetries, timeout, errorMessage },
     );
   } else {
     return withRetry(
       () => {
         return getPrismaClient().then(client => operation(client));
       },
-      { maxRetries, timeout, errorMessage }
+      { maxRetries, timeout, errorMessage },
     );
   }
 }
@@ -362,7 +362,7 @@ export async function checkDatabaseHealth(): Promise<{
         poolStats,
         tableCount,
         timestamp: new Date().toISOString(),
-      }
+      },
     };
 
   } catch (error) {
@@ -374,7 +374,7 @@ export async function checkDatabaseHealth(): Promise<{
       details: {
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
-      }
+      },
     };
   }
 }

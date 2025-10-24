@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
           message: '查询参数无效',
           error: {
             code: 'INVALID_QUERY',
-            message: 'query参数是必需的，且必须是字符串'
-          }
+            message: 'query参数是必需的，且必须是字符串',
+          },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
           message: '查询文本过短',
           error: {
             code: 'QUERY_TOO_SHORT',
-            message: '查询文本至少需要2个字符'
-          }
+            message: '查询文本至少需要2个字符',
+          },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       limit: Math.min(body.limit || 10, 50),
       threshold: body.threshold || 0.7,
       filters: body.filters,
-      includeMetadata: body.includeMetadata || false
+      includeMetadata: body.includeMetadata || false,
     });
 
     const searchTime = Date.now() - startTime;
@@ -97,10 +97,10 @@ export async function POST(request: NextRequest) {
         query: body.query,
         totalResults: results.length,
         searchTime,
-        threshold: body.threshold || 0.7
+        threshold: body.threshold || 0.7,
       },
       message: '向量搜索完成',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
@@ -112,11 +112,11 @@ export async function POST(request: NextRequest) {
         message: '向量搜索失败',
         error: {
           code: 'SEARCH_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error'
+          message: error instanceof Error ? error.message : 'Unknown error',
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

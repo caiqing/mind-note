@@ -245,7 +245,7 @@ export class PoolConfigurationManager {
       // 连接池使用率过高，建议增加连接数
       const newMaxConnections = Math.min(
         Math.ceil(this.currentConfig.maxConnections * 1.5),
-        this.getMaxConnectionsForEnvironment()
+        this.getMaxConnectionsForEnvironment(),
       );
 
       recommendedConfig.maxConnections = newMaxConnections;
@@ -259,7 +259,7 @@ export class PoolConfigurationManager {
       // 连接池使用率过低，可以减少连接数
       const newMaxConnections = Math.max(
         Math.ceil(this.currentConfig.maxConnections * 0.7),
-        this.getBaseMaxConnections()
+        this.getBaseMaxConnections(),
       );
 
       recommendedConfig.maxConnections = newMaxConnections;
@@ -272,9 +272,9 @@ export class PoolConfigurationManager {
       if (this.currentConfig.connectionTimeoutMs > 5000) {
         recommendedConfig.connectionTimeoutMs = Math.max(
           this.currentConfig.connectionTimeoutMs * 0.8,
-          3000
+          3000,
         );
-        improvements.push(`减少连接超时时间以快速识别问题连接`);
+        improvements.push('减少连接超时时间以快速识别问题连接');
       }
     }
 
@@ -283,34 +283,34 @@ export class PoolConfigurationManager {
       // 错误率过高，增加重试次数
       recommendedConfig.connectionRetryAttempts = Math.min(
         this.currentConfig.connectionRetryAttempts + 2,
-        15
+        15,
       );
       recommendedConfig.connectionRetryDelayMs = this.currentConfig.connectionRetryDelayMs * 1.5;
-      improvements.push(`增加重试次数和延迟以应对不稳定连接`);
+      improvements.push('增加重试次数和延迟以应对不稳定连接');
     }
 
     // 分析吞吐量
     const expectedThroughputIncrease = this.calculateThroughputGain(
       this.currentConfig,
       recommendedConfig,
-      loadMetrics
+      loadMetrics,
     );
 
     const expectedLatencyDecrease = this.calculateLatencyImprovement(
       this.currentConfig,
       recommendedConfig,
-      loadMetrics
+      loadMetrics,
     );
 
     const resourceUtilizationChange = this.calculateResourceUtilizationChange(
       this.currentConfig,
-      recommendedConfig
+      recommendedConfig,
     );
 
     const riskAssessment = this.assessOptimizationRisk(
       this.currentConfig,
       recommendedConfig,
-      loadMetrics
+      loadMetrics,
     );
 
     const result: PoolOptimizationResult = {
@@ -361,7 +361,7 @@ export class PoolConfigurationManager {
   private calculateThroughputGain(
     current: PoolConfiguration,
     recommended: PoolConfiguration,
-    loadMetrics: any
+    loadMetrics: any,
   ): number {
     let gain = 0;
 
@@ -385,7 +385,7 @@ export class PoolConfigurationManager {
   private calculateLatencyImprovement(
     current: PoolConfiguration,
     recommended: PoolConfiguration,
-    loadMetrics: any
+    loadMetrics: any,
   ): number {
     let improvement = 0;
 
@@ -407,7 +407,7 @@ export class PoolConfigurationManager {
    */
   private calculateResourceUtilizationChange(
     current: PoolConfiguration,
-    recommended: PoolConfiguration
+    recommended: PoolConfiguration,
   ): number {
     const currentResources = current.maxConnections + current.minConnections;
     const recommendedResources = recommended.maxConnections + recommended.minConnections;
@@ -421,7 +421,7 @@ export class PoolConfigurationManager {
   private assessOptimizationRisk(
     current: PoolConfiguration,
     recommended: PoolConfiguration,
-    loadMetrics: any
+    loadMetrics: any,
   ): { level: 'low' | 'medium' | 'high'; factors: string[] } {
     const factors: string[] = [];
     let riskScore = 0;
@@ -503,7 +503,7 @@ export class PoolConfigurationManager {
     };
     recommendations: PoolRecommendation[];
     lastOptimization: Date | null;
-  } {
+    } {
     const latestMetrics = this.metricsHistory[this.metricsHistory.length - 1];
 
     return {

@@ -50,7 +50,7 @@ describe('Database Types', () => {
         'development',
         'test',
         'staging',
-        'production'
+        'production',
       ];
 
       environments.forEach(environment => {

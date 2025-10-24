@@ -64,33 +64,33 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action') || 'status';
 
     switch (action) {
-      case 'setup':
-        return handleGetSetup();
+    case 'setup':
+      return handleGetSetup();
 
-      case 'status':
-        return handleGetStatus();
+    case 'status':
+      return handleGetStatus();
 
-      case 'health':
-        return handleGetHealth();
+    case 'health':
+      return handleGetHealth();
 
-      case 'info':
-        return handleGetInfo();
+    case 'info':
+      return handleGetInfo();
 
-      case 'environment':
-        return handleGetEnvironment();
+    case 'environment':
+      return handleGetEnvironment();
 
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: '不支持的操作',
-            error: {
-              code: 'INVALID_ACTION',
-              message: `不支持的操作: ${action}`
-            }
+    default:
+      return NextResponse.json(
+        {
+          success: false,
+          message: '不支持的操作',
+          error: {
+            code: 'INVALID_ACTION',
+            message: `不支持的操作: ${action}`,
           },
-          { status: 400 }
-        );
+        },
+        { status: 400 },
+      );
     }
   } catch (error) {
     Logger.error('数据库设置API错误:', error);
@@ -102,11 +102,11 @@ export async function GET(request: NextRequest) {
         error: {
           code: 'DATABASE_ERROR',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error
+          details: error,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -153,7 +153,7 @@ async function handleGetSetup(): Promise<NextResponse<DatabaseSetupResponse>> {
       environment,
     },
     message: '数据库设置状态获取成功',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -193,7 +193,7 @@ async function handleGetStatus(): Promise<NextResponse<DatabaseStatusResponse>> 
       performance,
       recommendations,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -212,7 +212,7 @@ async function handleGetHealth(): Promise<NextResponse> {
       recommendations: generateHealthRecommendations(health),
     },
     message: health.isHealthy ? '数据库健康状态正常' : '数据库存在健康问题',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -250,7 +250,7 @@ async function handleGetInfo(): Promise<NextResponse> {
         poolConfig: poolConfigManager.getCurrentConfiguration(),
       },
       message: '数据库信息获取成功',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     Logger.error('获取数据库信息失败:', error);
@@ -260,10 +260,10 @@ async function handleGetInfo(): Promise<NextResponse> {
         message: '获取数据库信息失败',
         error: {
           code: 'INFO_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error'
-        }
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -290,7 +290,7 @@ async function handleGetEnvironment(): Promise<NextResponse> {
       },
     },
     message: '环境配置获取成功',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -301,33 +301,33 @@ export async function POST(request: NextRequest) {
     const { action } = body;
 
     switch (action) {
-      case 'reconnect':
-        return handleReconnect();
+    case 'reconnect':
+      return handleReconnect();
 
-      case 'reset_pool':
-        return handleResetPool();
+    case 'reset_pool':
+      return handleResetPool();
 
-      case 'clear_cache':
-        return handleClearCache();
+    case 'clear_cache':
+      return handleClearCache();
 
-      case 'optimize':
-        return handleOptimize(body.workloadMetrics);
+    case 'optimize':
+      return handleOptimize(body.workloadMetrics);
 
-      case 'test_connection':
-        return handleTestConnection();
+    case 'test_connection':
+      return handleTestConnection();
 
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: '不支持的操作',
-            error: {
-              code: 'INVALID_ACTION',
-              message: `不支持的操作: ${action}`
-            }
+    default:
+      return NextResponse.json(
+        {
+          success: false,
+          message: '不支持的操作',
+          error: {
+            code: 'INVALID_ACTION',
+            message: `不支持的操作: ${action}`,
           },
-          { status: 400 }
-        );
+        },
+        { status: 400 },
+      );
     }
   } catch (error) {
     Logger.error('数据库维护API错误:', error);
@@ -338,10 +338,10 @@ export async function POST(request: NextRequest) {
         message: '数据库维护操作失败',
         error: {
           code: 'MAINTENANCE_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error'
-        }
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -375,7 +375,7 @@ async function handleReconnect(): Promise<NextResponse<DatabaseMaintenanceRespon
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -385,7 +385,7 @@ async function handleReconnect(): Promise<NextResponse<DatabaseMaintenanceRespon
       message: '数据库重新连接失败',
       error: {
         code: 'RECONNECT_ERROR',
-        message: error instanceof Error ? error.message : 'Reconnect failed'
+        message: error instanceof Error ? error.message : 'Reconnect failed',
       },
       data: {
         action: 'reconnect',
@@ -396,7 +396,7 @@ async function handleReconnect(): Promise<NextResponse<DatabaseMaintenanceRespon
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -424,7 +424,7 @@ async function handleResetPool(): Promise<NextResponse<DatabaseMaintenanceRespon
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -434,14 +434,14 @@ async function handleResetPool(): Promise<NextResponse<DatabaseMaintenanceRespon
       message: '连接池重置失败',
       error: {
         code: 'RESET_POOL_ERROR',
-        message: error instanceof Error ? error.message : 'Pool reset failed'
+        message: error instanceof Error ? error.message : 'Pool reset failed',
       },
       data: {
         action: 'reset_pool',
         result: { reset: false },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -468,7 +468,7 @@ async function handleClearCache(): Promise<NextResponse<DatabaseMaintenanceRespo
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -478,14 +478,14 @@ async function handleClearCache(): Promise<NextResponse<DatabaseMaintenanceRespo
       message: '数据库缓存清理失败',
       error: {
         code: 'CLEAR_CACHE_ERROR',
-        message: error instanceof Error ? error.message : 'Cache clear failed'
+        message: error instanceof Error ? error.message : 'Cache clear failed',
       },
       data: {
         action: 'clear_cache',
         result: { cleared: [] },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -503,8 +503,8 @@ async function handleOptimize(workloadMetrics?: any): Promise<NextResponse<Datab
         message: '缺少工作负载数据',
         error: {
           code: 'MISSING_METRICS',
-          message: '优化需要提供工作负载数据'
-        }
+          message: '优化需要提供工作负载数据',
+        },
       });
     }
 
@@ -524,7 +524,7 @@ async function handleOptimize(workloadMetrics?: any): Promise<NextResponse<Datab
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -534,14 +534,14 @@ async function handleOptimize(workloadMetrics?: any): Promise<NextResponse<Datab
       message: '数据库优化失败',
       error: {
         code: 'OPTIMIZE_ERROR',
-        message: error instanceof Error ? error.message : 'Optimization failed'
+        message: error instanceof Error ? error.message : 'Optimization failed',
       },
       data: {
         action: 'optimize',
         result: { optimization: null },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -570,7 +570,7 @@ async function handleTestConnection(): Promise<NextResponse<DatabaseMaintenanceR
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -580,7 +580,7 @@ async function handleTestConnection(): Promise<NextResponse<DatabaseMaintenanceR
       message: '数据库连接测试失败',
       error: {
         code: 'TEST_CONNECTION_ERROR',
-        message: error instanceof Error ? error.message : 'Connection test failed'
+        message: error instanceof Error ? error.message : 'Connection test failed',
       },
       data: {
         action: 'test_connection',
@@ -591,7 +591,7 @@ async function handleTestConnection(): Promise<NextResponse<DatabaseMaintenanceR
         },
         duration,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
@@ -669,7 +669,9 @@ function generateHealthRecommendations(health: any): string[] {
  * 格式化字节数
  */
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {
+    return '0 B';
+  }
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));

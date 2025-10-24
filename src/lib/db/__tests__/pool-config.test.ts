@@ -88,7 +88,7 @@ describe('PoolConfigurationManager', () => {
 
     it('应该验证最大连接数大于最小连接数', async () => {
       await expect(
-        manager.updateConfiguration({ minConnections: 10, maxConnections: 5 })
+        manager.updateConfiguration({ minConnections: 10, maxConnections: 5 }),
       ).rejects.toThrow();
     });
   });

@@ -9,7 +9,7 @@ import {
   getDatabaseStats,
   cleanup,
   ConnectionStatus,
-  DatabaseStats
+  DatabaseStats,
 } from '@/lib/db/connection';
 import { execFileNoThrow } from '@/lib/utils/execFileNoThrow';
 import { Logger } from '@/lib/utils/logger';
@@ -71,9 +71,9 @@ export async function GET(request: NextRequest) {
         isHealthy: health.isHealthy,
         status: health.status,
         details: health.details,
-        recommendations: generateRecommendations(health)
+        recommendations: generateRecommendations(health),
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     Logger.error('数据库连接检查API错误:', error);
@@ -85,11 +85,11 @@ export async function GET(request: NextRequest) {
         error: {
           code: 'CONNECTION_ERROR',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error
+          details: error,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,79 +100,79 @@ export async function POST(request: NextRequest) {
     const { action = 'check' } = body;
 
     switch (action) {
-      case 'check':
-        const health = await getDatabaseHealth();
+    case 'check':
+      const health = await getDatabaseHealth();
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          isHealthy: health.isHealthy,
+          status: health.status,
+          details: health.details,
+          recommendations: generateRecommendations(health),
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+    case 'reset':
+      const startTime = Date.now();
+
+      try {
+        await cleanup();
+        await getPrismaClient(); // 重新连接
+
+        const timeTaken = Date.now() - startTime;
 
         return NextResponse.json({
           success: true,
+          message: '数据库连接已重置',
+          timestamp: new Date().toISOString(),
           data: {
-            isHealthy: health.isHealthy,
-            status: health.status,
-            details: health.details,
-            recommendations: generateRecommendations(health)
+            reconnected: true,
+            timeTaken,
           },
-          timestamp: new Date().toISOString()
         });
 
-      case 'reset':
-        const startTime = Date.now();
-
-        try {
-          await cleanup();
-          await getPrismaClient(); // 重新连接
-
-          const timeTaken = Date.now() - startTime;
-
-          return NextResponse.json({
-            success: true,
-            message: '数据库连接已重置',
-            timestamp: new Date().toISOString(),
-            data: {
-              reconnected: true,
-              timeTaken
-            }
-          });
-
-        } catch (error) {
-          const timeTaken = Date.now() - startTime;
-
-          return NextResponse.json({
-            success: false,
-            message: '数据库连接重置失败',
-            timestamp: new Date().toISOString(),
-            error: {
-              code: 'RESET_ERROR',
-              message: error instanceof Error ? error.message : 'Reset failed'
-            },
-            data: {
-              reconnected: false,
-              timeTaken
-            }
-          });
-        }
-
-      case 'info':
-        const stats = await getDatabaseStats();
+      } catch (error) {
+        const timeTaken = Date.now() - startTime;
 
         return NextResponse.json({
-          success: true,
-          data: stats,
-          message: '数据库统计信息获取成功',
-          timestamp: new Date().toISOString()
-        });
-
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: '不支持的操作',
-            error: {
-              code: 'INVALID_ACTION',
-              message: `不支持的操作: ${action}`
-            }
+          success: false,
+          message: '数据库连接重置失败',
+          timestamp: new Date().toISOString(),
+          error: {
+            code: 'RESET_ERROR',
+            message: error instanceof Error ? error.message : 'Reset failed',
           },
-          { status: 400 }
-        );
+          data: {
+            reconnected: false,
+            timeTaken,
+          },
+        });
+      }
+
+    case 'info':
+      const stats = await getDatabaseStats();
+
+      return NextResponse.json({
+        success: true,
+        data: stats,
+        message: '数据库统计信息获取成功',
+        timestamp: new Date().toISOString(),
+      });
+
+    default:
+      return NextResponse.json(
+        {
+          success: false,
+          message: '不支持的操作',
+          error: {
+            code: 'INVALID_ACTION',
+            message: `不支持的操作: ${action}`,
+          },
+        },
+        { status: 400 },
+      );
     }
 
   } catch (error) {
@@ -185,11 +185,11 @@ export async function POST(request: NextRequest) {
         error: {
           code: 'OPERATION_ERROR',
           message: error instanceof Error ? error.message : 'Operation failed',
-          details: error
+          details: error,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -251,7 +251,7 @@ export async function PUT(request: NextRequest) {
         success: true,
         message: '连接池优化完成',
         data: result,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -261,10 +261,10 @@ export async function PUT(request: NextRequest) {
         message: '不支持的操作',
         error: {
           code: 'INVALID_ACTION',
-          message: `不支持的操作: ${action}`
-        }
+          message: `不支持的操作: ${action}`,
+        },
       },
-      { status: 400 }
+      { status: 400 },
     );
 
   } catch (error) {
@@ -276,10 +276,10 @@ export async function PUT(request: NextRequest) {
         message: '连接池优化失败',
         error: {
           code: 'OPTIMIZATION_ERROR',
-          message: error instanceof Error ? error.message : 'Optimization failed'
-        }
+          message: error instanceof Error ? error.message : 'Optimization failed',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -303,7 +303,7 @@ async function optimizeConnectionPool(): Promise<{
       minPool: 2,
       maxPool: 10,
       idleTimeout: 30000,
-      connectionTimeout: 5000
+      connectionTimeout: 5000,
     };
 
     // 基于当前统计给出建议
@@ -331,10 +331,10 @@ async function optimizeConnectionPool(): Promise<{
         minPool: process.env.DATABASE_POOL_MIN || '2',
         maxPool: process.env.DATABASE_POOL_MAX || '10',
         idleTimeout: process.env.DATABASE_POOL_IDLE_TIMEOUT || '30000',
-        connectionTimeout: process.env.DATABASE_POOL_CONNECTION_TIMEOUT || '5000'
+        connectionTimeout: process.env.DATABASE_POOL_CONNECTION_TIMEOUT || '5000',
       },
       suggestedSettings,
-      performanceMetrics
+      performanceMetrics,
     };
 
   } catch (error) {
@@ -378,7 +378,7 @@ async function getPerformanceMetrics(): Promise<{
       slowQueries: parseInt(slowQueries.rows[0].count),
       avgQueryTime: parseFloat(avgQueryTime.rows[0].avg_time),
       totalQueries: parseInt(totalQueries.rows[0].total || '0'),
-      cacheHitRate: 0.95 // 模拟缓存命中率
+      cacheHitRate: 0.95, // 模拟缓存命中率
     };
 
   } catch (error) {
@@ -388,7 +388,7 @@ async function getPerformanceMetrics(): Promise<{
       slowQueries: 0,
       avgQueryTime: 0,
       totalQueries: 0,
-      cacheHitRate: 0
+      cacheHitRate: 0,
     };
   }
 }
@@ -401,7 +401,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: '数据库连接已清理',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     Logger.error('数据库连接清理API错误:', error);
@@ -412,10 +412,10 @@ export async function DELETE(request: NextRequest) {
         message: '数据库连接清理失败',
         error: {
           code: 'CLEANUP_ERROR',
-          message: error instanceof Error ? error.message : 'Cleanup failed'
-        }
+          message: error instanceof Error ? error.message : 'Cleanup failed',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

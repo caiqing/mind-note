@@ -104,7 +104,7 @@ export class EmbeddingService {
           embedding,
           model,
           dimensions,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
       }
 
@@ -114,14 +114,14 @@ export class EmbeddingService {
         model,
         tokens: this.estimateTokens(request.text),
         cost: this.calculateCost(model, this.estimateTokens(request.text)),
-        processingTime
+        processingTime,
       };
 
       Logger.info('向量嵌入生成成功', {
         model,
         dimensions,
         processingTime,
-        tokens: result.tokens
+        tokens: result.tokens,
       });
 
       return result;
@@ -130,7 +130,7 @@ export class EmbeddingService {
       Logger.error('向量嵌入生成失败', {
         error: error instanceof Error ? error.message : 'Unknown error',
         model,
-        textLength: request.text.length
+        textLength: request.text.length,
       });
 
       throw new Error(`向量嵌入生成失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -141,14 +141,14 @@ export class EmbeddingService {
    * 批量生成向量嵌入
    */
   async generateBatchEmbeddings(
-    requests: EmbeddingRequest[]
+    requests: EmbeddingRequest[],
   ): Promise<EmbeddingResult[]> {
     const results: EmbeddingResult[] = [];
     const batchSize = 10; // 控制并发数
 
-    Logger.info(`开始批量生成向量嵌入`, {
+    Logger.info('开始批量生成向量嵌入', {
       totalRequests: requests.length,
-      batchSize
+      batchSize,
     });
 
     for (let i = 0; i < requests.length; i += batchSize) {
@@ -161,13 +161,13 @@ export class EmbeddingService {
 
         Logger.info(`批次 ${Math.floor(i / batchSize) + 1} 完成`, {
           batchSize: batch.length,
-          cumulativeResults: results.length
+          cumulativeResults: results.length,
         });
 
       } catch (error) {
         Logger.error(`批次 ${Math.floor(i / batchSize) + 1} 处理失败`, {
           batchSize: batch.length,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
 
         // 继续处理下一批次
@@ -183,7 +183,7 @@ export class EmbeddingService {
     Logger.info('批量向量嵌入生成完成', {
       totalRequested: requests.length,
       totalSuccessful: results.length,
-      successRate: `${((results.length / requests.length) * 100).toFixed(2)}%`
+      successRate: `${((results.length / requests.length) * 100).toFixed(2)}%`,
     });
 
     return results;
@@ -203,7 +203,7 @@ export class EmbeddingService {
       if (typeof request.query === 'string') {
         // 如果查询是文本，先生成向量嵌入
         const embedding = await this.generateEmbedding({
-          text: request.query
+          text: request.query,
         });
         queryVector = embedding.embedding;
       } else {
@@ -221,13 +221,13 @@ export class EmbeddingService {
         if (request.filters.categoryId) {
           whereClause.note = {
             ...whereClause.note,
-            categoryId: request.filters.categoryId
+            categoryId: request.filters.categoryId,
           };
         }
         if (request.filters.status) {
           whereClause.note = {
             ...whereClause.note,
-            status: request.filters.status
+            status: request.filters.status,
           };
         }
         if (request.filters.tags && request.filters.tags.length > 0) {
@@ -236,10 +236,10 @@ export class EmbeddingService {
             tags: {
               some: {
                 tag: {
-                  name: { in: request.filters.tags }
-                }
-              }
-            }
+                  name: { in: request.filters.tags },
+                },
+              },
+            },
           };
         }
       }
@@ -275,9 +275,9 @@ export class EmbeddingService {
           where: { noteId: row.note_id },
           include: {
             tag: {
-              select: { name: true }
-            }
-          }
+              select: { name: true },
+            },
+          },
         });
 
         const result: VectorSearchResult = {
@@ -291,8 +291,8 @@ export class EmbeddingService {
             tags: tags.map(t => t.tag.name),
             status: row.status,
             wordCount: row.wordCount,
-            createdAt: row.createdAt
-          }
+            createdAt: row.createdAt,
+          },
         };
 
         results.push(result);
@@ -304,7 +304,7 @@ export class EmbeddingService {
         queryLength: typeof request.query === 'string' ? request.query.length : queryVector.length,
         results: results.length,
         threshold,
-        searchTime
+        searchTime,
       });
 
       return results;
@@ -314,7 +314,7 @@ export class EmbeddingService {
         error: error instanceof Error ? error.message : 'Unknown error',
         queryType: typeof request.query,
         limit,
-        threshold
+        threshold,
       });
 
       throw new Error(`向量搜索失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -328,13 +328,13 @@ export class EmbeddingService {
     try {
       // 删除现有嵌入
       await this.prisma.vectorEmbedding.deleteMany({
-        where: { noteId }
+        where: { noteId },
       });
 
       // 生成新的嵌入
       await this.generateEmbedding({
         text,
-        metadata: { noteId }
+        metadata: { noteId },
       });
 
       Logger.info('笔记向量嵌入更新成功', { noteId });
@@ -342,7 +342,7 @@ export class EmbeddingService {
     } catch (error) {
       Logger.error('笔记向量嵌入更新失败', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        noteId
+        noteId,
       });
 
       throw new Error(`向量嵌入更新失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -355,18 +355,18 @@ export class EmbeddingService {
   async deleteNoteEmbedding(noteId: string): Promise<void> {
     try {
       const result = await this.prisma.vectorEmbedding.deleteMany({
-        where: { noteId }
+        where: { noteId },
       });
 
       Logger.info('笔记向量嵌入删除成功', {
         noteId,
-        deletedCount: result.count
+        deletedCount: result.count,
       });
 
     } catch (error) {
       Logger.error('笔记向量嵌入删除失败', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        noteId
+        noteId,
       });
 
       throw new Error(`向量嵌入删除失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -381,12 +381,12 @@ export class EmbeddingService {
       const [totalEmbeddings, dimensionStats, modelStats] = await Promise.all([
         this.prisma.vectorEmbedding.count(),
         this.prisma.vectorEmbedding.aggregate({
-          _avg: { dimensions: true }
+          _avg: { dimensions: true },
         }),
         this.prisma.vectorEmbedding.groupBy({
           by: ['model'],
-          _count: true
-        })
+          _count: true,
+        }),
       ]);
 
       const modelUsage: Record<string, number> = {};
@@ -407,12 +407,12 @@ export class EmbeddingService {
         modelUsage,
         totalTokens,
         totalCost: parseFloat(totalCost.toFixed(4)),
-        averageProcessingTime
+        averageProcessingTime,
       };
 
     } catch (error) {
       Logger.error('获取向量嵌入统计失败', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       throw new Error(`获取统计信息失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -452,14 +452,14 @@ export class EmbeddingService {
           embedding: data.embedding,
           model: data.model,
           dimensions: data.dimensions,
-          createdAt: data.createdAt
-        }
+          createdAt: data.createdAt,
+        },
       });
 
     } catch (error) {
       Logger.error('保存向量嵌入失败', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        noteId: data.noteId
+        noteId: data.noteId,
       });
 
       throw error;
@@ -482,7 +482,7 @@ export class EmbeddingService {
     const costPerToken = {
       'text-embedding-ada-002': 0.0001 / 1000,
       'text-embedding-3-small': 0.00002 / 1000,
-      'text-embedding-3-large': 0.00013 / 1000
+      'text-embedding-3-large': 0.00013 / 1000,
     };
 
     const rate = costPerToken[model as keyof typeof costPerToken] || 0.0001 / 1000;
@@ -496,7 +496,7 @@ export class EmbeddingService {
     const dimensions: Record<string, number> = {
       'text-embedding-ada-002': 1536,
       'text-embedding-3-small': 1536,
-      'text-embedding-3-large': 3072
+      'text-embedding-3-large': 3072,
     };
 
     return dimensions[model] || this.defaultDimensions;
@@ -535,7 +535,7 @@ export class EmbeddingService {
 
     } catch (error) {
       Logger.error('检查pgvector扩展失败', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       return false;
@@ -569,7 +569,7 @@ export class EmbeddingService {
 
     } catch (error) {
       Logger.error('创建向量索引失败', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       throw new Error(`向量索引创建失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -591,7 +591,7 @@ export class EmbeddingService {
 
     try {
       const totalNotes = await this.prisma.note.count({
-        where: { status: 'PUBLISHED' }
+        where: { status: 'PUBLISHED' },
       });
 
       Logger.info('开始重新索引所有笔记', { totalNotes });
@@ -604,10 +604,10 @@ export class EmbeddingService {
           select: {
             id: true,
             title: true,
-            content: true
+            content: true,
           },
           skip: offset,
-          take: batchSize
+          take: batchSize,
         });
 
         for (const note of notes) {
@@ -620,7 +620,7 @@ export class EmbeddingService {
               Logger.info('重新索引进度', {
                 processed,
                 total: totalNotes,
-                progress: `${((processed / totalNotes) * 100).toFixed(2)}%`
+                progress: `${((processed / totalNotes) * 100).toFixed(2)}%`,
               });
             }
 
@@ -628,7 +628,7 @@ export class EmbeddingService {
             failed++;
             Logger.error('笔记索引失败', {
               noteId: note.id,
-              error: error instanceof Error ? error.message : 'Unknown error'
+              error: error instanceof Error ? error.message : 'Unknown error',
             });
           }
         }
@@ -644,19 +644,19 @@ export class EmbeddingService {
         processed,
         failed,
         duration: `${(duration / 1000).toFixed(2)}s`,
-        successRate: `${((processed / totalNotes) * 100).toFixed(2)}%`
+        successRate: `${((processed / totalNotes) * 100).toFixed(2)}%`,
       });
 
       return {
         total: totalNotes,
         processed,
         failed,
-        duration
+        duration,
       };
 
     } catch (error) {
       Logger.error('重新索引失败', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       throw new Error(`重新索引失败: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: healthData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     Logger.error('数据库健康检查API错误:', error);
@@ -99,11 +99,11 @@ export async function GET(request: NextRequest) {
         error: {
           code: 'HEALTH_CHECK_ERROR',
           message: error instanceof Error ? error.message : 'Unknown error',
-          details: error
+          details: error,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -118,7 +118,7 @@ async function performComprehensiveHealthCheck(detailed: boolean = false): Promi
   const [health, stats, poolReport] = await Promise.all([
     getDatabaseHealth(),
     getDatabaseStats(),
-    Promise.resolve(poolConfigManager.generateConfigurationReport())
+    Promise.resolve(poolConfigManager.generateConfigurationReport()),
   ]);
 
   // 执行各项检查
@@ -127,7 +127,7 @@ async function performComprehensiveHealthCheck(detailed: boolean = false): Promi
     checkPoolHealth(poolReport, detailed),
     checkPerformanceHealth(stats, detailed),
     checkExtensionsHealth(detailed),
-    checkSecurityHealth(detailed)
+    checkSecurityHealth(detailed),
   ]);
 
   const [connection, pool, performance, extensions, security] = components;
@@ -175,7 +175,7 @@ async function checkConnectionHealth(health: any, detailed: boolean): Promise<He
     status: health.isHealthy ? 'pass' : 'fail',
     message: health.isHealthy ? '数据库连接正常' : '数据库连接失败',
     value: health.status?.status,
-    threshold: 'connected'
+    threshold: 'connected',
   });
 
   // 连接稳定性检查
@@ -185,7 +185,7 @@ async function checkConnectionHealth(health: any, detailed: boolean): Promise<He
     status: reconnectCount === 0 ? 'pass' : reconnectCount < 5 ? 'warn' : 'fail',
     message: `重新连接次数: ${reconnectCount}`,
     value: reconnectCount,
-    threshold: { warn: 5, fail: 10 }
+    threshold: { warn: 5, fail: 10 },
   });
 
   if (detailed) {
@@ -194,7 +194,7 @@ async function checkConnectionHealth(health: any, detailed: boolean): Promise<He
       name: 'last_connect_time',
       status: health.status?.lastConnect ? 'pass' : 'unknown',
       message: `最后连接时间: ${health.status?.lastConnect || 'Unknown'}`,
-      value: health.status?.lastConnect
+      value: health.status?.lastConnect,
     });
 
     // 连接延迟检查
@@ -204,7 +204,7 @@ async function checkConnectionHealth(health: any, detailed: boolean): Promise<He
         status: health.status.avgConnectTime < 100 ? 'pass' : health.status.avgConnectTime < 500 ? 'warn' : 'fail',
         message: `平均连接延迟: ${health.status.avgConnectTime}ms`,
         value: health.status.avgConnectTime,
-        threshold: { warn: 100, fail: 500 }
+        threshold: { warn: 100, fail: 500 },
       });
     }
   }
@@ -219,9 +219,9 @@ async function checkConnectionHealth(health: any, detailed: boolean): Promise<He
     details: {
       reconnectCount,
       lastConnect: health.status?.lastConnect,
-      avgConnectTime: health.status?.avgConnectTime
+      avgConnectTime: health.status?.avgConnectTime,
     },
-    checks
+    checks,
   };
 }
 
@@ -239,7 +239,7 @@ async function checkPoolHealth(poolReport: any, detailed: boolean): Promise<Heal
     status: utilizationRate < 0.8 ? 'pass' : utilizationRate < 0.95 ? 'warn' : 'fail',
     message: `连接池使用率: ${(utilizationRate * 100).toFixed(1)}%`,
     value: utilizationRate,
-    threshold: { warn: 0.8, fail: 0.95 }
+    threshold: { warn: 0.8, fail: 0.95 },
   });
 
   // 连接数配置检查
@@ -248,7 +248,7 @@ async function checkPoolHealth(poolReport: any, detailed: boolean): Promise<Heal
     status: recommendations.length === 0 ? 'pass' : 'warn',
     message: `连接池建议: ${recommendations.length}项`,
     value: recommendations.length,
-    threshold: { warn: 1, fail: 5 }
+    threshold: { warn: 1, fail: 5 },
   });
 
   if (detailed) {
@@ -257,21 +257,21 @@ async function checkPoolHealth(poolReport: any, detailed: boolean): Promise<Heal
       name: 'total_connections',
       status: metrics.totalConnections > 0 ? 'pass' : 'warn',
       message: `总连接数: ${metrics.totalConnections}`,
-      value: metrics.totalConnections
+      value: metrics.totalConnections,
     });
 
     checks.push({
       name: 'active_connections',
       status: metrics.activeConnections > 0 ? 'pass' : 'unknown',
       message: `活跃连接数: ${metrics.activeConnections}`,
-      value: metrics.activeConnections
+      value: metrics.activeConnections,
     });
 
     checks.push({
       name: 'idle_connections',
       status: 'pass', // 空闲连接总是正常的
       message: `空闲连接数: ${metrics.idleConnections}`,
-      value: metrics.idleConnections
+      value: metrics.idleConnections,
     });
   }
 
@@ -284,9 +284,9 @@ async function checkPoolHealth(poolReport: any, detailed: boolean): Promise<Heal
     message: `连接池健康状态: ${status}`,
     details: {
       ...metrics,
-      recommendations
+      recommendations,
     },
-    checks
+    checks,
   };
 }
 
@@ -303,7 +303,7 @@ async function checkPerformanceHealth(stats: any, detailed: boolean): Promise<He
     status: avgResponseTime < 200 ? 'pass' : avgResponseTime < 500 ? 'warn' : 'fail',
     message: `平均响应时间: ${avgResponseTime.toFixed(2)}ms`,
     value: avgResponseTime,
-    threshold: { warn: 200, fail: 500 }
+    threshold: { warn: 200, fail: 500 },
   });
 
   // 错误率检查
@@ -313,7 +313,7 @@ async function checkPerformanceHealth(stats: any, detailed: boolean): Promise<He
     status: errorRate < 0.01 ? 'pass' : errorRate < 0.05 ? 'warn' : 'fail',
     message: `错误率: ${(errorRate * 100).toFixed(2)}%`,
     value: errorRate,
-    threshold: { warn: 0.01, fail: 0.05 }
+    threshold: { warn: 0.01, fail: 0.05 },
   });
 
   // 吞吐量检查
@@ -322,7 +322,7 @@ async function checkPerformanceHealth(stats: any, detailed: boolean): Promise<He
     name: 'throughput',
     status: throughput > 0 ? 'pass' : 'unknown',
     message: `总查询数: ${throughput}`,
-    value: throughput
+    value: throughput,
   });
 
   if (detailed) {
@@ -331,7 +331,7 @@ async function checkPerformanceHealth(stats: any, detailed: boolean): Promise<He
       name: 'slow_queries',
       status: 'pass', // 慢查询计数本身是信息性的
       message: `慢查询数: ${stats.slowQueries || 0}`,
-      value: stats.slowQueries || 0
+      value: stats.slowQueries || 0,
     });
 
     if (stats.cacheHitRate !== undefined) {
@@ -340,7 +340,7 @@ async function checkPerformanceHealth(stats: any, detailed: boolean): Promise<He
         status: stats.cacheHitRate > 0.8 ? 'pass' : stats.cacheHitRate > 0.6 ? 'warn' : 'fail',
         message: `缓存命中率: ${(stats.cacheHitRate * 100).toFixed(1)}%`,
         value: stats.cacheHitRate,
-        threshold: { warn: 0.6, fail: 0.8 }
+        threshold: { warn: 0.6, fail: 0.8 },
       });
     }
   }
@@ -353,7 +353,7 @@ async function checkPerformanceHealth(stats: any, detailed: boolean): Promise<He
     score,
     message: `性能健康状态: ${status}`,
     details: stats,
-    checks
+    checks,
   };
 }
 
@@ -382,14 +382,14 @@ async function checkExtensionsHealth(detailed: boolean): Promise<HealthComponent
           name: `extension_${extName}`,
           status: installed ? 'pass' : 'warn',
           message: `扩展 ${extName}: ${installed ? '已安装' : '未安装'}`,
-          value: installed
+          value: installed,
         });
       } catch (error) {
         checks.push({
           name: `extension_${extName}`,
           status: 'unknown',
           message: `扩展 ${extName}: 检查失败`,
-          value: false
+          value: false,
         });
       }
     }
@@ -408,7 +408,7 @@ async function checkExtensionsHealth(detailed: boolean): Promise<HealthComponent
         status: 'pass',
         message: `已安装扩展总数: ${allExtensions.length}`,
         value: allExtensions.length,
-        details: allExtensions
+        details: allExtensions,
       });
     }
 
@@ -421,9 +421,9 @@ async function checkExtensionsHealth(detailed: boolean): Promise<HealthComponent
       message: `扩展健康状态: ${status}`,
       details: {
         criticalExtensions: criticalExtensions.length,
-        installedCount: checks.filter(c => c.status === 'pass').length
+        installedCount: checks.filter(c => c.status === 'pass').length,
       },
-      checks
+      checks,
     };
 
   } catch (error) {
@@ -436,8 +436,8 @@ async function checkExtensionsHealth(detailed: boolean): Promise<HealthComponent
         name: 'extension_check',
         status: 'fail',
         message: '扩展检查失败',
-        value: error instanceof Error ? error.message : 'Unknown error'
-      }]
+        value: error instanceof Error ? error.message : 'Unknown error',
+      }],
     };
   }
 }
@@ -456,7 +456,7 @@ async function checkSecurityHealth(detailed: boolean): Promise<HealthComponent> 
       name: 'ssl_connection',
       status: 'pass', // 假设SSL已配置
       message: 'SSL连接: 已启用',
-      value: true
+      value: true,
     });
 
     // 检查数据库版本安全性
@@ -473,14 +473,14 @@ async function checkSecurityHealth(detailed: boolean): Promise<HealthComponent> 
         status: isPostgres12OrNewer ? 'pass' : 'warn',
         message: `数据库版本: ${version.split(' ')[1] || 'Unknown'}`,
         value: version,
-        threshold: { warn: 'PostgreSQL 12.0' }
+        threshold: { warn: 'PostgreSQL 12.0' },
       });
     } catch (error) {
       checks.push({
         name: 'database_version',
         status: 'unknown',
         message: '版本检查失败',
-        value: error instanceof Error ? error.message : 'Unknown error'
+        value: error instanceof Error ? error.message : 'Unknown error',
       });
     }
 
@@ -499,7 +499,7 @@ async function checkSecurityHealth(detailed: boolean): Promise<HealthComponent> 
           status: maxConnections >= 100 ? 'pass' : 'warn',
           message: `最大连接数限制: ${maxConnections}`,
           value: maxConnections,
-          threshold: { warn: 100 }
+          threshold: { warn: 100 },
         });
       }
     }
@@ -513,9 +513,9 @@ async function checkSecurityHealth(detailed: boolean): Promise<HealthComponent> 
       message: `安全健康状态: ${status}`,
       details: {
         sslEnabled: true,
-        checksPerformed: checks.length
+        checksPerformed: checks.length,
       },
-      checks
+      checks,
     };
 
   } catch (error) {
@@ -528,8 +528,8 @@ async function checkSecurityHealth(detailed: boolean): Promise<HealthComponent> 
         name: 'security_check',
         status: 'fail',
         message: '安全检查失败',
-        value: error instanceof Error ? error.message : 'Unknown error'
-      }]
+        value: error instanceof Error ? error.message : 'Unknown error',
+      }],
     };
   }
 }
@@ -544,47 +544,47 @@ async function handleComponentCheck(component: string): Promise<NextResponse> {
     let result: HealthComponent;
 
     switch (component) {
-      case 'connection':
-        const health = await getDatabaseHealth();
-        result = await checkConnectionHealth(health, detailed);
-        break;
+    case 'connection':
+      const health = await getDatabaseHealth();
+      result = await checkConnectionHealth(health, detailed);
+      break;
 
-      case 'pool':
-        const poolReport = poolConfigManager.generateConfigurationReport();
-        result = await checkPoolHealth(poolReport, detailed);
-        break;
+    case 'pool':
+      const poolReport = poolConfigManager.generateConfigurationReport();
+      result = await checkPoolHealth(poolReport, detailed);
+      break;
 
-      case 'performance':
-        const stats = await getDatabaseStats();
-        result = await checkPerformanceHealth(stats, detailed);
-        break;
+    case 'performance':
+      const stats = await getDatabaseStats();
+      result = await checkPerformanceHealth(stats, detailed);
+      break;
 
-      case 'extensions':
-        result = await checkExtensionsHealth(detailed);
-        break;
+    case 'extensions':
+      result = await checkExtensionsHealth(detailed);
+      break;
 
-      case 'security':
-        result = await checkSecurityHealth(detailed);
-        break;
+    case 'security':
+      result = await checkSecurityHealth(detailed);
+      break;
 
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: '不支持的组件检查',
-            error: {
-              code: 'INVALID_COMPONENT',
-              message: `不支持的组件: ${component}`
-            }
+    default:
+      return NextResponse.json(
+        {
+          success: false,
+          message: '不支持的组件检查',
+          error: {
+            code: 'INVALID_COMPONENT',
+            message: `不支持的组件: ${component}`,
           },
-          { status: 400 }
-        );
+        },
+        { status: 400 },
+      );
     }
 
     return NextResponse.json({
       success: true,
       data: result,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
@@ -594,10 +594,10 @@ async function handleComponentCheck(component: string): Promise<NextResponse> {
         message: '组件检查失败',
         error: {
           code: 'COMPONENT_CHECK_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error'
-        }
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -606,7 +606,9 @@ async function handleComponentCheck(component: string): Promise<NextResponse> {
  * 计算组件得分
  */
 function calculateComponentScore(checks: HealthCheck[]): number {
-  if (checks.length === 0) return 50;
+  if (checks.length === 0) {
+    return 50;
+  }
 
   const weights = { pass: 100, warn: 50, fail: 0, unknown: 25 };
   const totalWeight = checks.reduce((sum, check) => sum + weights[check.status], 0);
@@ -671,7 +673,7 @@ function generateHealthRecommendations(components: any, metrics: any): HealthRec
             title: `${componentName} - ${check.name}`,
             description: check.message,
             action: getRecommendedAction(check.name, check.status),
-            impact: getImpactDescription(check.name, check.status)
+            impact: getImpactDescription(check.name, check.status),
           });
         }
       });
@@ -686,7 +688,7 @@ function generateHealthRecommendations(components: any, metrics: any): HealthRec
       title: '错误率过高',
       description: `当前错误率为 ${(metrics.errorRate * 100).toFixed(2)}%`,
       action: '检查查询逻辑，优化错误处理机制',
-      impact: '降低错误率，提升系统稳定性'
+      impact: '降低错误率，提升系统稳定性',
     });
   }
 
@@ -697,7 +699,7 @@ function generateHealthRecommendations(components: any, metrics: any): HealthRec
       title: '响应时间过长',
       description: `平均响应时间为 ${metrics.responseTime.toFixed(2)}ms`,
       action: '优化查询语句，添加适当索引',
-      impact: '提升查询性能，改善用户体验'
+      impact: '提升查询性能，改善用户体验',
     });
   }
 
@@ -718,7 +720,7 @@ function generateHealthAlerts(components: any, metrics: any): HealthAlert[] {
         message: `${componentName} 健康得分仅为 ${component.score}/100`,
         timestamp: new Date().toISOString(),
         component: componentName,
-        actionable: true
+        actionable: true,
       });
     } else if (component.score < 80) {
       alerts.push({
@@ -727,7 +729,7 @@ function generateHealthAlerts(components: any, metrics: any): HealthAlert[] {
         message: `${componentName} 健康得分为 ${component.score}/100`,
         timestamp: new Date().toISOString(),
         component: componentName,
-        actionable: true
+        actionable: true,
       });
     }
   });
@@ -742,20 +744,20 @@ function getRecommendedAction(checkName: string, status: string): string {
   const actions: Record<string, Record<string, string>> = {
     'database_connection': {
       'fail': '检查数据库服务状态和连接配置',
-      'warn': '监控连接稳定性，考虑增加重试机制'
+      'warn': '监控连接稳定性，考虑增加重试机制',
     },
     'pool_utilization': {
       'fail': '立即增加连接池最大连接数',
-      'warn': '监控连接池使用情况，准备扩容'
+      'warn': '监控连接池使用情况，准备扩容',
     },
     'response_time': {
       'fail': '优化慢查询，添加数据库索引',
-      'warn': '分析查询性能，考虑优化'
+      'warn': '分析查询性能，考虑优化',
     },
     'error_rate': {
       'fail': '检查查询逻辑，修复错误',
-      'warn': '监控错误趋势，排查原因'
-    }
+      'warn': '监控错误趋势，排查原因',
+    },
   };
 
   return actions[checkName]?.[status] || '联系数据库管理员检查';
@@ -768,20 +770,20 @@ function getImpactDescription(checkName: string, status: string): string {
   const impacts: Record<string, Record<string, string>> = {
     'database_connection': {
       'fail': '系统无法正常访问数据库',
-      'warn': '可能出现间歇性连接问题'
+      'warn': '可能出现间歇性连接问题',
     },
     'pool_utilization': {
       'fail': '请求处理能力严重受限',
-      'warn': '可能影响并发性能'
+      'warn': '可能影响并发性能',
     },
     'response_time': {
       'fail': '用户体验严重下降',
-      'warn': '响应速度需要改善'
+      'warn': '响应速度需要改善',
     },
     'error_rate': {
       'fail': '系统稳定性严重受损',
-      'warn': '数据一致性可能受影响'
-    }
+      'warn': '数据一致性可能受影响',
+    },
   };
 
   return impacts[checkName]?.[status] || '需要进一步评估影响';
