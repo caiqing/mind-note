@@ -81,7 +81,14 @@
       "Bash(psql:*)",
       "Bash(npx prisma generate:*)",
       "Bash(git merge:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(rm:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:claudelog.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:hyperdev.matsuoka.com)",
+      "WebFetch(domain:claudecode.io)",
+      "WebFetch(domain:skywork.ai)"
     ],
     "deny": [],
     "ask": []

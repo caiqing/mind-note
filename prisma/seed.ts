@@ -19,8 +19,9 @@ async function main() {
     update: {},
     create: {
       email: 'demo@mindnote.com',
-      name: 'Demo User',
-      password: hashedPassword,
+      username: 'demo',
+      fullName: 'Demo User',
+      passwordHash: hashedPassword,
     },
   });
 
@@ -29,9 +30,9 @@ async function main() {
     update: {},
     create: {
       email: 'admin@mindnote.com',
-      name: 'Admin User',
-      password: hashedPassword,
-      role: 'ADMIN',
+      username: 'admin',
+      fullName: 'Admin User',
+      passwordHash: hashedPassword,
     },
   });
 

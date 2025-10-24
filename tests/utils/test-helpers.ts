@@ -8,6 +8,7 @@ import { render, RenderOptions } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { ComponentType } from 'react';
 import { NextRouter } from 'next/router';
+import { vi } from 'vitest';
 
 // 自定义渲染函数，包含常用的配置
 export const customRender = <T extends ComponentType<any>>(
@@ -23,7 +24,7 @@ export const customRender = <T extends ComponentType<any>>(
 // 创建用户事件实例，包含常用配置
 export const createUserEvent = () => {
   return userEvent.setup({
-    advanceTimers: jest.advanceTimersByTime,
+    advanceTimers: vi.advanceTimersByTime,
     skipAutoCleanup: true,
   });
 };
@@ -166,12 +167,12 @@ export const expectAsyncToComplete = async (
 };
 
 // 测试API调用的辅助函数
-export const expectApiCallToHaveBeenCalled = (mockFn: jest.Mock) => {
+export const expectApiCallToHaveBeenCalled = (mockFn: vi.Mock) => {
   expect(mockFn).toHaveBeenCalled();
 };
 
 export const expectApiCallToHaveBeenCalledWith = (
-  mockFn: jest.Mock,
+  mockFn: vi.Mock,
   ...args: any[]
 ) => {
   expect(mockFn).toHaveBeenCalledWith(...args);
@@ -180,16 +181,16 @@ export const expectApiCallToHaveBeenCalledWith = (
 // 测试路由的辅助函数
 export const mockRouter = () => {
   const router = {
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    reload: jest.fn(),
-    prefetch: jest.fn().mockResolvedValue(undefined),
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    reload: vi.fn(),
+    prefetch: vi.fn().mockResolvedValue(undefined),
   };
 
   // Mock NextRouter
-  jest.mock('next/router', () => ({
+  vi.mock('next/router', () => ({
     useRouter: () => router,
   }));
 
@@ -202,14 +203,14 @@ export const mockLocalStorage = () => {
 
   Object.defineProperty(window, 'localStorage', {
     value: {
-      getItem: jest.fn((key: string) => store[key] || null),
-      setItem: jest.fn((key: string, value: string) => {
+      getItem: vi.fn((key: string) => store[key] || null),
+      setItem: vi.fn((key: string, value: string) => {
         store[key] = value;
       }),
-      removeItem: jest.fn((key: string) => {
+      removeItem: vi.fn((key: string) => {
         delete store[key];
       }),
-      clear: jest.fn(() => {
+      clear: vi.fn(() => {
         Object.keys(store).forEach(key => delete store[key]);
       }),
     },
@@ -225,14 +226,14 @@ export const mockSessionStorage = () => {
 
   Object.defineProperty(window, 'sessionStorage', {
     value: {
-      getItem: jest.fn((key: string) => store[key] || null),
-      setItem: jest.fn((key: string, value: string) => {
+      getItem: vi.fn((key: string) => store[key] || null),
+      setItem: vi.fn((key: string, value: string) => {
         store[key] = value;
       }),
-      removeItem: jest.fn((key: string) => {
+      removeItem: vi.fn((key: string) => {
         delete store[key];
       }),
-      clear: jest.fn(() => {
+      clear: vi.fn(() => {
         Object.keys(store).forEach(key => delete store[key]);
       }),
     },
@@ -251,21 +252,21 @@ export const mockNotification = () => {
   }> = [];
 
   Object.defineProperty(window, 'Notification', {
-    value: jest.fn().mockImplementation((title: string, options: any) => ({
+    value: vi.fn().mockImplementation((title: string, options: any) => ({
       title,
       body: options.body,
       icon: options.icon,
-      close: jest.fn(),
-      onclick: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
+      close: vi.fn(),
+      onclick: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     })),
     writable: true,
   });
 
   // Mock Notification.requestPermission
   Object.defineProperty(Notification, 'requestPermission', {
-    value: jest.fn().mockResolvedValue('granted'),
+    value: vi.fn().mockResolvedValue('granted'),
     writable: true,
   });
 
@@ -289,9 +290,9 @@ export const mockIntersectionObserver = () => {
         ) => {
           observers.push({ callback, options });
           return {
-            observe: jest.fn(),
-            unobserve: jest.fn(),
-            disconnect: jest.fn(),
+            observe: vi.fn(),
+            unobserve: vi.fn(),
+            disconnect: vi.fn(),
           };
         },
       ),
@@ -308,12 +309,12 @@ export const mockResizeObserver = () => {
   }> = [];
 
   Object.defineProperty(window, 'ResizeObserver', {
-    value: jest.fn().mockImplementation((callback: ResizeObserverCallback) => {
+    value: vi.fn().mockImplementation((callback: ResizeObserverCallback) => {
       observers.push({ callback });
       return {
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-        disconnect: jest.fn(),
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
       };
     }),
     writable: true,
@@ -328,11 +329,11 @@ export const mockClipboard = () => {
 
   Object.defineProperty(navigator, 'clipboard', {
     value: {
-      writeText: jest.fn().mockImplementation((text: string) => {
+      writeText: vi.fn().mockImplementation((text: string) => {
         clipboardData.text = text;
         return Promise.resolve();
       }),
-      readText: jest.fn().mockResolvedValue(clipboardData.text || ''),
+      readText: vi.fn().mockResolvedValue(clipboardData.text || ''),
     },
     writable: true,
   });
@@ -342,7 +343,7 @@ export const mockClipboard = () => {
 
 // 清理所有Mock的辅助函数
 export const clearAllMocks = () => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   localStorage.clear();
   sessionStorage.clear();
 };
@@ -361,13 +362,13 @@ export const setupTestEnvironment = () => {
   mockClipboard();
 
   // 重置所有模拟定时器
-  jest.useFakeTimers();
+  vi.useFakeTimers();
 };
 
 // 清理测试环境的辅助函数
 export const cleanupTestEnvironment = () => {
   // 恢复真实定时器
-  jest.useRealTimers();
+  vi.useRealTimers();
 
   // 清理所有Mock
   clearAllMocks();
@@ -386,15 +387,15 @@ export const validateMockData = (
 // 测试响应式设计的辅助函数
 export const mockMatchMedia = () => {
   Object.defineProperty(window, 'matchMedia', {
-    value: jest.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation(query => ({
       matches: false,
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     })),
     writable: true,
   });

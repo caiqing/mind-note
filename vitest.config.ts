@@ -9,7 +9,7 @@ export default defineConfig({
   test: {
     // 测试环境
     environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./vitest.setup.ts'],
 
     // 全局配置
     globals: true,
@@ -37,10 +37,14 @@ export default defineConfig({
     // 钩子超时
     hookTimeout: 10000,
 
-    // 并发配置
-    threads: true,
-    maxThreads: 4,
-    minThreads: 1,
+    // 并发配置 (vitest 最新版本使用 pool 配置)
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        maxThreads: 4,
+        minThreads: 1,
+      },
+    },
 
     // 监听模式配置
     watch: false,
