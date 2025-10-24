@@ -80,7 +80,8 @@
       "Bash(./scripts/run-ai-migration.sh:*)",
       "Bash(psql:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
