@@ -41,15 +41,28 @@ model Note {
   id              String    @id @default(cuid())
   userId          String    @map("user_id")
   title           String
-  content         String
+  content         String    @db.Text
   contentHash     String    @map("content_hash")
-  contentVector   Float[]?  @map("content_vector") // pgvector
-  categoryId      Int?      @map("category_id")
-  tags            String[]  @default("{}")
-  metadata        Json      @default("{}")
+  contentVector   Bytes?    @map("content_vector") // pgvector
+
+  // AI分析结果字段
   aiProcessed     Boolean   @default(false) @map("ai_processed")
   aiSummary       String?   @map("ai_summary") @db.Text
-  aiKeywords      String[]  @default("{}") @map("ai_keywords")
+  aiKeywords      String[]  @default([]) @map("ai_keywords")
+  aiKeyConcepts   String[]  @default([]) @map("ai_key_concepts")
+  aiCategory      String    @default("other") @map("ai_category")
+  aiTags          String[]  @default([]) @map("ai_tags")
+  aiSentiment     String    @default("neutral") @map("ai_sentiment")
+  aiConfidence    Float     @default(0.0) @map("ai_confidence")
+  aiModel         String?   @map("ai_model")
+  aiProvider      String?   @map("ai_provider")
+  aiTokens        Int       @default(0) @map("ai_tokens")
+  aiCost          Decimal   @default(0) @db.Decimal(10, 6) @map("ai_cost")
+
+  // 基础字段
+  categoryId      Int?      @map("category_id")
+  tags            String[]  @default([])
+  metadata        Json      @default("{}")
   version         Int       @default(1)
   status          NoteStatus @default(DRAFT)
   isPublic        Boolean   @default(false) @map("is_public")
@@ -57,29 +70,6 @@ model Note {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   aiProcessedAt   DateTime? @map("ai_processed_at")
-
-  // Add constraints (will be applied in migration)
-  @@map("notes")
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_title_not_empty
-    CHECK (LENGTH(TRIM(title)) > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_content_not_empty
-    CHECK (LENGTH(TRIM(content)) > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_content_hash_not_empty
-    CHECK (LENGTH(TRIM(content_hash)) > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_version_positive
-    CHECK (version > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_view_count_positive
-    CHECK (view_count >= 0)
-  """)
 
   // Relations
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -98,11 +88,14 @@ model Note {
   @@index([isPublic, status])
   @@index([viewCount(sort: Desc)])
   @@index([aiProcessedAt])
+  @@index([aiCategory])
+  @@index([aiSentiment])
+  @@index([aiConfidence(sort: Desc)])
+
   @@map("notes")
 
-  // Vector search index for pgvector (for AI functionality)
-  @@index([contentVector], map: "idx_content_vector_hnsw", using: HNSW)
-  @@index([contentVector], map: "idx_content_vector_l2", using: IVFFlat, options: { listCount: 100 })
+  // Vector search indexes for pgvector (AI functionality)
+  // Note: Vector indexes will be created manually in migration with proper SQL syntax
 }
 
 // 标签表
@@ -117,13 +110,14 @@ model Tag {
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
-  user     User      @relation(fields: [createdBy], references: [id])
+  user     User?     @relation(fields: [createdBy], references: [id])
   noteTags NoteTag[]
 
   @@index([usageCount(sort: Desc)])
   @@index([category])
   @@index([createdBy])
   @@index([createdAt])
+  @@index([createdBy, usageCount(sort: Desc)])
   @@map("tags")
 }
 
@@ -142,7 +136,7 @@ model Category {
   // Relations
   parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
-  user     User      @relation(fields: [createdBy], references: [id])
+  user     User?     @relation(fields: [createdBy], references: [id])
   notes    Note[]
 
   @@index([parentId, sortOrder])
@@ -290,14 +284,8 @@ enum FeedbackType {
   RELATIONSHIP
 }
 
-// Add database constraints for data integrity
-model DatabaseConstraints {
-  // This model represents database constraints
-  // In PostgreSQL, these will be added as table constraints
+// Database constraints will be added in migration files
 
-  // Example of constraints that would be added:
-  // - CHECK (strength_score >= 0 AND strength_score <= 1) for NoteRelationship
-  // - CHECK (rating >= 1 AND rating <= 5) for UserFeedback
-  // - CHECK (LENGTH(title) > 0) for Note
-  // - CHECK (LENGTH(content) > 0) for Note
-}
+// Vector extension for pgvector (will be created in migration)
+// These are SQL statements that will be added to the migration:
+// CREATE EXTENSION IF NOT EXISTS vector;

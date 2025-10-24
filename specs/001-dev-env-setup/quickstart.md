@@ -1,8 +1,6 @@
 # Quick Start Guide
 
-**Feature**: 项目基础设施搭建和开发环境配置
-**Branch**: 001-dev-env-setup
-**Created**: 2025-10-22
+**Feature**: 项目基础设施搭建和开发环境配置 **Branch**: 001-dev-env-setup **Created**: 2025-10-22
 **Status**: Guide Ready
 
 ---
@@ -48,12 +46,14 @@ npm run dev
 #### 1.1 安装Docker
 
 **macOS (推荐使用Homebrew)**:
+
 ```bash
 brew install --cask docker
 brew install --cask docker-compose
 ```
 
 **Ubuntu/Debian**:
+
 ```bash
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -62,6 +62,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
 **Windows**:
+
 1. 下载并安装 Docker Desktop for Windows
 2. 启用 WSL2 后端
 3. 重启计算机
@@ -94,6 +95,7 @@ nano .env
 ```
 
 **必要的环境变量**:
+
 ```bash
 # 数据库配置
 DATABASE_URL="postgresql://mindnote:dev_password@localhost:5432/mindnote_dev"
@@ -120,6 +122,7 @@ NEXTAUTH_URL="http://localhost:3000"
 ```
 
 该脚本将自动：
+
 - ✅ 检查系统要求
 - ✅ 安装项目依赖
 - ✅ 配置Docker容器
@@ -269,6 +272,7 @@ npm run deploy:production  # 部署到生产环境
 #### 1. Docker相关问题
 
 **问题**: `docker: command not found`
+
 ```bash
 # 解决方案
 # macOS
@@ -279,6 +283,7 @@ sudo apt-get install docker.io docker-compose
 ```
 
 **问题**: `Permission denied while trying to connect to Docker daemon`
+
 ```bash
 # 解决方案
 sudo usermod -aG docker $USER
@@ -289,6 +294,7 @@ newgrp docker
 #### 2. 数据库连接问题
 
 **问题**: `ECONNREFUSED: Connection refused`
+
 ```bash
 # 检查PostgreSQL容器状态
 docker-compose logs postgres
@@ -298,6 +304,7 @@ docker-compose restart postgres
 ```
 
 **问题**: `FATAL: database "mindnote_dev" does not exist`
+
 ```bash
 # 创建数据库
 docker-compose exec postgres createdb -U mindnote mindnote_dev
@@ -309,6 +316,7 @@ npm run db:setup
 #### 3. Redis连接问题
 
 **问题**: `ECONNREFUSED: Connection refused`
+
 ```bash
 # 检查Redis容器状态
 docker-compose logs redis
@@ -320,6 +328,7 @@ docker-compose restart redis
 #### 4. AI服务问题
 
 **问题**: 本地模型无法加载
+
 ```bash
 # 检查Ollama容器状态
 docker-compose logs ollama
@@ -329,6 +338,7 @@ docker-compose exec ollama ollama pull distilbert
 ```
 
 **问题**: 云端API连接失败
+
 ```bash
 # 检查API密钥配置
 cat .env | grep API_KEY
@@ -410,9 +420,9 @@ WITH (lists = 100);
 // 缓存配置优化
 const cacheConfig = {
   ai_conversations: { ttl: 1800 }, // 30分钟
-  search_results: { ttl: 300 },    // 5分钟
-  user_sessions: { ttl: 3600 },   // 1小时
-  popular_notes: { ttl: 7200 }   // 2小时
+  search_results: { ttl: 300 }, // 5分钟
+  user_sessions: { ttl: 3600 }, // 1小时
+  popular_notes: { ttl: 7200 }, // 2小时
 };
 ```
 
@@ -423,11 +433,13 @@ const cacheConfig = {
 ### 日常开发流程
 
 1. **启动开发环境**
+
    ```bash
    docker-compose up -d && npm run dev
    ```
 
 2. **创建功能分支**
+
    ```bash
    git checkout -b feature/new-feature
    ```
@@ -438,6 +450,7 @@ const cacheConfig = {
    - 提交代码
 
 4. **代码质量检查**
+
    ```bash
    npm run lint && npm run type-check && npm run test
    ```
@@ -513,9 +526,8 @@ docker-compose restart
 - [ ] 代码质量工具配置完成
 - [ ] 测试套件运行正常
 
-**环境状态**: ✅ 就绪
-**下一步**: 开始功能开发或运行 `/speckit.tasks` 生成开发任务
+**环境状态**: ✅ 就绪 **下一步**: 开始功能开发或运行 `/speckit.tasks` 生成开发任务
 
 ---
 
-*快速开始指南支持30分钟内完成开发环境搭建，包含完整的故障排除和性能优化建议。*
+_快速开始指南支持30分钟内完成开发环境搭建，包含完整的故障排除和性能优化建议。_

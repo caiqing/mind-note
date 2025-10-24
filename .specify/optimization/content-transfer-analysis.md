@@ -3,32 +3,35 @@
 ## 当前问题
 
 ### Shell管道传递的脆弱性
+
 ```bash
 # 当前的问题方式
 echo "$AI_RESPONSE" | bash script.sh add-content "$content"
 ```
 
 **问题根源**：
-1. **特殊字符冲突**：Mermaid代码块中的 ```` ```mermaid` `` 被shell解释
+
+1. **特殊字符冲突**：Mermaid代码块中的 `` `mermaid` `` 被shell解释
 2. **引号转义地狱**：多层引号嵌套导致解析错误
 3. **命令注入风险**：恶意内容可能被执行为shell命令
 
 ### 具体失败场景
 
 #### 场景1：Mermaid图表丢失
-```bash
+
+````bash
 # AI原始输出
 ```mermaid
 graph LR
     A[思考] --> B[AI协作]
-```
+````
 
 # Shell解析错误
-$ ```mermaid
-bash: mermaid: command not found
-$ graph LR
-bash: syntax error near unexpected token `('
-```
+
+$
+```mermaid bash: mermaid: command not found $ graph LR bash: syntax error near unexpected token `('
+
+````
 
 #### 场景2：多行内容截断
 ```bash
@@ -37,7 +40,7 @@ bash: syntax error near unexpected token `('
 
 # 实际只保存了第一行
 "第一行内容"
-```
+````
 
 ## 根本原因
 

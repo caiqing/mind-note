@@ -1,6 +1,7 @@
 # MindNote Development Environment Troubleshooting Guide
 
-This guide helps you resolve common issues when setting up and working with the MindNote development environment.
+This guide helps you resolve common issues when setting up and working with the MindNote development
+environment.
 
 ## Table of Contents
 
@@ -42,6 +43,7 @@ Before starting development, generate secure secrets:
 **Problem**: `NEXTAUTH_SECRET`, `POSTGRES_PASSWORD`, or `REDIS_PASSWORD` are empty
 
 **Solution**:
+
 ```bash
 # Generate all required secrets
 ./scripts/generate-secrets.sh --all
@@ -55,6 +57,7 @@ Before starting development, generate secure secrets:
 **Problem**: Using default or weak passwords
 
 **Solution**:
+
 ```bash
 # Generate new secure passwords
 openssl rand -base64 32  # For JWT secret
@@ -70,9 +73,9 @@ openssl rand -base64 24  # For database passwords
 ```yaml
 # Services now bind to localhost only
 ports:
-  - "127.0.0.1:5432:5432"  # PostgreSQL
-  - "127.0.0.1:6379:6379"  # Redis
-  - "127.0.0.1:11434:11434" # Ollama
+  - '127.0.0.1:5432:5432' # PostgreSQL
+  - '127.0.0.1:6379:6379' # Redis
+  - '127.0.0.1:11434:11434' # Ollama
 
 # Internal network for database services
 networks:
@@ -138,6 +141,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Kill the process using the port**:
+
    ```bash
    # Find the process
    lsof -ti:3000
@@ -147,6 +151,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Use a different port**:
+
    ```bash
    PORT=3001 npm run dev
    ```
@@ -163,6 +168,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Clean and reinstall dependencies**:
+
    ```bash
    # Remove node_modules and package-lock.json
    rm -rf node_modules package-lock.json
@@ -175,6 +181,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Check Node.js version**:
+
    ```bash
    node --version  # Should be v20 or higher
    ```
@@ -191,11 +198,13 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Copy the environment template**:
+
    ```bash
    cp .env.example .env
    ```
 
 2. **Edit the .env file** and ensure these variables are set:
+
    ```bash
    DATABASE_URL=postgresql://mindnote:dev_password@localhost:5432/mindnote_dev
    NEXTAUTH_SECRET=your-secret-key-here
@@ -204,6 +213,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 3. **Regenerate NEXTAUTH_SECRET**:
+
    ```bash
    # Generate a new secret
    openssl rand -base64 32
@@ -219,6 +229,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Database authentication failed**:
+
    ```bash
    # Check if database password is set
    if [ -z "$POSTGRES_PASSWORD" ]; then
@@ -228,6 +239,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Database not running**:
+
    ```bash
    # Check Docker containers
    docker-compose ps postgres
@@ -240,6 +252,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 3. **Database schema not created**:
+
    ```bash
    # Generate Prisma client
    npx prisma generate
@@ -252,6 +265,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 4. **Vector search not working**:
+
    ```bash
    # Check if pgvector extension is enabled
    docker-compose exec postgres psql -U mindnote -d mindnote_dev -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
@@ -261,7 +275,8 @@ curl http://localhost:3000/api/health/ai
    docker-compose up postgres
    ```
 
-1. **Check if PostgreSQL is running**:
+5. **Check if PostgreSQL is running**:
+
    ```bash
    # With Docker
    docker-compose ps postgres
@@ -270,7 +285,8 @@ curl http://localhost:3000/api/health/ai
    pg_isready -h localhost -p 5432
    ```
 
-2. **Start the database services**:
+6. **Start the database services**:
+
    ```bash
    # With Docker
    npm run docker:dev
@@ -279,18 +295,21 @@ curl http://localhost:3000/api/health/ai
    docker-compose up postgres redis
    ```
 
-3. **Verify database URL format**:
+7. **Verify database URL format**:
+
    ```bash
    # Should be: postgresql://user:password@host:port/database
    echo $DATABASE_URL
    ```
 
-4. **Check database logs**:
+8. **Check database logs**:
+
    ```bash
    docker-compose logs postgres
    ```
 
-5. **Reset database connection**:
+9. **Reset database connection**:
+
    ```bash
    # Reset migrations
    npm run db:reset
@@ -306,6 +325,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Redis authentication failed**:
+
    ```bash
    # Check if Redis password is set
    if [ -z "$REDIS_PASSWORD" ]; then
@@ -318,6 +338,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Redis not running**:
+
    ```bash
    # Check Docker containers
    docker-compose ps redis
@@ -330,6 +351,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 3. **Check Redis URL format**:
+
    ```bash
    # Should be: redis://:password@host:port
    echo $REDIS_URL
@@ -339,6 +361,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 4. **Clear Redis cache if corrupted**:
+
    ```bash
    # With Docker and password
    docker-compose exec redis redis-cli -a "$REDIS_PASSWORD" FLUSHALL
@@ -348,6 +371,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 5. **Redis security commands disabled**:
+
    ```bash
    # Check if dangerous commands are disabled
    docker-compose exec redis redis-cli CONFIG GET rename-command
@@ -364,16 +388,19 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Regenerate Prisma client**:
+
    ```bash
    npx prisma generate
    ```
 
 2. **Reset database**:
+
    ```bash
    npx prisma migrate reset
    ```
 
 3. **Check schema file**:
+
    ```bash
    # Validate schema syntax
    npx prisma validate
@@ -391,6 +418,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Check NextAuth configuration**:
+
    ```bash
    # Verify NEXTAUTH_URL matches your development URL
    echo $NEXTAUTH_URL  # Should be http://localhost:3000
@@ -414,6 +442,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Check Ollama service**:
+
    ```bash
    # Check if Ollama is running
    curl http://localhost:11434/api/tags
@@ -426,6 +455,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Verify API keys**:
+
    ```bash
    # Check environment variables
    echo $OPENAI_API_KEY
@@ -446,22 +476,26 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Check Docker daemon**:
+
    ```bash
    docker info
    ```
 
 2. **Rebuild containers**:
+
    ```bash
    docker-compose down
    docker-compose up --build
    ```
 
 3. **Clear Docker cache**:
+
    ```bash
    docker system prune -a
    ```
 
 4. **Check container logs**:
+
    ```bash
    docker-compose logs app
    docker-compose logs postgres
@@ -481,17 +515,20 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Increase Node.js memory limit**:
+
    ```bash
    NODE_OPTIONS="--max-old-space-size=4096" npm run dev
    ```
 
 2. **Disable TypeScript strict mode temporarily**:
+
    ```bash
    # Edit tsconfig.json
    # Set "strict": false
    ```
 
 3. **Clear Next.js cache**:
+
    ```bash
    rm -rf .next
    npm run dev
@@ -507,12 +544,14 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Check slow queries**:
+
    ```bash
    # Enable query logging in PostgreSQL
    docker-compose exec postgres psql -U mindnote -d mindnote_dev -c "ALTER SYSTEM SET log_min_duration_statement = 100;"
    ```
 
 2. **Add database indexes**:
+
    ```bash
    # Check missing indexes
    npx prisma db pull
@@ -529,6 +568,7 @@ curl http://localhost:3000/api/health/ai
 ### Windows-Specific Issues
 
 **Problems**:
+
 - Path separator issues
 - Permission problems
 - Shell script compatibility
@@ -536,6 +576,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Use Git Bash or WSL**:
+
    ```bash
    # Run scripts with Git Bash
    bash scripts/setup-dev.sh
@@ -545,6 +586,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Check file permissions**:
+
    ```bash
    # In Git Bash
    chmod +x scripts/*.sh
@@ -559,6 +601,7 @@ curl http://localhost:3000/api/health/ai
 ### macOS-Specific Issues
 
 **Problems**:
+
 - Gatekeeper blocking scripts
 - Homebrew installation issues
 - Port conflicts with system services
@@ -566,12 +609,14 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Allow scripts to run**:
+
    ```bash
    # Remove quarantine flag
    xattr -d com.apple.quarantine scripts/setup-dev.sh
    ```
 
 2. **Check Homebrew installation**:
+
    ```bash
    brew doctor
    brew update
@@ -585,6 +630,7 @@ curl http://localhost:3000/api/health/ai
 ### Linux-Specific Issues
 
 **Problems**:
+
 - Package manager differences
 - Permission denied errors
 - Missing system dependencies
@@ -592,6 +638,7 @@ curl http://localhost:3000/api/health/ai
 **Solutions**:
 
 1. **Install system dependencies**:
+
    ```bash
    # Ubuntu/Debian
    sudo apt-get update
@@ -602,6 +649,7 @@ curl http://localhost:3000/api/health/ai
    ```
 
 2. **Fix permission issues**:
+
    ```bash
    # Fix npm permissions
    sudo chown -R $(whoami) ~/.npm
@@ -640,6 +688,7 @@ npm run dev -- --verbose
 If you're still having problems:
 
 1. **Collect diagnostic information**:
+
    ```bash
    # System information
    npm run validate:env > diagnostic-info.txt
