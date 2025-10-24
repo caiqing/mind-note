@@ -1,8 +1,6 @@
 # MindNote技术架构设计文档
 
-**文档版本**: v1.0
-**创建日期**: 2025-10-22
-**架构类型**: 微服务 + 混合关系图谱 + AI原生设计
+**文档版本**: v1.0 **创建日期**: 2025-10-22 **架构类型**: 微服务 + 混合关系图谱 + AI原生设计
 **状态**: 架构设计完成
 
 ---
@@ -95,36 +93,39 @@ graph TB
 #### 1. 客户端层架构
 
 ##### Web应用架构
+
 ```typescript
 // Web应用技术栈
 const WebAppStack = {
-  framework: "Next.js 15",
-  ui: "React 19",
-  language: "TypeScript 5.0+",
-  styling: "Tailwind CSS + Shadcn/ui",
-  state: "Zustand + React Query",
-  deployment: "Vercel Edge Functions",
-  ai: "Vercel AI SDK"
+  framework: 'Next.js 15',
+  ui: 'React 19',
+  language: 'TypeScript 5.0+',
+  styling: 'Tailwind CSS + Shadcn/ui',
+  state: 'Zustand + React Query',
+  deployment: 'Vercel Edge Functions',
+  ai: 'Vercel AI SDK',
 };
 ```
 
 ##### 移动端架构
+
 ```typescript
 // React Native技术栈
 const MobileStack = {
-  framework: "React Native 0.75",
-  language: "TypeScript",
-  navigation: "React Navigation 6",
-  state: "Redux Toolkit",
-  api: "Apollo GraphQL Client",
-  ai: "Vercel AI SDK Mobile",
-  deployment: "App Store + Google Play"
+  framework: 'React Native 0.75',
+  language: 'TypeScript',
+  navigation: 'React Navigation 6',
+  state: 'Redux Toolkit',
+  api: 'Apollo GraphQL Client',
+  ai: 'Vercel AI SDK Mobile',
+  deployment: 'App Store + Google Play',
 };
 ```
 
 #### 2. API网关层架构
 
 ##### 核心功能
+
 - **统一入口**: 所有请求通过单一网关，简化客户端复杂度
 - **智能路由**: 基于请求类型、负载、地理位置智能路由
 - **认证授权**: JWT + OAuth2 + 多因素认证
@@ -132,76 +133,62 @@ const MobileStack = {
 - **监控日志**: 实时性能监控、错误追踪、审计日志
 
 ##### 技术实现
+
 ```typescript
 // API网关配置
 const APIGatewayConfig = {
-  gateway: "Kong 3.4",
+  gateway: 'Kong 3.4',
   authentication: {
-    jwt: "HMAC-SHA256",
-    oauth2: "Authorization Code Flow",
-    mfa: "TOTP + SMS + Email"
+    jwt: 'HMAC-SHA256',
+    oauth2: 'Authorization Code Flow',
+    mfa: 'TOTP + SMS + Email',
   },
   rateLimiting: {
-    userLevel: "1000 req/min",
-    ipLevel: "10000 req/min",
-    serviceLevel: "50000 req/min"
+    userLevel: '1000 req/min',
+    ipLevel: '10000 req/min',
+    serviceLevel: '50000 req/min',
   },
   monitoring: {
-    metrics: "Prometheus + Grafana",
-    logging: "ELK Stack",
-    tracing: "Jaeger + Zipkin"
-  }
+    metrics: 'Prometheus + Grafana',
+    logging: 'ELK Stack',
+    tracing: 'Jaeger + Zipkin',
+  },
 };
 ```
 
 #### 3. 微服务层架构
 
 ##### 笔记服务 (NoteService)
+
 ```typescript
 const NoteServiceArchitecture = {
-  framework: "Next.js 15 API Routes",
-  database: "PostgreSQL",
-  orm: "Prisma + pgvector",
-  caching: "Redis",
-  features: [
-    "CRUD操作",
-    "版本控制",
-    "协作编辑",
-    "自动保存",
-    "冲突检测"
-  ]
+  framework: 'Next.js 15 API Routes',
+  database: 'PostgreSQL',
+  orm: 'Prisma + pgvector',
+  caching: 'Redis',
+  features: ['CRUD操作', '版本控制', '协作编辑', '自动保存', '冲突检测'],
 };
 ```
 
 ##### AI服务 (AIService)
+
 ```typescript
 const AIServiceArchitecture = {
-  framework: "Python FastAPI",
-  aiIntegration: "Vercel AI SDK",
-  modelRouting: "Intelligent Model Router",
-  features: [
-    "文本生成",
-    "向量嵌入",
-    "对话管理",
-    "上下文理解",
-    "降级策略"
-  ]
+  framework: 'Python FastAPI',
+  aiIntegration: 'Vercel AI SDK',
+  modelRouting: 'Intelligent Model Router',
+  features: ['文本生成', '向量嵌入', '对话管理', '上下文理解', '降级策略'],
 };
 ```
 
 ##### 图关系服务 (GraphService)
+
 ```typescript
 const GraphServiceArchitecture = {
-  framework: "Node.js",
-  graphDatabase: "Apache AGE + Neo4j",
-  queryLanguage: "Cypher + SQL",
-  features: [
-    "关系发现",
-    "路径查询",
-    "中心性分析",
-    "社区检测",
-    "关系强度计算"
-  ]
+  framework: 'Node.js',
+  graphDatabase: 'Apache AGE + Neo4j',
+  queryLanguage: 'Cypher + SQL',
+  features: ['关系发现', '路径查询', '中心性分析', '社区检测', '关系强度计算'],
 };
 ```
 
@@ -213,13 +200,13 @@ const GraphServiceArchitecture = {
 
 #### 查询类型分析
 
-| 查询复杂度 | 推荐数据源 | 响应时间 | 准确性 | 使用场景 |
-|-----------|------------|----------|--------|----------|
-| **简单关联**<br/>1-2度关系 | PostgreSQL + pgvector | < 20ms | 95% | 基础相似笔记推荐 |
-| **复杂关系**<br/>3-5度关系 | Apache AGE + Cypher | < 100ms | 92% | 深度关系图谱分析 |
-| **路径分析**<br/>多跳路径查找 | Neo4j + 原生图算法 | < 150ms | 98% | 知识传递路径发现 |
-| **全文搜索**<br/>关键词检索 | ElasticSearch | < 80ms | 90% | 内容全文检索 |
-| **混合查询**<br/>多条件组合 | 智能路由选择最优组合 | < 200ms | 93% | 复杂用户查询 |
+| 查询复杂度                    | 推荐数据源            | 响应时间 | 准确性 | 使用场景         |
+| ----------------------------- | --------------------- | -------- | ------ | ---------------- |
+| **简单关联**<br/>1-2度关系    | PostgreSQL + pgvector | < 20ms   | 95%    | 基础相似笔记推荐 |
+| **复杂关系**<br/>3-5度关系    | Apache AGE + Cypher   | < 100ms  | 92%    | 深度关系图谱分析 |
+| **路径分析**<br/>多跳路径查找 | Neo4j + 原生图算法    | < 150ms  | 98%    | 知识传递路径发现 |
+| **全文搜索**<br/>关键词检索   | ElasticSearch         | < 80ms   | 90%    | 内容全文检索     |
+| **混合查询**<br/>多条件组合   | 智能路由选择最优组合  | < 200ms  | 93%    | 复杂用户查询     |
 
 #### 路由器实现逻辑
 
@@ -233,9 +220,7 @@ class IntelligentQueryRouter {
     const dataSources = this.selectDataSources(analysis);
 
     // 3. 并行执行策略
-    const results = await Promise.allSettled(
-      dataSources.map(ds => this.executeQuery(ds, request))
-    );
+    const results = await Promise.allSettled(dataSources.map(ds => this.executeQuery(ds, request)));
 
     // 4. 结果合并和排序
     const mergedResult = this.mergeResults(results, analysis);
@@ -347,20 +332,22 @@ SELECT * FROM cypher('
 ### 多层安全防护体系
 
 #### 网络安全层
+
 ```typescript
 const NetworkSecurityConfig = {
-  waf: "Cloudflare WAF",
-  ddosProtection: "Cloudflare Spectrum",
-  ssl: "TLS 1.3 + AES-256-GCM",
+  waf: 'Cloudflare WAF',
+  ddosProtection: 'Cloudflare Spectrum',
+  ssl: 'TLS 1.3 + AES-256-GCM',
   rateLimiting: {
-    global: "10000 req/sec",
-    perUser: "1000 req/min",
-    perIP: "5000 req/min"
-  }
+    global: '10000 req/sec',
+    perUser: '1000 req/min',
+    perIP: '5000 req/min',
+  },
 };
 ```
 
 #### 数据安全层
+
 ```typescript
 class DataSecurityService {
   async encryptNoteContent(content: string, userId: string): Promise<EncryptedData> {
@@ -379,7 +366,7 @@ class DataSecurityService {
     return {
       encryptedContent,
       classification,
-      encryptionKeyId: encryptionKey.id
+      encryptionKeyId: encryptionKey.id,
     };
   }
 
@@ -393,36 +380,37 @@ class DataSecurityService {
     return {
       level: this.determineProtectionLevel(piiScore, sensitivityScore),
       piiDetected: piiScore > 0.7,
-      requiresAdditionalProtection: sensitivityScore > 0.8
+      requiresAdditionalProtection: sensitivityScore > 0.8,
     };
   }
 }
 ```
 
 #### 隐私保护策略
+
 ```typescript
 interface PrivacyControls {
   // GDPR合规
   gdpr: {
-    consentManagement: '用户同意管理系统',
-    dataPortability: '数据导出功能',
-    rightToErasure: '数据删除功能',
-    breachNotification: '泄露通知机制'
+    consentManagement: '用户同意管理系统';
+    dataPortability: '数据导出功能';
+    rightToErasure: '数据删除功能';
+    breachNotification: '泄露通知机制';
   };
 
   // 数据匿名化
   anonymization: {
-    piidetection: 'PII自动识别',
-    masking: '敏感信息遮罩',
-    aggregation: '数据聚合去标识',
-    generalization: '数据泛化处理'
+    piidetection: 'PII自动识别';
+    masking: '敏感信息遮罩';
+    aggregation: '数据聚合去标识';
+    generalization: '数据泛化处理';
   };
 
   // 访问控制
   accessControl: {
-    rbac: '基于角色的访问控制',
-    auditLogging: '访问审计日志',
-    sessionManagement: '会话安全管理'
+    rbac: '基于角色的访问控制';
+    auditLogging: '访问审计日志';
+    sessionManagement: '会话安全管理';
   };
 }
 ```
@@ -435,13 +423,13 @@ interface PrivacyControls {
 
 #### 缓存层次设计
 
-| 缓存层级 | 技术 | 缓存内容 | 过期时间 | 命中率目标 |
-|-----------|------|----------|-----------|------------|
-| **CDN边缘缓存** | Vercel Edge | 静态资源 | 24小时 | 95% |
-| **API响应缓存** | Redis | API响应结果 | 5-30分钟 | 85% |
-| **向量嵌入缓存** | Redis | 重复文本嵌入 | 永久/7天 | 70% |
-| **搜索结果缓存** | Redis | 热门查询结果 | 1小时 | 80% |
-| **会话缓存** | Redis | 用户会话状态 | 30分钟 | 90% |
+| 缓存层级         | 技术        | 缓存内容     | 过期时间 | 命中率目标 |
+| ---------------- | ----------- | ------------ | -------- | ---------- |
+| **CDN边缘缓存**  | Vercel Edge | 静态资源     | 24小时   | 95%        |
+| **API响应缓存**  | Redis       | API响应结果  | 5-30分钟 | 85%        |
+| **向量嵌入缓存** | Redis       | 重复文本嵌入 | 永久/7天 | 70%        |
+| **搜索结果缓存** | Redis       | 热门查询结果 | 1小时    | 80%        |
+| **会话缓存**     | Redis       | 用户会话状态 | 30分钟   | 90%        |
 
 #### 性能监控系统
 
@@ -449,34 +437,34 @@ interface PrivacyControls {
 interface PerformanceMetrics {
   // API性能指标
   api: {
-    responseTimeP95: '< 100ms',
-    throughput: '10K+ RPS',
-    errorRate: '< 0.1%',
-    availability: '> 99.9%'
+    responseTimeP95: '< 100ms';
+    throughput: '10K+ RPS';
+    errorRate: '< 0.1%';
+    availability: '> 99.9%';
   };
 
   // 数据库性能指标
   database: {
-    queryTimeP95: '< 50ms',
-    connectionUtilization: '< 80%',
-    indexHitRate: '> 95%',
-    replicationLag: '< 1s'
+    queryTimeP95: '< 50ms';
+    connectionUtilization: '< 80%';
+    indexHitRate: '> 95%';
+    replicationLag: '< 1s';
   };
 
   // AI服务性能指标
   ai: {
-    responseTimeP95: '< 3s',
-    embeddingTime: '< 500ms',
-    cacheHitRate: '> 85%',
-    modelAccuracy: '> 92%'
+    responseTimeP95: '< 3s';
+    embeddingTime: '< 500ms';
+    cacheHitRate: '> 85%';
+    modelAccuracy: '> 92%';
   };
 
   // 前端性能指标
   frontend: {
-    firstContentfulPaint: '< 1.5s',
-    largestContentfulPaint: '< 2.5s',
-    cumulativeLayoutShift: '< 0.1',
-    firstInputDelay: '< 100ms'
+    firstContentfulPaint: '< 1.5s';
+    largestContentfulPaint: '< 2.5s';
+    cumulativeLayoutShift: '< 0.1';
+    firstInputDelay: '< 100ms';
   };
 }
 
@@ -532,21 +520,21 @@ spec:
   template:
     spec:
       containers:
-      - name: noteservice
-        image: mindnote/noteservice:v1.0
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: mindnote-secrets
-              key: database-url
+        - name: noteservice
+          image: mindnote/noteservice:v1.0
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mindnote-secrets
+                  key: database-url
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -560,43 +548,43 @@ spec:
   minReplicas: 2
   maxReplicas: 20
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
 ```
 
 #### 服务网格架构
 
 ```typescript
 const ServiceMeshConfig = {
-  serviceMesh: "Istio",
+  serviceMesh: 'Istio',
   features: [
-    "流量管理",
-    "安全策略执行",
-    "可观察性收集",
-    "故障注入测试",
-    "金丝雀部署",
-    "熔断和重试"
+    '流量管理',
+    '安全策略执行',
+    '可观察性收集',
+    '故障注入测试',
+    '金丝雀部署',
+    '熔断和重试',
   ],
   trafficManagement: {
-    routing: "智能负载均衡",
-    canary: "渐进式部署",
-    mirroring: "流量镜像分析"
+    routing: '智能负载均衡',
+    canary: '渐进式部署',
+    mirroring: '流量镜像分析',
   },
   security: {
-    mtls: "双向TLS认证",
-    policies: "OPA策略引擎",
-    rbac: "细粒度权限控制"
-  }
+    mtls: '双向TLS认证',
+    policies: 'OPA策略引擎',
+    rbac: '细粒度权限控制',
+  },
 };
 ```
 
@@ -608,24 +596,24 @@ const ServiceMeshConfig = {
 
 #### 部署环境设计
 
-| 环境 | 用途 | 配置 | 监控级别 |
-|------|------|--------|----------|
-| **开发环境** | 开发和测试 | 单实例 + 详细日志 |
-| **测试环境** | 集成测试 | 小集群 + 性能监控 |
+| 环境           | 用途         | 配置              | 监控级别 |
+| -------------- | ------------ | ----------------- | -------- |
+| **开发环境**   | 开发和测试   | 单实例 + 详细日志 |
+| **测试环境**   | 集成测试     | 小集群 + 性能监控 |
 | **预发布环境** | 用户验收测试 | 生产配置 + 金丝雀 |
-| **生产环境** | 正式服务 | 大集群 + 全面监控 |
+| **生产环境**   | 正式服务     | 大集群 + 全面监控 |
 
 #### 基础设施选型
 
 ```typescript
 const InfrastructureStack = {
-  cloud: "Vercel + Railway + AWS",
-  orchestration: "Kubernetes",
-  networking: "Cloudflare CDN + VPC",
-  storage: "AWS S3 + PostgreSQL",
-  monitoring: "Datadog + Prometheus + Grafana",
-  security: "Cloudflare WAF + AWS KMS",
-  ci_cd: "GitHub Actions + ArgoCD"
+  cloud: 'Vercel + Railway + AWS',
+  orchestration: 'Kubernetes',
+  networking: 'Cloudflare CDN + VPC',
+  storage: 'AWS S3 + PostgreSQL',
+  monitoring: 'Datadog + Prometheus + Grafana',
+  security: 'Cloudflare WAF + AWS KMS',
+  ci_cd: 'GitHub Actions + ArgoCD',
 };
 ```
 
@@ -765,12 +753,12 @@ gantt
 
 ### 技术债务管理
 
-| 领域 | 策略 | 监控指标 |
-|-------|-------|----------|
+| 领域         | 策略                | 监控指标                   |
+| ------------ | ------------------- | -------------------------- |
 | **代码质量** | 代码审查 + 自动测试 | 覆盖率 > 90%，技术债务评分 |
-| **性能** | 性能预算 + 监控 | 响应时间、资源利用率 |
-| **安全** | 安全扫描 + 漏洞追踪 | 漏洞数量、修复时间 |
-| **架构** | 架构评审 + 重构计划 | 技术债务减少率 |
+| **性能**     | 性能预算 + 监控     | 响应时间、资源利用率       |
+| **安全**     | 安全扫描 + 漏洞追踪 | 漏洞数量、修复时间         |
+| **架构**     | 架构评审 + 重构计划 | 技术债务减少率             |
 
 ### 关键成功因素
 
@@ -781,10 +769,9 @@ gantt
 
 ---
 
-**架构设计状态**: ✅ 完成
-**下一步**: 开始第一阶段基础设施搭建
-**相关文档**: PRD需求文档、技术选型报告
+**架构设计状态**: ✅ 完成 **下一步**: 开始第一阶段基础设施搭建 **相关文档**:
+PRD需求文档、技术选型报告
 
 ---
 
-*本文档提供了MindNote产品的完整技术架构设计，涵盖了从基础设施到应用层的所有技术细节，为项目实施提供清晰的指导*
+_本文档提供了MindNote产品的完整技术架构设计，涵盖了从基础设施到应用层的所有技术细节，为项目实施提供清晰的指导_

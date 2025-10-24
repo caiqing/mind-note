@@ -1,15 +1,14 @@
 # Data Model Design
 
-**Feature**: 项目基础设施搭建和开发环境配置
-**Branch**: 001-dev-env-setup
-**Created**: 2025-10-22
+**Feature**: 项目基础设施搭建和开发环境配置 **Branch**: 001-dev-env-setup **Created**: 2025-10-22
 **Status**: Design Complete
 
 ---
 
 ## Overview
 
-本文档定义了MindNote项目基础设施开发环境的数据模型设计。设计遵循MindNote章程的AI-First开发原则，支持向量嵌入、关系映射、AI处理元数据等核心功能。数据模型采用PostgreSQL + pgvector + Redis的混合架构，支持从1到50+用户的弹性扩展。
+本文档定义了MindNote项目基础设施开发环境的数据模型设计。设计遵循MindNote章程的AI-First开发原则，支持向量嵌入、关系映射、AI处理元数据等核心功能。数据模型采用PostgreSQL +
+pgvector + Redis的混合架构，支持从1到50+用户的弹性扩展。
 
 ---
 
@@ -339,15 +338,19 @@ const CreateNoteSchema = z.object({
   category_id: z.number().positive().optional(),
   tags: z.array(z.string().max(50)).max(10).optional(),
   metadata: z.record(z.any()).optional(),
-  is_public: z.boolean().default(false)
+  is_public: z.boolean().default(false),
 });
 
 // 用户注册验证
 const CreateUserSchema = z.object({
   email: z.string().email(),
-  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/),
+  username: z
+    .string()
+    .min(3)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/),
   password: z.string().min(8).max(100),
-  full_name: z.string().min(1).max(255).optional()
+  full_name: z.string().min(1).max(255).optional(),
 });
 
 // AI服务配置验证
@@ -357,7 +360,7 @@ const AIServiceConfigSchema = z.object({
   apiKey: z.string().optional(),
   baseUrl: z.string().url().optional(),
   temperature: z.number().min(0).max(2).optional(),
-  maxTokens: z.number().positive().max(8192).optional()
+  maxTokens: z.number().positive().max(8192).optional(),
 });
 ```
 
@@ -481,13 +484,15 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
     },
-  },
-});
+  });
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
@@ -520,7 +525,7 @@ export class AIService {
         summary,
         embedding,
         classification,
-        processingTime: Date.now() - startTime
+        processingTime: Date.now() - startTime,
       });
 
       return { success: true };
@@ -567,17 +572,17 @@ export class CacheService {
 
 ## Data Model Status
 
-**Status**: ✅ Design Complete
-**Database**: PostgreSQL 15 + pgvector + Redis 7
-**AI Integration**: Local (Ollama) + Cloud (OpenAI/Anthropic)
-**Scaling**: Supports 1-50+ users
-**Compliance**: Ready for GDPR implementation
+**Status**: ✅ Design Complete **Database**: PostgreSQL 15 + pgvector + Redis 7 **AI Integration**:
+Local (Ollama) + Cloud (OpenAI/Anthropic) **Scaling**: Supports 1-50+ users **Compliance**: Ready
+for GDPR implementation
 
 **Next Steps**:
+
 1. Create API contracts documentation
 2. Generate quickstart guide
 3. Implement task list for development
 
 ---
 
-*Data model design supports AI-First development principles with vector search, relationship mapping, and comprehensive AI processing metadata.*
+_Data model design supports AI-First development principles with vector search, relationship
+mapping, and comprehensive AI processing metadata._

@@ -1,11 +1,13 @@
 # Tasks: 项目基础设施搭建和开发环境配置
 
-**Input**: Design documents from `/specs/001-dev-env-setup/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/api-contracts.md, quickstart.md
+**Input**: Design documents from `/specs/001-dev-env-setup/` **Prerequisites**: plan.md, spec.md,
+research.md, data-model.md, contracts/api-contracts.md, quickstart.md
 
-**Tests**: The examples below include test tasks. Tests are REQUIRED for this development environment feature to ensure reliability and cross-platform compatibility.
+**Tests**: The examples below include test tasks. Tests are REQUIRED for this development
+environment feature to ensure reliability and cross-platform compatibility.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing
+of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -26,10 +28,11 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [X] T001 Create project structure per implementation plan with Next.js 15 App Router layout
-- [X] T002 Initialize TypeScript project with Next.js 15, React 19 dependencies
-- [X] T003 [P] Configure ESLint, Prettier, and TypeScript strict mode in `.eslintrc.js`, `.prettierrc`, `tsconfig.json`
-- [X] T004 [P] Setup development environment configuration files (`.env.example`, `.gitignore`)
+- [x] T001 Create project structure per implementation plan with Next.js 15 App Router layout
+- [x] T002 Initialize TypeScript project with Next.js 15, React 19 dependencies
+- [x] T003 [P] Configure ESLint, Prettier, and TypeScript strict mode in `.eslintrc.js`,
+      `.prettierrc`, `tsconfig.json`
+- [x] T004 [P] Setup development environment configuration files (`.env.example`, `.gitignore`)
 
 ---
 
@@ -39,13 +42,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [X] T005 Setup PostgreSQL + pgvector database schema and Prisma migrations framework in `prisma/schema.prisma`
-- [X] T006 [P] Implement authentication/authorization framework with NextAuth.js in `src/lib/auth/`
-- [X] T007 [P] Setup API routing and middleware structure in `src/app/api/`
-- [X] T008 Create base data models that all stories depend on in `src/lib/db/models/`
-- [X] T009 Configure error handling and logging infrastructure in `src/lib/utils/`
-- [X] T010 Setup Redis cache service connection in `src/lib/cache/`
-- [X] T011 Configure Docker containerization with `docker-compose.dev.yml` and `docker/Dockerfile.dev`
+- [x] T005 Setup PostgreSQL + pgvector database schema and Prisma migrations framework in
+      `prisma/schema.prisma`
+- [x] T006 [P] Implement authentication/authorization framework with NextAuth.js in `src/lib/auth/`
+- [x] T007 [P] Setup API routing and middleware structure in `src/app/api/`
+- [x] T008 Create base data models that all stories depend on in `src/lib/db/models/`
+- [x] T009 Configure error handling and logging infrastructure in `src/lib/utils/`
+- [x] T010 Setup Redis cache service connection in `src/lib/cache/`
+- [x] T011 Configure Docker containerization with `docker-compose.dev.yml` and
+      `docker/Dockerfile.dev`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -61,19 +66,22 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [X] T012 [P] [US1] Contract test for development environment health check in `tests/integration/test-dev-env-health.ts`
-- [X] T013 [P] [US1] Integration test for setup script execution in `tests/integration/test-setup-scripts.ts`
-- [X] T014 [P] [US1] Cross-platform compatibility test in `tests/integration/test-cross-platform.ts`
+- [x] T012 [P] [US1] Contract test for development environment health check in
+      `tests/integration/test-dev-env-health.ts`
+- [x] T013 [P] [US1] Integration test for setup script execution in
+      `tests/integration/test-setup-scripts.ts`
+- [x] T014 [P] [US1] Cross-platform compatibility test in `tests/integration/test-cross-platform.ts`
 
 ### Implementation for User Story 1
 
-- [X] T015 [US1] Create automated setup script `scripts/setup-dev.sh` for environment initialization
-- [X] T016 [P] [US1] Create Docker development environment configuration in `docker-compose.dev.yml`
-- [X] T017 [US1] Implement development server startup script in `scripts/start-dev.sh`
-- [X] T018 [US1] Create environment validation script in `scripts/validate-env.sh`
-- [X] T019 [US1] Setup hot reload development configuration in `next.config.js`
-- [X] T020 [US1] Add comprehensive error handling and user-friendly error messages for setup failures
-- [X] T021 [US1] Create troubleshooting documentation in `docs/troubleshooting.md`
+- [x] T015 [US1] Create automated setup script `scripts/setup-dev.sh` for environment initialization
+- [x] T016 [P] [US1] Create Docker development environment configuration in `docker-compose.dev.yml`
+- [x] T017 [US1] Implement development server startup script in `scripts/start-dev.sh`
+- [x] T018 [US1] Create environment validation script in `scripts/validate-env.sh`
+- [x] T019 [US1] Setup hot reload development configuration in `next.config.js`
+- [x] T020 [US1] Add comprehensive error handling and user-friendly error messages for setup
+      failures
+- [x] T021 [US1] Create troubleshooting documentation in `docs/troubleshooting.md`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -87,8 +95,10 @@
 
 ### Tests for User Story 2 (REQUIRED) ⚠️
 
-- [ ] T022 [P] [US2] Contract test for code quality API endpoints in `tests/integration/test-code-quality.ts`
-- [ ] T023 [P] [US2] Integration test for Git hooks execution in `tests/integration/test-git-hooks.ts`
+- [ ] T022 [P] [US2] Contract test for code quality API endpoints in
+      `tests/integration/test-code-quality.ts`
+- [ ] T023 [P] [US2] Integration test for Git hooks execution in
+      `tests/integration/test-git-hooks.ts`
 - [ ] T024 [P] [US2] Unit test for code formatting in `tests/unit/test-code-formatting.ts`
 
 ### Implementation for User Story 2
@@ -114,7 +124,8 @@
 ### Tests for User Story 3 (REQUIRED) ⚠️
 
 - [ ] T032 [P] [US3] Contract test for database setup API in `tests/integration/test-db-setup.ts`
-- [ ] T033 [P] [US3] Integration test for database migrations in `tests/integration/test-db-migrations.ts`
+- [ ] T033 [P] [US3] Integration test for database migrations in
+      `tests/integration/test-db-migrations.ts`
 - [ ] T034 [P] [US3] Unit test for database seed data in `tests/unit/test-db-seed.ts`
 
 ### Implementation for User Story 3
@@ -140,7 +151,8 @@
 ### Tests for User Story 4 (REQUIRED) ⚠️
 
 - [ ] T042 [P] [US4] Contract test for CI/CD configuration in `tests/integration/test-cicd.ts`
-- [ ] T043 [P] [US4] Integration test for automated deployment in `tests/integration/test-deployment.ts`
+- [ ] T043 [P] [US4] Integration test for automated deployment in
+      `tests/integration/test-deployment.ts`
 
 ### Implementation for User Story 4
 
@@ -163,8 +175,10 @@
 
 ### Tests for User Story 5 (REQUIRED) ⚠️
 
-- [ ] T050 [P] [US5] Contract test for AI service endpoints in `tests/integration/test-ai-services.ts`
-- [ ] T051 [P] [US5] Integration test for AI service fallback mechanism in `tests/integration/test-ai-fallback.ts`
+- [ ] T050 [P] [US5] Contract test for AI service endpoints in
+      `tests/integration/test-ai-services.ts`
+- [ ] T051 [P] [US5] Integration test for AI service fallback mechanism in
+      `tests/integration/test-ai-fallback.ts`
 - [ ] T052 [P] [US5] Unit test for AI routing logic in `tests/unit/test-ai-routing.ts`
 
 ### Implementation for User Story 5
@@ -196,25 +210,51 @@
 - [ ] T068 [P] Run quickstart.md validation and update instructions
 - [ ] T069 Create project contribution guidelines in `CONTRIBUTING.md`
 
+### Development Environment Maintenance Tasks
+
+**Automated Dependency Management**:
+
+- [ ] T070 [P] [FR-021] Implement automated dependency version compatibility checking in
+      `scripts/check-dependencies.ts`
+- [ ] T071 [P] [FR-021] Create version compatibility reporting dashboard in
+      `src/app/api/dev/compatibility/`
+- [ ] T072 [P] [FR-021] Setup automated dependency update workflow with compatibility validation in
+      `.github/workflows/dependency-update.yml`
+- [ ] T073 [P] [FR-021] Create dependency version lock validation script in
+      `scripts/validate-versions.sh`
+
+**Cloud Development Environment Support**:
+
+- [ ] T074 [P] [FR-022] Create GitHub Codespaces configuration in `.devcontainer/devcontainer.json`
+- [ ] T075 [P] [FR-022] Setup Gitpod development environment configuration in `.gitpod.yml`
+- [ ] T076 [P] [FR-022] Implement cloud-local environment sync utility in `scripts/sync-env.sh`
+- [ ] T077 [P] [FR-022] Create cloud development environment documentation in
+      `docs/cloud-development.md`
+
 ### MindNote-Specific AI Integration Tasks
 
 **AI Performance & Observability (Constitution Principle V)**:
-- [ ] T070 [P] Implement AI performance monitoring (<3s response target) in `src/lib/ai/monitoring.ts`
-- [ ] T071 [P] Add AI service cost tracking and reporting in `src/lib/ai/cost-tracker.ts`
-- [ ] T072 [P] Configure AI quality metrics and user feedback collection in `src/lib/ai/quality.ts`
-- [ ] T073 [P] Setup AI service health checks and fallback mechanisms in `src/lib/ai/health.ts`
+
+- [ ] T078 [P] Implement AI performance monitoring (<3s response target) in
+      `src/lib/ai/monitoring.ts`
+- [ ] T079 [P] Add AI service cost tracking and reporting in `src/lib/ai/cost-tracker.ts`
+- [ ] T080 [P] Configure AI quality metrics and user feedback collection in `src/lib/ai/quality.ts`
+- [ ] T081 [P] Setup AI service health checks and fallback mechanisms in `src/lib/ai/health.ts`
 
 **AI Testing & Validation (Constitution Principle III)**:
-- [ ] T074 [P] Create mock AI services for unit testing in `tests/mocks/ai-services.ts`
-- [ ] T075 [P] Implement integration tests for AI service endpoints in `tests/integration/ai/`
-- [ ] T076 [P] Setup AI output quality validation tests in `tests/validation/ai-quality.ts`
-- [ ] T077 [P] Configure user acceptance testing for AI features in `tests/acceptance/`
+
+- [ ] T082 [P] Create mock AI services for unit testing in `tests/mocks/ai-services.ts`
+- [ ] T083 [P] Implement integration tests for AI service endpoints in `tests/integration/ai/`
+- [ ] T084 [P] Setup AI output quality validation tests in `tests/validation/ai-quality.ts`
+- [ ] T085 [P] Configure user acceptance testing for AI features in `tests/acceptance/`
 
 **Data Intelligence (Constitution Principle IV)**:
-- [ ] T078 [P] Implement vector embedding storage and retrieval in `src/lib/vector/embeddings.ts`
-- [ ] T079 [P] Setup graph relationship mapping for note connections in `src/lib/graph/relationships.ts`
-- [ ] T080 [P] Configure AI metadata tracking and audit trails in `src/lib/ai/metadata.ts`
-- [ ] T081 [P] Implement privacy controls for AI-processed content in `src/lib/privacy/controls.ts`
+
+- [ ] T086 [P] Implement vector embedding storage and retrieval in `src/lib/vector/embeddings.ts`
+- [ ] T087 [P] Setup graph relationship mapping for note connections in
+      `src/lib/graph/relationships.ts`
+- [ ] T088 [P] Configure AI metadata tracking and audit trails in `src/lib/ai/metadata.ts`
+- [ ] T089 [P] Implement privacy controls for AI-processed content in `src/lib/privacy/controls.ts`
 
 ---
 
@@ -232,10 +272,12 @@
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Can start after Foundational - No dependencies on other stories
-- **User Story 2 (P1)**: Can start after Foundational - May integrate with US1 but should be independently testable
+- **User Story 2 (P1)**: Can start after Foundational - May integrate with US1 but should be
+  independently testable
 - **User Story 3 (P1)**: Can start after Foundational - Required for AI data storage
 - **User Story 4 (P2)**: Can start after Foundational - Requires some code for testing
-- **User Story 5 (P2)**: Can start after Foundational + US3 (database) - Requires database for AI metadata
+- **User Story 5 (P2)**: Can start after Foundational + US3 (database) - Requires database for AI
+  metadata
 
 ### Within Each User Story
 
@@ -312,5 +354,6 @@ With multiple developers (1-5 team members):
 - Verify tests fail before implementing (TDD approach)
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
-- This is a development environment feature - reliability and cross-platform compatibility are critical
+- This is a development environment feature - reliability and cross-platform compatibility are
+  critical
 - All tasks should include comprehensive error handling and user-friendly feedback

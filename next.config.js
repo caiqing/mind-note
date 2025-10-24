@@ -1,20 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Development optimizations
-  experimental: {
-    // Enable React Strict Mode in development
-    reactStrictMode: true,
+  // React Strict Mode
+  reactStrictMode: true,
 
-    // Optimize server startup
-    serverComponentsExternalPackages: ['pg', 'ioredis'],
-
-    // Enable Turbopack for faster builds (Next.js 15)
-    turbo: {
-      loaders: {
-        '.svg': ['@svgr/webpack'],
-      },
-    },
-  },
+  // Optimize server startup
+  serverExternalPackages: ['pg', 'ioredis'],
 
   // Webpack configuration for better development experience
   webpack: (config, { dev, isServer }) => {
@@ -24,10 +14,10 @@ const nextConfig = {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
-      }
+      };
 
       // Improve source map generation for debugging
-      config.devtool = 'eval-cheap-module-source-map'
+      config.devtool = 'eval-cheap-module-source-map';
     }
 
     // Add custom aliases for cleaner imports
@@ -41,7 +31,7 @@ const nextConfig = {
       '@utils': './src/lib/utils',
       '@styles': './src/styles',
       '@tests': './tests',
-    }
+    };
 
     // Handle file-loader for static assets
     config.module.rules.push({
@@ -50,7 +40,7 @@ const nextConfig = {
       generator: {
         filename: 'static/images/[name].[hash][ext]',
       },
-    })
+    });
 
     // Handle font files
     config.module.rules.push({
@@ -59,35 +49,28 @@ const nextConfig = {
       generator: {
         filename: 'static/fonts/[name].[hash][ext]',
       },
-    })
+    });
 
-    return config
+    return config;
   },
-
-  // Environment variables
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
-  },
-
-  // Development server configuration
-  ...(process.env.NODE_ENV === 'development' && {
-    async rewrites() {
-      return [
-        // API health check endpoint
-        {
-          source: '/api/health/:path*',
-          destination: '/api/internal/health/:path*',
-        },
-      ]
-    },
-  }),
 
   // Image optimization
   images: {
-    domains: [
-      'localhost',
-      'avatars.githubusercontent.com',
-      'images.unsplash.com',
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+        port: '3001',
+        pathname: '/api/placeholder/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days
@@ -99,18 +82,18 @@ const nextConfig = {
   // Power by header
   poweredByHeader: false,
 
-  // Internationalization (if needed)
-  i18n: {
-    locales: ['en', 'zh'],
-    defaultLocale: 'en',
-  },
-
-  // Logging configuration
-  logging: {
-    fetches: {
-      fullUrl: process.env.NODE_ENV === 'development',
+  // Development server configuration
+  ...(process.env.NODE_ENV === 'development' && {
+    async rewrites() {
+      return [
+        // API health check endpoint
+        {
+          source: '/api/health/:path*',
+          destination: '/api/internal/health/:path*',
+        },
+      ];
     },
-  },
+  }),
 
   // Static file configuration
   async headers() {
@@ -119,8 +102,14 @@ const nextConfig = {
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
         ],
       },
@@ -141,7 +130,7 @@ const nextConfig = {
           },
         ],
       },
-    ]
+    ];
   },
 
   // Redirects for common routes
@@ -162,17 +151,16 @@ const nextConfig = {
         destination: '/auth/signup',
         permanent: false,
       },
-    ]
+    ];
   },
-}
+};
 
 // Environment-specific overrides
 if (process.env.NODE_ENV === 'development') {
   // Development-only configurations
-  nextConfig.swcMinify = false // Disable SWC minification for faster builds
   nextConfig.compiler = {
     removeConsole: false, // Keep console logs in development
-  }
+  };
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;

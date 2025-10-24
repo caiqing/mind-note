@@ -1,102 +1,134 @@
 <!--
 Sync Impact Report:
-- Version change: 1.0.0 → 1.0.1 (patch release for path reference corrections)
-- Modified principles: N/A (no principle changes)
-- Added sections: N/A (no new sections)
-- Removed sections: N/A (no sections removed)
-- Templates requiring updates: ✅ plan-template.md (path references fixed), ✅ spec-template.md (AI integration aligned), ✅ tasks-template.md (MindNote-specific tasks aligned)
-- Command files updated: ✅ speckit.plan.md, ✅ speckit.analyze.md, ✅ speckit.constitution.md (all path references corrected)
-- Follow-up TODOs: N/A (all path references now consistent)
+Version change: 0.0.0 → 1.0.0 (Major: Initial constitution creation)
+Modified principles: N/A (new document)
+Added sections: All sections (new document)
+Removed sections: N/A
+Templates requiring updates:
+✅ .specify/templates/spec-template.md (validated - aligns with principles)
+✅ .specify/templates/plan-template.md (validated - constitution check included)
+✅ .specify/templates/tasks-template.md (validated - TDD principle reflected)
+⚠ .claude/commands/*.md (pending review for generic agent guidance)
+Follow-up TODOs: N/A (all placeholders filled)
 -->
 
 # MindNote Constitution
 
 ## Core Principles
 
-### I. AI-First Development
-All features MUST prioritize AI integration from the initial design phase. AI capabilities are not add-ons but core architectural concerns. System designs MUST include: AI model integration points, data preparation for AI processing, fallback mechanisms when AI services are unavailable, and explicit AI decision transparency for users. Rationale: MindNote's value proposition is AI-driven intelligence, not traditional note storage.
+### I. AI-Native Development (AI原生开发)
 
-### II. Specification-Driven Engineering
-Every feature MUST start with a complete specification document created via `/speckit.specify`. Specifications MUST include prioritized user stories, measurable success criteria, and explicit acceptance scenarios. Implementation MUST NOT begin until specification is approved and all clarification questions are resolved. Rationale: Complex AI features require thorough upfront analysis to avoid architectural rework.
+AI集成不是可选项，而是核心架构要求。所有功能设计必须以AI为第一优先级，确保AI能力深度融入产品核心体验，而非后期附加功能。具体要求：每个功能必须考虑AI增强的可能性；数据模型必须支持机器学习和语义分析；API设计必须预留AI服务集成接口；用户交互必须支持智能对话和辅助。
 
-### III. Test-First with AI Validation
-TDD is mandatory for all code. Additionally, AI-dependent features MUST include AI-specific validation: test data for AI model training, mock AI services for unit testing, integration tests with real AI endpoints, and user acceptance testing focused on AI output quality. Red-Green-Refactor cycle MUST be followed with explicit AI behavior verification. Rationale: AI outputs are non-deterministic; rigorous testing ensures reliability.
+**理由**:
+MindNote的竞争优势在于AI驱动的智能体验，只有AI原生开发才能确保产品的核心价值主张得到充分实现。
 
-### IV. Data Intelligence Integration
-All data structures MUST support AI analysis capabilities. Note entities MUST include metadata fields for AI processing, content tagging, relationship tracking, and version history. Data models MUST support: vector embeddings for semantic search, graph structures for relationship mapping, and audit trails for AI decisions. Rationale: AI features require richly structured data to function effectively.
+### II. Specification-Driven Development (规格驱动开发)
 
-### V. Observability & AI Performance
-All AI interactions MUST be observable and measurable. System MUST log: AI model performance metrics, processing latency, quality scores, user satisfaction feedback, and cost tracking. Performance targets: AI responses <3 seconds, relationship analysis <10 seconds for 10k notes, podcast generation <30 seconds. Rationale: AI performance directly impacts user experience and operational costs.
+所有功能开发必须从详细的功能规格说明开始，使用Specify框架确保需求的完整性、一致性和可追溯性。禁止直接编码实现，必须遵循：规格先行→设计审查→任务分解→测试先行→实现验证的严格流程。每个功能必须有独立的用户故事、验收标准和成功指标。
 
-## AI Integration Requirements
+**理由**: 规格驱动开发确保产品质量、减少返工、提高开发效率，特别是在复杂的AI功能开发中至关重要。
 
-### Model Architecture
-- Primary AI services: Claude API for text analysis, OpenAI embeddings for semantic search
-- Fallback strategy: Local caching + simplified algorithms when external AI unavailable
-- Rate limiting: Intelligent batching and queuing to manage API costs
-- Data privacy: User content encryption + optional local processing mode
+### III. Test-First Engineering (测试先行工程)
 
-### Content Processing Pipeline
-- Automatic categorization and tagging within 5 seconds of note creation
-- Relationship analysis runs every 24 hours or on-demand
-- Summary generation limited to 100 words with configurable extraction rules
-- Podcast generation supports multiple voice models with user customization
+严格遵循TDD（测试驱动开发）原则，所有功能实现前必须先编写失败的测试用例。包括：单元测试覆盖率>90%，集成测试覆盖所有API接口，E2E测试覆盖主要用户流程。AI功能必须有专门的测试策略，包括模型性能测试、响应时间测试和结果质量评估。
 
-## Development Workflow
+**理由**: AI系统的复杂性和不确定性要求更严格的测试保障，确保产品质量和用户体验的稳定性。
 
-### Feature Development Process
-1. `/speckit.specify` creates comprehensive feature specification
-2. `/speckit.clarify` resolves all technical ambiguities
-3. `/speckit.plan` produces technical design and data models
-4. `/speckit.tasks` generates prioritized implementation tasks
-5. `/speckit.implement` executes tasks with continuous validation
-6. `/speckit.analyze` ensures cross-document consistency
+### IV. Observability & Performance First (可观测性与性能优先)
 
-### AI Collaboration Integration
-- Complex technical problems MUST use `/collaborate first-principles`
-- Architecture design MUST use `/collaborate visual` for diagram documentation
-- User experience questions MUST use `/collaborate progressive` for stakeholder communication
-- All collaboration sessions MUST be saved with `/save` for knowledge retention
+系统必须具备完整的可观测性，包括：结构化日志、性能监控、错误追踪和用户行为分析。所有AI功能必须满足明确的性能指标：API响应<100ms，AI功能响应<3秒，支持1万并发用户。系统可用性>99.9%，具备自动扩缩容能力。
 
-## Performance Standards
+**理由**: AI应用的性能直接影响用户体验，可观测性是确保系统稳定运行和持续优化的基础。
 
-### Latency Requirements
-- Note creation and auto-tagging: <2 seconds
-- Search across 10k notes: <3 seconds
-- Relationship graph visualization: <5 seconds
-- AI conversation response: <3 seconds
-- Podcast generation (5-minute content): <30 seconds
+### V. Documentation-Code Synchronization (文档代码同步)
 
-### Scalability Targets
-- Single user: 50k notes without performance degradation
-- Relationship analysis: Efficient processing of 100k+ note connections
-- Concurrent AI conversations: 100 simultaneous users
-- Audio storage: 1000 hours of podcast content per user
+设计文档与代码实现必须保持严格同步，任何代码变更都必须同步更新相关文档。包括：API文档、架构设计、数据模型、部署指南等。使用自动化工具确保文档一致性，定期进行跨文档一致性检查。
 
-## Quality Assurance
+**理由**: 在快速迭代的AI项目中，文档与代码的脱节会导致开发效率下降和系统维护困难。
 
-### Testing Requirements
-- Unit test coverage: >90% for all business logic
-- Integration test coverage: 100% of AI service interactions
-- Performance testing: All latency targets verified under load
-- User acceptance testing: AI output quality rated >4/5 by test users
+## Architecture & Technology Standards
 
-### Code Review Standards
-- All PRs MUST verify constitution compliance
-- AI-related changes MUST include performance impact analysis
-- Data model changes MUST validate AI processing compatibility
-- Security reviews MUST consider AI privacy implications
+### Technology Stack Requirements
+
+- **前端**: Next.js 15 + React 19 + TypeScript (AI原生支持)
+- **数据库**: PostgreSQL + Apache AGE + pgvector (混合关系图谱)
+- **AI集成**: Vercel AI SDK (多模型统一接口)
+- **部署**: Vercel + Railway + Cloudflare (全球CDN)
+
+### Data & Privacy Standards
+
+- 用户数据必须AES-256加密存储
+- 遵循GDPR隐私合规要求
+- 支持用户数据导出和删除
+- 完整的操作审计日志
+
+### Security Requirements
+
+- 多层安全防护（网络+应用+数据）
+- 基于角色的细粒度权限控制
+- 端到端加密传输
+- 定期安全评估和漏洞扫描
+
+## Development Workflow Standards
+
+### Specify Framework Compliance
+
+所有功能开发必须严格遵循Specify框架：
+
+1. `/speckit.specify` - 创建功能规格说明
+2. `/speckit.clarify` - 澄清需求和假设
+3. `/speckit.plan` - 制定详细实现计划
+4. `/speckit.tasks` - 生成具体开发任务
+5. `/speckit.analyze` - 跨文档一致性检查
+
+### AI Collaboration Standards
+
+复杂问题分析必须使用AI协作系统：
+
+- 架构设计：`/collaborate visual` 可视化设计
+- 深度分析：`/collaborate first-principles` 第一性原理分析
+- 创意激发：`/collaborate creative` 头脑风暴
+- 知识学习：`/collaborate feynman` 费曼学习法
+
+### Quality Gates
+
+- 代码覆盖率>90%
+- 所有PR必须通过代码审查
+- 性能测试必须达标
+- 安全扫描无高危漏洞
+- 文档完整性检查通过
 
 ## Governance
 
-This constitution supersedes all other development practices and guidelines. Amendments require:
+### Constitution Supremacy
 
-1. **Documentation**: Proposed changes with rationale and impact analysis
-2. **Review**: Minimum 48-hour review period with stakeholder feedback
-3. **Approval**: Majority approval from core development team
-4. **Migration Plan**: Explicit steps for updating existing features and documentation
-5. **Version Bump**: Semantic versioning applied based on change impact
+本章程优先于所有其他开发实践和规范。在发生冲突时，以本章程为准。
 
-All pull requests and code reviews MUST verify compliance with constitution principles. Complexity increases beyond standard patterns MUST be explicitly justified in the Constitution Check section of implementation plans. Use `CLAUDE.md` for runtime development guidance and AI collaboration best practices.
+### Amendment Procedure
 
-**Version**: 1.0.1 | **Ratified**: 2025-10-22 | **Last Amended**: 2025-10-22
+- 任何章程修改需要提出详细的修改建议
+- 必须包含修改理由、影响分析和实施计划
+- 需要项目维护者投票通过（>2/3多数）
+- 修改后必须更新所有相关模板和文档
+
+### Versioning Policy
+
+- 主版本号：重大原则变更或向后不兼容修改
+- 次版本号：新增原则或重要内容扩展
+- 修订版本号：澄清说明、文字修改、格式优化
+
+### Compliance Review
+
+- 每个PR必须验证章程合规性
+- 定期进行章程执行情况审查
+- 违反章程的实践必须有充分的理由说明
+- 复杂性增加必须通过章程审查批准
+
+### Enforcement
+
+- 违反章程的代码不能合并到主分支
+- 章程合规性是代码审查的必要条件
+- 严重违反章程的情况可能导致分支被重置
+
+**Version**: 1.0.0 | **Ratified**: 2025-10-23 | **Last Amended**: 2025-10-23

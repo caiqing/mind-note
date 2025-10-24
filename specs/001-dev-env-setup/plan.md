@@ -1,61 +1,71 @@
 # Implementation Plan: 项目基础设施搭建和开发环境配置
 
-**Branch**: `001-dev-env-setup` | **Date**: 2025-10-22 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/001-dev-env-setup/spec.md`
-**Technical References**:
+**Branch**: `001-dev-env-setup` | **Date**: 2025-10-22 | **Spec**: [spec.md](spec.md) **Input**:
+Feature specification from `/specs/001-dev-env-setup/spec.md` **Technical References**:
+
 - [技术选型报告](../../docs/reports/20251022-mindnote-tech-stack.md)
 - [架构设计文档](../../docs/reports/20251022-mindnote-architecture.md)
 - [MVP实施路径](../../docs/collaboration/20251022-mindnote-mvp-implementation-path.md)
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This template is filled in by the `/speckit.plan` command. See
+`.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-基于功能规格分析和澄清需求，本项目需要建立一个全栈开发环境，支持Next.js 15 + React 19前端、PostgreSQL + pgvector数据库、Redis缓存，以及AI服务集成。实施重点在于Docker容器化部署、本地AI模型优先的多云AI服务策略，以及支持小型团队协作的开发工具链。技术栈采用最新稳定版本策略，支持本地和云端混合开发模式。
+基于功能规格分析和澄清需求，本项目需要建立一个全栈开发环境，支持Next.js 15 + React
+19前端、PostgreSQL +
+pgvector数据库、Redis缓存，以及AI服务集成。实施重点在于Docker容器化部署、本地AI模型优先的多云AI服务策略，以及支持小型团队协作的开发工具链。技术栈采用最新稳定版本策略，支持本地和云端混合开发模式。
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.0+ / Node.js 20.x
-**Primary Dependencies**: Next.js 15, React 19, PostgreSQL 15+, Redis 7.x, Docker 24.x
-**Storage**: PostgreSQL (主数据库 + pgvector扩展), Redis (缓存), Neo4j (图数据库 - 阶段2), AWS S3/Cloudflare R2 (对象存储)
-**Testing**: Jest + React Testing Library + Playwright + Supertest
-**Target Platform**: 跨平台 (Web + 容器化), 支持本地开发和云端开发环境
-**Project Type**: Full-stack Web Application with Microservices Architecture
-**Performance Goals**: API响应 <100ms, AI响应 <3s, 支持1000+并发用户
-**Constraints**: 30分钟内完成环境搭建，支持1-5人小团队，Docker容器化部署
+**Language/Version**: TypeScript 5.0+ / Node.js 20.x **Primary Dependencies**: Next.js 15, React 19,
+PostgreSQL 15+, Redis 7.x, Docker 24.x **Storage**: PostgreSQL (主数据库 + pgvector扩展), Redis
+(缓存), Neo4j (图数据库 - 阶段2), AWS S3/Cloudflare R2 (对象存储) **Testing**: Jest + React Testing
+Library + Playwright + Supertest (覆盖率>90%目标) **Quality
+Gates**: 单元测试覆盖率>90%, 集成测试100%API覆盖, E2E测试覆盖主要用户流程 **Target
+Platform**: 跨平台 (Web + 容器化), 支持本地开发和云端开发环境 **Project Type**: Full-stack Web
+Application with Microservices Architecture **Performance Goals**: API响应 <100ms,
+AI响应 <3s, 支持1000+并发用户 **Constraints**:
+30分钟内完成环境搭建，支持1-5人小团队，Docker容器化部署
 **Scale/Scope**: 小型团队协作工具，支持从1到50+用户的弹性扩展
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 ### Required Gates (MindNote Constitution v1.0.1)
 
 **AI-First Development (Principle I)**
+
 - [x] Feature includes explicit AI integration points (本地模型优先 + 多云API备用)
 - [x] Fallback mechanisms defined for AI service unavailability (多云降级策略)
 - [x] AI decision transparency for users is documented (成本和性能监控)
 - [x] Data preparation strategy for AI processing is specified (向量嵌入和元数据结构)
 
 **Specification-Driven Engineering (Principle II)**
+
 - [x] Complete specification exists via `/speckit.specify`
 - [x] All user stories are prioritized (P1, P2, P3)
 - [x] Measurable success criteria are defined (8个可衡量指标)
 - [x] Acceptance scenarios are explicit and testable
 
 **Test-First with AI Validation (Principle III)**
+
 - [x] Unit test strategy defined for business logic (>90% coverage)
+- [x] Coverage measurement and enforcement mechanism defined (Jest coverage + CI check)
 - [x] AI-specific validation approach documented (AI服务集成测试)
 - [x] Integration test plan for AI services included (多云API测试)
 - [x] Mock AI service strategy for unit testing specified (本地模型模拟)
 
 **Data Intelligence Integration (Principle IV)**
+
 - [x] Data models support vector embeddings (PostgreSQL + pgvector)
 - [x] Graph structures for relationship mapping included (Apache AGE + Neo4j)
 - [x] AI processing metadata fields defined (AI处理结果和决策跟踪)
 - [x] Audit trails for AI decisions incorporated (版本历史和用户反馈)
 
 **Observability & AI Performance (Principle V)**
+
 - [x] AI performance metrics defined (<3s responses)
 - [x] Latency targets specified (API <100ms, 数据库 <50ms)
 - [x] Logging strategy for AI interactions documented (AI服务监控)
@@ -189,13 +199,14 @@ specs/[###-feature]/
 └── dist/                        # 构建产物
 ```
 
-**Structure Decision**: 采用Next.js 15全栈架构，集成AI服务，支持容器化部署和云端开发环境。目录结构按功能模块组织，便于团队协作和代码维护。
+**Structure Decision**: 采用Next.js
+15全栈架构，集成AI服务，支持容器化部署和云端开发环境。目录结构按功能模块组织，便于团队协作和代码维护。
 
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+| -------------------------- | ------------------ | ------------------------------------ |
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |

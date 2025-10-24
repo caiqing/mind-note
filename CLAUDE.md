@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 **版本**: v1.0.1 | **更新日期**: 2025-10-22
 
@@ -11,7 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **第一性原理思维**：透过现象看本质，回归问题本源
 - **渐进式沟通**：由易到难，先用通俗易懂的类比法举例，再逐步过渡到深入洞见
 - **结构化表达**：运用SMART、RIDE、PREP、5W2H、PDCA等方法说明关键问题
-- **可视化呈现**：整合思维导图、架构图、类图、时序图、流程图、状态图、实体关系图、甘特图、饼图、用户旅程图、象限图、需求图、时间线、数据包图、看板图、雷达图、GitGraph图、ZenUML图、Sankey图、C4 Diagrams、XY Chart、Block Diagrams等Mermaid图表进行讲解
+- **可视化呈现**：整合思维导图、架构图、类图、时序图、流程图、状态图、实体关系图、甘特图、饼图、用户旅程图、象限图、需求图、时间线、数据包图、看板图、雷达图、GitGraph图、ZenUML图、Sankey图、C4
+  Diagrams、XY Chart、Block Diagrams等Mermaid图表进行讲解
 - **需求描述**：使用EARS语法简明、清晰地描述软件需求
 - **持续学习**：充满好奇心，基于已有知识体系联网搜索最新权威性资料，进行启发性联想，结合实际案例探索与分析，不断提升思想深度及维度
 
@@ -55,11 +57,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 为确保文档管理的统一性和可维护性，所有交互过程中产生的报告文档必须遵循以下规范：
 
 #### 报告文档命名规则
+
 - **文件命名**：全部使用小写字母，单词间用连字符(-)分隔
 - **文件格式**：`docs/reports/主题描述-report.md`
 - **日期格式**：可选前缀 `YYYYMMDD-主题描述-report.md`
 
 #### 标准报告类型
+
 - `analysis-report.md` - 分析报告
 - `migration-test-report.md` - 迁移测试报告
 - `feature-analysis-report.md` - 功能分析报告
@@ -88,11 +92,13 @@ docs/
 
 ## 项目概述
 
-这是一个智能笔记应用项目 - **MindNote**，是一个基于Specify框架的项目模板，用于规范化的功能开发流程。项目使用了一套完整的开发工作流，从功能规格说明到实现计划再到任务执行。
+这是一个智能笔记应用项目 -
+**MindNote**，是一个基于Specify框架的项目模板，用于规范化的功能开发流程。项目使用了一套完整的开发工作流，从功能规格说明到实现计划再到任务执行。
 
 ### 核心功能描述
 
 MindNote 是一个智能笔记应用，支持：
+
 - 随手记录各种类型的信息
 - 系统自动归类打标签进行内容标注
 - 后台定期对所有笔记进行关联性分析
@@ -109,6 +115,7 @@ MindNote 是一个智能笔记应用，支持：
 ## 核心工具与命令
 
 ### 功能开发工作流命令
+
 - `/speckit.specify [功能描述]` - 创建新功能分支和规格说明文档
   - 执行 `.specify/scripts/bash/create-new-feature.sh`
   - 生成格式为 `[###-feature-name]` 的分支
@@ -132,6 +139,7 @@ MindNote 是一个智能笔记应用，支持：
 - `/save` - 保存当前协作会话，生成结构化文档并更新索引
 
 ### 增强版协作命令系统
+
 推荐使用增强版命令替代原生命令，获得更好的协作体验：
 
 ```bash
@@ -146,6 +154,7 @@ MindNote 是一个智能笔记应用，支持：
 ```
 
 ### 重要脚本
+
 - `.specify/scripts/bash/create-new-feature.sh` - 创建新功能分支和规格文档
 - `.specify/scripts/bash/setup-plan.sh` - 设置实现计划环境
 - `.specify/scripts/bash/update-agent-context.sh` - 更新AI助手上下文文件
@@ -155,20 +164,26 @@ MindNote 是一个智能笔记应用，支持：
 - `.specify/optimization/enhanced-collaboration.sh` - 增强版AI协作系统
 
 ### 系统健康检查
+
 定期运行系统健康检查确保最佳性能：
+
 ```bash
 ./.specify/optimization/enhanced-collaboration.sh health
 ```
 
 ### 错误诊断工具
+
 遇到问题时使用智能错误诊断：
+
 ```bash
 ./.specify/optimization/error-handler.sh analyze "错误信息"
 ./.specify/optimization/error-handler.sh auto-fix
 ```
 
 ### 内容完整性验证
+
 验证重要内容的完整性：
+
 ```bash
 ./.specify/optimization/content-validator.sh batch-validate
 ```
@@ -176,6 +191,7 @@ MindNote 是一个智能笔记应用，支持：
 ## 项目架构
 
 ### 目录结构
+
 ```
 .specify/
 ├── memory/           # 项目章程和长期记忆
@@ -229,6 +245,7 @@ docs/
 ```
 
 ### 开发流程原则
+
 1. **规格驱动** - 所有功能从详细的规格说明开始
 2. **测试先行** - 遵循TDD原则，先写失败的测试再实现
 3. **契约优先** - 先定义API契约和数据模型
@@ -238,18 +255,21 @@ docs/
 ## 文档模板系统
 
 ### 规格说明模板 (spec-template.md)
+
 - 用户场景和测试用例
 - 功能需求（FR-001格式）
 - 关键实体定义
 - 审查检查清单
 
 ### 实现计划模板 (plan-template.md)
+
 - 技术上下文分析
 - 章程合规检查
 - 分阶段实施策略
 - 项目结构设计
 
 ### 任务列表模板 (tasks-template.md)
+
 - 依赖关系图
 - 并行执行标记 [P]
 - TDD任务组织
@@ -258,13 +278,16 @@ docs/
 ## AI协作系统
 
 ### 协作会话管理
+
 - **启动协作**：使用 `/collaborate [范式] [主题]` 开始AI协作会话
 - **保存会话**：使用 `/save` 保存当前协作会话为结构化文档
 - **自动化记录**：AI自动记录讨论内容、关键洞察和产出成果
 - **索引管理**：自动生成和维护协作会话索引，便于查阅
 
 ### 协作范式
+
 支持12种AI协作范式，适用于不同场景：
+
 - first-principles - 第一性原理思维分析
 - progressive - 渐进式沟通（从类比到深入）
 - visual - 可视化呈现（图表和流程图）
@@ -279,7 +302,9 @@ docs/
 - learning - 个性化学习路径
 
 ### 协作文档结构
+
 每个协作会话生成标准化的Markdown文档，包含：
+
 - 会话元信息（ID、时间、范式、主题）
 - 范式说明和协作方式
 - 完整的讨论内容记录
@@ -289,6 +314,7 @@ docs/
 - 结构化的知识总结
 
 ### 增强版协作特性
+
 - **🛡️ 内容完整性保障** - Mermaid图表、代码块100%保护
 - **🔧 智能错误处理** - 自动诊断和修复系统问题
 - **⚡ 一键式操作** - 简化用户操作流程
@@ -297,6 +323,7 @@ docs/
 ## 开发最佳实践
 
 ### 功能开发
+
 1. 始终从 `/speckit.specify` 开始新功能
 2. 在技术实现不明确时使用 `/speckit.clarify`
 3. 使用 `/speckit.plan` 进行详细设计规划
@@ -304,6 +331,7 @@ docs/
 5. 定期运行 `/speckit.analyze` 检查一致性
 
 ### AI协作开发
+
 1. 复杂问题分析：使用 `/collaborate first-principles` 进行深度分析
 2. 架构设计讨论：使用 `/collaborate visual` 进行可视化设计
 3. 创意头脑风暴：使用 `/collaborate creative` 激发创新想法
@@ -311,6 +339,7 @@ docs/
 5. 完成后使用 `/save` 保存协作成果
 
 ### 文档管理
+
 - 所有功能文档存储在 `specs/` 目录下
 - AI协作文档存储在 `docs/collaboration/` 目录下
 - 分析报告存储在 `docs/reports/` 目录下
@@ -320,6 +349,7 @@ docs/
 - 使用 `/save` 保存AI协作成果
 
 ### 质量保证
+
 - 每个功能都有完整的规格说明
 - 实现前必须先通过测试阶段
 - 遵循项目的核心开发原则
@@ -342,34 +372,44 @@ docs/
 ## 常见问题解答
 
 ### Q: 如何开始一个新的功能开发？
+
 A: 使用 `/speckit.specify [功能描述]` 命令开始新功能，系统会自动创建分支和规格文档。
 
 ### Q: AI协作系统如何使用？
+
 A: 使用 `/collaborate [范式] [主题]` 启动协作，完成后使用 `/save` 保存会话。
 
 ### Q: 如何确保内容完整性？
-A: 使用增强版协作系统 `./.specify/optimization/enhanced-collaboration.sh` 可以确保Mermaid图表和代码块的完整性。
+
+A: 使用增强版协作系统 `./.specify/optimization/enhanced-collaboration.sh`
+可以确保Mermaid图表和代码块的完整性。
 
 ### Q: 项目章程在哪里定义？
+
 A: 项目章程位于 `.specify/memory/constitution.md`，使用 `/speckit.constitution` 命令更新。
 
 ### Q: 如何查看之前的协作会话？
+
 A: 所有协作会话保存在 `docs/collaboration/` 目录下，查看 `index.md` 索引文件。
 
 ### Q: 遇到系统问题怎么办？
+
 A: 运行 `./.specify/optimization/error-handler.sh analyze "错误信息"` 进行智能诊断。
 
 ## 重要提醒
 
 ### 项目状态
+
 **⚠️ 早期规划阶段** - 项目目前处于概念设计和架构规划阶段，具体的技术实现将在开发过程中逐步确定。
 
 ### 开发前必读
+
 1. **先运行章程检查** - 开始任何开发前，请先阅读 `.specify/memory/constitution.md` 了解开发原则
 2. **使用Specify工作流** - 所有功能开发必须通过 `/speckit.specify` 开始
 3. **AI协作优先** - 复杂问题建议使用 `/collaborate first-principles` 进行深度分析
 
 ### 关键约束
+
 - 所有功能必须遵循章程中的5大核心原则
 - AI集成不是可选项，而是核心架构要求
 - 必须使用规格驱动的开发流程

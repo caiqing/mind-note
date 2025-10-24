@@ -1,0 +1,1491 @@
+openapi: 3.0.3
+info:
+  title: MindNote API
+  description: 智能笔记管理RESTful API，支持笔记CRUD、AI分析、搜索等功能
+  version: 1.0.0
+  contact:
+    name: MindNote Team
+    email: support@mindnote.app
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.mindnote.app/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # 通用响应格式
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          $ref: '#/components/schemas/ErrorResponseDetail'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ResponseMeta:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        requestId:
+          type: string
+          example: 'req_123456789'
+        version:
+          type: string
+          example: '1.0.0'
+
+    ErrorResponseDetail:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 'VALIDATION_ERROR'
+        message:
+          type: string
+          example: 'Request validation failed'
+        details:
+          type: object
+
+    # 分页响应
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        totalPages:
+          type: integer
+          example: 8
+        hasNext:
+          type: boolean
+          example: true
+        hasPrev:
+          type: boolean
+          example: false
+
+    # 核心实体
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'note_123456789'
+        title:
+          type: string
+          example: 'My Smart Note'
+        content:
+          type: string
+          example: 'This is the content of my note...'
+        contentHash:
+          type: string
+          example: 'abc123def456'
+        categoryId:
+          type: integer
+          nullable: true
+        category:
+          $ref: '#/components/schemas/Category'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        metadata:
+          type: object
+          example:
+            source: 'web'
+            priority: 'high'
+        aiProcessed:
+          type: boolean
+          example: true
+        aiSummary:
+          type: string
+          nullable: true
+          example: 'A comprehensive note about productivity...'
+        aiKeywords:
+          type: array
+          items:
+            type: string
+          example: ['productivity', 'tools', 'review']
+        status:
+          $ref: '#/components/schemas/NoteStatus'
+        isPublic:
+          type: boolean
+          example: false
+        viewCount:
+          type: integer
+          example: 15
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        aiProcessedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    NoteRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          example: 'My Smart Note'
+        content:
+          type: string
+          maxLength: 100000
+          example: 'This is the content of my note...'
+        categoryId:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          example: ['important', 'work']
+        metadata:
+          type: object
+          example:
+            source: 'web'
+            priority: 'high'
+        status:
+          $ref: '#/components/schemas/NoteStatus'
+        isPublic:
+          type: boolean
+          default: false
+
+    NoteStatus:
+      type: string
+      enum:
+        - DRAFT
+        - PUBLISHED
+        - ARCHIVED
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'Work'
+        description:
+          type: string
+          nullable: true
+        parentId:
+          type: integer
+          nullable: true
+        color:
+          type: string
+          example: '#3B82F6'
+        icon:
+          type: string
+          example: 'briefcase'
+        noteCount:
+          type: integer
+          example: 25
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'important'
+        color:
+          type: string
+          example: '#EF4444'
+        category:
+          type: string
+          example: 'priority'
+        usageCount:
+          type: integer
+          example: 45
+        createdAt:
+          type: string
+          format: date-time
+
+    # AI相关
+    AIAnalysisRequest:
+      type: object
+      required:
+        - operations
+      properties:
+        operations:
+          type: array
+          items:
+            type: string
+            enum:
+              - categorize
+              - tag
+              - summarize
+          example: ['categorize', 'tag', 'summarize']
+        provider:
+          type: string
+          example: 'auto'
+        options:
+          type: object
+          properties:
+            language:
+              type: string
+              example: 'zh-CN'
+            summaryLength:
+              type: integer
+              example: 200
+            maxTags:
+              type: integer
+              example: 5
+            temperature:
+              type: number
+              example: 0.3
+
+    AIAnalysisResponse:
+      type: object
+      properties:
+        taskId:
+          type: string
+          example: 'ai_task_123456789'
+        status:
+          type: string
+          enum:
+            - QUEUED
+            - PROCESSING
+            - COMPLETED
+            - FAILED
+          example: 'COMPLETED'
+        progress:
+          type: integer
+          example: 100
+        result:
+          type: object
+          properties:
+            category:
+              type: string
+              example: 'Work'
+            tags:
+              type: array
+              items:
+                type: string
+              example: ['productivity', 'tools', 'review']
+            summary:
+              type: string
+              example: 'A comprehensive review of productivity tools...'
+            confidence:
+              type: number
+              example: 0.92
+            provider:
+              type: string
+              example: 'zhipu'
+            model:
+              type: string
+              example: 'glm-4'
+            processingTime:
+              type: integer
+              example: 2450
+            cost:
+              type: number
+              example: 0.025
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    # 搜索相关
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          example: 'productivity tools'
+        filters:
+          type: object
+          properties:
+            categories:
+              type: array
+              items:
+                type: integer
+              example: [1, 2]
+            tags:
+              type: array
+              items:
+                type: string
+              example: ['important']
+            dateRange:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date
+                  example: '2025-10-01'
+                to:
+                  type: string
+                  format: date
+                  example: '2025-10-31'
+            status:
+              type: array
+              items:
+                type: string
+                enum:
+                  - DRAFT
+                  - PUBLISHED
+                  - ARCHIVED
+              example: ['PUBLISHED']
+        sort:
+          type: object
+          properties:
+            field:
+              type: string
+              enum:
+                - relevance
+                - createdAt
+                - updatedAt
+                - title
+                - viewCount
+              example: 'relevance'
+            order:
+              type: string
+              enum:
+                - asc
+                - desc
+              example: 'desc'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 20
+
+    SearchResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Note'
+              - type: object
+                properties:
+                  relevanceScore:
+                    type: number
+                    example: 0.95
+                  highlights:
+                    type: array
+                    items:
+                      type: string
+                    example: ['Latest <mark>productivity</mark> <mark>tools</mark>']
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        searchMeta:
+          type: object
+          properties:
+            queryTime:
+              type: integer
+              example: 45
+            totalResults:
+              type: integer
+              example: 15
+
+  parameters:
+    NoteId:
+      name: noteId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Note ID
+
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+      description: Page number
+
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Items per page
+
+    CategoryId:
+      name: categoryId
+      in: query
+      schema:
+        type: integer
+      description: Filter by category ID
+
+    Status:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [DRAFT, PUBLISHED, ARCHIVED]
+      description: Filter by status
+
+    Tags:
+      name: tags
+      in: query
+      schema:
+        type: string
+        description: Filter by tags (comma-separated)
+
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+      description: Search query
+
+    SortBy:
+      name: sortBy
+      in: query
+      schema:
+        type: string
+        enum: [createdAt, updatedAt, title, viewCount]
+        default: createdAt
+      description: Sort field
+
+    SortOrder:
+      name: sortOrder
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: Sort order
+
+paths:
+  # 笔记管理
+  /notes:
+    post:
+      tags:
+        - Notes
+      summary: Create a new note
+      description: Create a new note with optional AI analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteRequest'
+      responses:
+        '201':
+          description: Note created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Note'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Notes
+      summary: List notes
+      description: Get paginated list of user's notes with optional filtering
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/CategoryId'
+        - $ref: '#/components/parameters/Tags'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+      responses:
+        '200':
+          description: Notes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /notes/{noteId}:
+    get:
+      tags:
+        - Notes
+      summary: Get note by ID
+      description: Retrieve a specific note by its ID
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      responses:
+        '200':
+          description: Note retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Note'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Notes
+      summary: Update note
+      description: Update an existing note
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteRequest'
+      responses:
+        '200':
+          description: Note updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Note'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+    delete:
+      tags:
+        - Notes
+      summary: Delete note
+      description: Delete a note permanently
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      responses:
+        '200':
+          description: Note deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notes/{noteId}/autosave:
+    post:
+      tags:
+        - Notes
+      summary: Auto-save note
+      description: Auto-save note content to prevent data loss
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Note auto-saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # AI处理
+  /notes/{noteId}/ai-analyze:
+    post:
+      tags:
+        - AI
+      summary: Trigger AI analysis
+      description: Start AI analysis for a note (categorization, tagging, summarization)
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIAnalysisRequest'
+      responses:
+        '200':
+          description: AI analysis started
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AIAnalysisResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ai/tasks/{taskId}:
+    get:
+      tags:
+        - AI
+      summary: Get AI analysis status
+      description: Check the status of an AI analysis task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task status retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AIAnalysisResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /ai/batch-analyze:
+    post:
+      tags:
+        - AI
+      summary: Batch AI analysis
+      description: Analyze multiple notes with AI in batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - noteIds
+                - operations
+              properties:
+                noteIds:
+                  type: array
+                  items:
+                    type: string
+                  example: ['note_1', 'note_2', 'note_3']
+                operations:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - categorize
+                      - tag
+                      - summarize
+                  example: ['categorize', 'tag']
+                provider:
+                  type: string
+                  example: 'auto'
+                options:
+                  type: object
+                  properties:
+                    batchSize:
+                      type: integer
+                      example: 5
+                    delayBetweenBatches:
+                      type: integer
+                      example: 1000
+      responses:
+        '200':
+          description: Batch analysis started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ai/providers/status:
+    get:
+      tags:
+        - AI
+      summary: Get AI provider status
+      description: Check the availability and status of all AI providers
+      responses:
+        '200':
+          description: Provider status retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          providers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                status:
+                                  type: string
+                                  enum: [AVAILABLE, UNAVAILABLE, ERROR]
+                                responseTime:
+                                  type: integer
+                                  example: 1250
+                                models:
+                                  type: array
+                                  items:
+                                    type: string
+                                costPerToken:
+                                  type: object
+                                  properties:
+                                    input:
+                                      type: number
+                                    output:
+                                      type: number
+                          primaryProvider:
+                            type: string
+                            example: 'zhipu'
+                          fallbackProviders:
+                            type: array
+                            items:
+                              type: string
+                            example: ['openai', 'ollama']
+
+  # 搜索
+  /search:
+    post:
+      tags:
+        - Search
+      summary: Full-text search
+      description: Search notes with advanced filtering and ranking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notes/{noteId}/similar:
+    get:
+      tags:
+        - Search
+      summary: Get similar notes
+      description: Find notes similar to a given note using vector similarity
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+            maximum: 20
+          description: Maximum number of similar notes to return
+        - name: excludeProcessed
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Exclude AI-processed notes from results
+      responses:
+        '200':
+          description: Similar notes found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          similarNotes:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                title:
+                                  type: string
+                                similarityScore:
+                                  type: number
+                                  example: 0.87
+                                sharedTags:
+                                  type: array
+                                  items:
+                                    type: string
+                                preview:
+                                  type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # 分类管理
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Get categories
+      description: Get user's categories with note counts and hierarchy
+      parameters:
+        - name: includeEmpty
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include categories with no notes
+      responses:
+        '200':
+          description: Categories retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Categories
+      summary: Create category
+      description: Create a new category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: 'Work Projects'
+                description:
+                  type: string
+                  nullable: true
+                parentId:
+                  type: integer
+                  nullable: true
+                color:
+                  type: string
+                  example: '#3B82F6'
+                icon:
+                  type: string
+                  example: 'briefcase'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # 标签管理
+  /tags/popular:
+    get:
+      tags:
+        - Tags
+      summary: Get popular tags
+      description: Get user's most frequently used tags
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Maximum number of tags to return
+      responses:
+        '200':
+          description: Popular tags retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tags/suggest:
+    get:
+      tags:
+        - Tags
+      summary: Suggest tags
+      description: Get tag suggestions based on partial input
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Partial tag input
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+          description: Maximum number of suggestions
+      responses:
+        '200':
+          description: Tag suggestions retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            count:
+                              type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # 导入导出
+  /import:
+    post:
+      tags:
+        - ImportExport
+      summary: Import notes
+      description: Import notes from various formats
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                format:
+                  type: string
+                  enum: [json, markdown, csv]
+                  default: json
+                options:
+                  type: object
+                  properties:
+                    skipDuplicates:
+                      type: boolean
+                      default: true
+                    preserveIds:
+                      type: boolean
+                      default: false
+                    autoAnalyze:
+                      type: boolean
+                      default: true
+      responses:
+        '200':
+          description: Notes imported successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          imported:
+                            type: integer
+                          skipped:
+                            type: integer
+                          errors:
+                            type: array
+                            items:
+                              type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /export:
+    post:
+      tags:
+        - ImportExport
+      summary: Export notes
+      description: Export notes to various formats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - format
+              properties:
+                format:
+                  type: string
+                  enum: [json, markdown, csv]
+                  example: json
+                filters:
+                  type: object
+                  properties:
+                    categories:
+                      type: array
+                      items:
+                        type: integer
+                    dateRange:
+                      type: object
+                      properties:
+                        from:
+                          type: string
+                          format: date
+                        to:
+                          type: string
+                          format: date
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum: [DRAFT, PUBLISHED, ARCHIVED]
+                options:
+                  type: object
+                  properties:
+                    includeAIResults:
+                      type: boolean
+                      default: true
+                    includeMetadata:
+                      type: boolean
+                      default: true
+      responses:
+        '200':
+          description: Export prepared
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          exportId:
+                            type: string
+                          downloadUrl:
+                            type: string
+                          format:
+                            type: string
+                          size:
+                            type: integer
+                          noteCount:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # 分析统计
+  /analytics/notes:
+    get:
+      tags:
+        - Analytics
+      summary: Get note statistics
+      description: Get comprehensive note usage statistics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            pattern: ^\d+d$
+            default: 30d
+          description: Time period (e.g., 7d, 30d, 90d)
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+          description: Grouping period
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          summary:
+                            type: object
+                            properties:
+                              totalNotes:
+                                type: integer
+                              notesCreated:
+                                type: integer
+                              notesUpdated:
+                                type: integer
+                              aiProcessedNotes:
+                                type: integer
+                              averageNoteLength:
+                                type: number
+                              topCategories:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    count:
+                                      type: integer
+                              topTags:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    count:
+                                      type: integer
+                          timeline:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  format: date
+                                notesCreated:
+                                  type: integer
+                                notesUpdated:
+                                  type: integer
+                                aiProcessed:
+                                  type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/ai-usage:
+    get:
+      tags:
+        - Analytics
+      summary: Get AI usage statistics
+      description: Get comprehensive AI service usage statistics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            pattern: ^\d+d$
+            default: 30d
+          description: Time period (e.g., 7d, 30d, 90d)
+      responses:
+        '200':
+          description: AI usage statistics retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          summary:
+                            type: object
+                            properties:
+                              totalRequests:
+                                type: integer
+                              totalCost:
+                                type: number
+                              totalTokens:
+                                type: integer
+                              averageResponseTime:
+                                type: number
+                              successRate:
+                                type: number
+                          byProvider:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                provider:
+                                  type: string
+                                requests:
+                                  type: integer
+                                cost:
+                                  type: number
+                                tokens:
+                                  type: integer
+                                avgResponseTime:
+                                  type: number
+                          byOperation:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                operation:
+                                  type: string
+                                requests:
+                                  type: integer
+                                successRate:
+                                  type: number
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # 健康检查
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check API and service health status
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: 'healthy'
+                          timestamp:
+                            type: string
+                            format: date-time
+                          services:
+                            type: object
+                            properties:
+                              database:
+                                type: string
+                                enum: [healthy, unhealthy]
+                              ai:
+                                type: string
+                                enum: [healthy, degraded, unavailable]
+                              cache:
+                                type: string
+                                enum: [healthy, unhealthy]
+
+responses:
+  BadRequest:
+    description: Bad request
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'
+
+  Unauthorized:
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'
+
+  NotFound:
+    description: Resource not found
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'
+
+  InternalServerError:
+    description: Internal server error
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Notes
+    description: Note management operations
+  - name: Categories
+    description: Category management operations
+  - name: Tags
+    description: Tag management operations
+  - name: AI
+    description: AI analysis operations
+  - name: Search
+    description: Search and discovery operations
+  - name: ImportExport
+    description: Import and export operations
+  - name: Analytics
+    description: Analytics and statistics operations
+  - name: Health
+    description: Health check operations

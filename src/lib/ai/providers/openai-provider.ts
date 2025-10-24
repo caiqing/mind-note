@@ -1,0 +1,557 @@
+/**
+ * OpenAI AI服务提供商实现
+ */
+
+import OpenAI from 'openai';
+import {
+  BaseAIProvider,
+  AIRequest,
+  AIResponse,
+  CategoryRequest,
+  CategoryResponse,
+  CategoryPrediction,
+  TagRequest,
+  TagResponse,
+  TagPrediction,
+  TagType,
+  SummaryRequest,
+  SummaryResponse,
+  SummaryStyle,
+  KeywordRequest,
+  KeywordResponse,
+  KeywordPrediction,
+  LanguageResponse,
+  SentimentRequest,
+  SentimentResponse,
+  SentimentResult,
+  EmotionResult,
+  ModelInfo,
+  AIError,
+} from './base-provider';
+
+export class OpenAIProvider extends BaseAIProvider {
+  private client: OpenAI;
+
+  constructor(apiKey: string, model: string = 'gpt-4-turbo-preview') {
+    super('OpenAI', 'openai', apiKey, 'https://api.openai.com/v1', model);
+
+    this.client = new OpenAI({
+      apiKey: this.apiKey,
+      baseURL: this.baseURL,
+    });
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const response = await this.client.models.list();
+      return response.data.length > 0;
+    } catch (error) {
+      console.error('OpenAI availability check failed:', error);
+      return false;
+    }
+  }
+
+  getModelInfo(): ModelInfo {
+    return {
+      name: this.model,
+      maxTokens: 128000,
+      supportedOperations: [
+        'categorize',
+        'tag',
+        'summarize',
+        'extract_keywords',
+        'analyze_sentiment',
+      ],
+      costPerToken: {
+        input: 0.00001, // $0.01 per 1K input tokens
+        output: 0.00003, // $0.03 per 1K output tokens
+      },
+    };
+  }
+
+  async generateResponse(request: AIRequest): Promise<AIResponse> {
+    const startTime = Date.now();
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: request.context || 'You are a helpful AI assistant.',
+          },
+          {
+            role: 'user',
+            content: request.content,
+          },
+        ],
+        temperature: request.temperature || 0.7,
+        max_tokens: request.maxTokens || 2000,
+      });
+
+      const content = response.choices[0]?.message?.content || '';
+      const responseTime = Date.now() - startTime;
+      const tokensUsed = this.calculateTokenUsage(
+        JSON.stringify(request),
+        content,
+      );
+
+      return this.createAIResponse(content, tokensUsed, responseTime);
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      const aiError = this.createError(error as Error);
+      return this.createAIResponse(
+        '',
+        { input: 0, output: 0, total: 0 },
+        responseTime,
+        aiError,
+      );
+    }
+  }
+
+  async generateCategories(content: string): Promise<CategoryResponse> {
+    const prompt = `
+分析以下笔记内容，为其推荐最合适的分类。
+
+笔记内容：
+${content}
+
+请返回JSON格式的结果，格式如下：
+{
+  "categories": [
+    {
+      "name": "分类名称",
+      "confidence": 0.85,
+      "reasoning": "分类理由",
+      "suggestions": ["相关建议1", "相关建议2"]
+    }
+  ],
+  "primaryCategory": {
+    "name": "主要分类",
+    "confidence": 0.92
+  },
+  "confidence": 0.92,
+  "reasoning": "整体分析理由"
+}
+
+要求：
+1. 推荐3-5个最相关的分类
+2. 置信度范围0-1
+3. 分类应该简洁明了
+4. 优先考虑工作、学习、生活等通用分类
+5. 用中文回答
+`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              '你是一个专业的笔记分类助手，擅长为各种内容推荐合适的分类。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+        max_tokens: 1000,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const result = JSON.parse(content);
+
+      return {
+        categories: result.categories || [],
+        primaryCategory: result.primaryCategory || {
+          name: '未分类',
+          confidence: 0.5,
+        },
+        confidence: result.confidence || 0.5,
+        reasoning: result.reasoning || '',
+      };
+    } catch (error) {
+      console.error('Error generating categories:', error);
+      return {
+        categories: [
+          { name: '未分类', confidence: 0.5, reasoning: '无法自动分类' },
+        ],
+        primaryCategory: { name: '未分类', confidence: 0.5 },
+        confidence: 0.5,
+        reasoning: '分析过程中出现错误',
+      };
+    }
+  }
+
+  async generateTags(
+    content: string,
+    options?: TagRequest,
+  ): Promise<TagResponse> {
+    const {
+      maxTags = 5,
+      tagTypes = [TagType.TOPIC, TagType.PRIORITY],
+      language = 'zh',
+    } = options || {};
+
+    const prompt = `
+为以下笔记内容生成相关的标签。
+
+笔记内容：
+${content}
+
+要求：
+1. 生成最多${maxTags}个标签
+2. 标签应该简洁明了（1-3个词）
+3. 包含不同类型的标签：${tagTypes.join('、')}
+4. 使用${language === 'zh' ? '中文' : '英文'}标签
+
+请返回JSON格式的结果：
+{
+  "tags": [
+    {
+      "name": "标签名",
+      "type": "topic",
+      "confidence": 0.9,
+      "relevance": 0.85,
+      "suggestions": ["相关建议1"]
+    }
+  ],
+  "confidence": 0.88,
+  "reasoning": "标签生成理由"
+}
+
+标签类型说明：
+- topic: 主题标签
+- priority: 优先级标签（高、中、低）
+- status: 状态标签（进行中、已完成、待办）
+- emotion: 情感标签（积极、消极、中性）
+- custom: 自定义标签
+`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              '你是一个专业的标签生成助手，擅长为各种内容生成有意义的标签。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.4,
+        response_format: { type: 'json_object' },
+        max_tokens: 1000,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const result = JSON.parse(content);
+
+      return {
+        tags: result.tags || [],
+        confidence: result.confidence || 0.5,
+        reasoning: result.reasoning || '',
+      };
+    } catch (error) {
+      console.error('Error generating tags:', error);
+      return {
+        tags: [],
+        confidence: 0.0,
+        reasoning: '标签生成失败',
+      };
+    }
+  }
+
+  async generateSummary(
+    content: string,
+    options?: SummaryRequest,
+  ): Promise<SummaryResponse> {
+    const {
+      maxLength = 200,
+      style = SummaryStyle.PARAGRAPH,
+      focus = [],
+      language = 'zh',
+    } = options || {};
+
+    const styleInstructions = {
+      [SummaryStyle.PARAGRAPH]: '请用段落形式总结',
+      [SummaryStyle.BULLET]: '请用要点形式总结',
+      [SummaryStyle.KEY_POINTS]: '请提取关键要点',
+    };
+
+    const focusInstructions =
+      focus.length > 0 ? `特别关注以下方面：${focus.join('、')}` : '';
+
+    const prompt = `
+请为以下笔记内容生成简洁的摘要。
+
+笔记内容：
+${content}
+
+要求：
+- 摘要长度：${maxLength}字以内
+- ${styleInstructions[style]}
+- 使用${language === 'zh' ? '中文' : '英文'}
+- 突出重点和关键信息
+${focusInstructions}
+${style === SummaryStyle.KEY_POINTS ? '- 请以要点形式输出，每个要点一行' : ''}
+
+${style === SummaryStyle.BULLET ? '摘要：\n• ' : '摘要：'}
+`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              '你是一个专业的内容摘要助手，擅长提取关键信息并生成简洁的摘要。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 500,
+      });
+
+      const summary = response.choices[0]?.message?.content || '';
+
+      // 如果是关键要点格式，解析要点
+      let keyPoints: string[] | undefined;
+      if (style === SummaryStyle.KEY_POINTS) {
+        keyPoints = summary
+          .split('\n')
+          .map(line => line.replace(/^[-*•]\s*/, '').trim())
+          .filter(line => line.length > 0);
+      }
+
+      return {
+        summary: summary.trim(),
+        style,
+        length: summary.length,
+        confidence: 0.85,
+        keyPoints,
+      };
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      return {
+        summary: '摘要生成失败',
+        style,
+        length: 0,
+        confidence: 0.0,
+      };
+    }
+  }
+
+  async extractKeywords(content: string): Promise<KeywordResponse> {
+    const prompt = `
+从以下文本中提取关键词。
+
+文本内容：
+${content}
+
+要求：
+1. 提取10-15个最重要的关键词
+2. 关键词应该是单字词或短语
+3. 按重要性排序
+4. 使用中文关键词
+
+请返回JSON格式：
+{
+  "keywords": [
+    {
+      "word": "关键词",
+      "score": 0.9,
+      "frequency": 5,
+      "type": "single",
+      "context": "出现上下文"
+    }
+  ],
+  "confidence": 0.88,
+  "language": "zh"
+}
+`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个专业的关键词提取助手。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+        max_tokens: 1000,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const result = JSON.parse(content);
+
+      return {
+        keywords: result.keywords || [],
+        confidence: result.confidence || 0.5,
+        language: result.language || 'zh',
+      };
+    } catch (error) {
+      console.error('Error extracting keywords:', error);
+      return {
+        keywords: [],
+        confidence: 0.0,
+        language: 'zh',
+      };
+    }
+  }
+
+  async detectLanguage(content: string): Promise<LanguageResponse> {
+    const prompt = `
+检测以下文本的语言：
+
+文本内容：
+${content.substring(0, 1000)}...
+
+请返回JSON格式：
+{
+  "language": "zh",
+  "confidence": 0.95,
+  "detectedLanguage": "中文"
+}
+
+支持的语言代码：
+- zh: 中文
+- en: 英文
+- ja: 日文
+- ko: 韩文
+- es: 西班牙文
+- fr: 法文
+- de: 德文
+- ru: 俄文
+`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个语言检测专家。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+        max_tokens: 200,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const result = JSON.parse(content);
+
+      return {
+        language: result.language || 'unknown',
+        confidence: result.confidence || 0.5,
+        detectedLanguage: result.detectedLanguage || '未知',
+      };
+    } catch (error) {
+      console.error('Error detecting language:', error);
+      return {
+        language: 'unknown',
+        confidence: 0.0,
+        detectedLanguage: '检测失败',
+      };
+    }
+  }
+
+  async analyzeSentiment(content: string): Promise<SentimentResponse> {
+    const prompt = `
+分析以下文本的情感倾向：
+
+文本内容：
+${content}
+
+请返回JSON格式：
+{
+  "sentiment": {
+    "polarity": "positive",
+    "score": 0.7,
+    "magnitude": 0.8
+  },
+  "emotions": [
+    {
+      "emotion": "joy",
+      "score": 0.8
+    }
+  ],
+  "confidence": 0.85,
+  "language": "zh"
+}
+
+情感类型：
+- polarity: positive, negative, neutral
+- score: -1到1之间
+- magnitude: 0到1之间
+- emotion: joy, sadness, anger, fear, surprise, disgust
+`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个情感分析专家。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+        max_tokens: 500,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      const result = JSON.parse(content);
+
+      return {
+        sentiment: result.sentiment || {
+          polarity: 'neutral',
+          score: 0.0,
+          magnitude: 0.0,
+        },
+        emotions: result.emotions || [],
+        confidence: result.confidence || 0.5,
+        language: result.language || 'zh',
+      };
+    } catch (error) {
+      console.error('Error analyzing sentiment:', error);
+      return {
+        sentiment: {
+          polarity: 'neutral',
+          score: 0.0,
+          magnitude: 0.0,
+        },
+        emotions: [],
+        confidence: 0.0,
+        language: 'zh',
+      };
+    }
+  }
+}

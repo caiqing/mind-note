@@ -1,15 +1,14 @@
 # API Contracts
 
-**Feature**: 项目基础设施搭建和开发环境配置
-**Branch**: 001-dev-env-setup
-**Created**: 2025-10-22
+**Feature**: 项目基础设施搭建和开发环境配置 **Branch**: 001-dev-env-setup **Created**: 2025-10-22
 **Status**: Contract Specification Complete
 
 ---
 
 ## Overview
 
-本文档定义了MindNote开发环境配置的API契约。所有API遵循RESTful设计原则，使用JSON格式进行数据交换，支持OpenAPI 3.0规范。API设计注重安全性、性能和易用性，支持小型团队协作开发场景。
+本文档定义了MindNote开发环境配置的API契约。所有API遵循RESTful设计原则，使用JSON格式进行数据交换，支持OpenAPI
+3.0规范。API设计注重安全性、性能和易用性，支持小型团队协作开发场景。
 
 ---
 
@@ -430,14 +429,7 @@ Authorization: Bearer <access_token>
   "success": true,
   "data": {
     "configuration_applied": true,
-    "tools_configured": [
-      "eslint",
-      "prettier",
-      "jest",
-      "playwright",
-      "husky",
-      "lint-staged"
-    ],
+    "tools_configured": ["eslint", "prettier", "jest", "playwright", "husky", "lint-staged"],
     "git_hooks_enabled": true
   }
 }
@@ -633,15 +625,15 @@ Authorization: Bearer <access_token>
 
 ### Common Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-----------|
-| `UNAUTHORIZED` | 401 | 认证失败或令牌过期 |
-| `FORBIDDEN` | 403 | 权限不足 |
-| `NOT_FOUND` | 404 | 资源不存在 |
-| `VALIDATION_ERROR` | 400 | 请求参数验证失败 |
-| `RATE_LIMIT_EXCEEDED` | 429 | 请求频率超限 |
-| `INTERNAL_ERROR` | 500 | 服务器内部错误 |
-| `SERVICE_UNAVAILABLE` | 503 | 服务暂时不可用 |
+| Code                  | HTTP Status | Description        |
+| --------------------- | ----------- | ------------------ |
+| `UNAUTHORIZED`        | 401         | 认证失败或令牌过期 |
+| `FORBIDDEN`           | 403         | 权限不足           |
+| `NOT_FOUND`           | 404         | 资源不存在         |
+| `VALIDATION_ERROR`    | 400         | 请求参数验证失败   |
+| `RATE_LIMIT_EXCEEDED` | 429         | 请求频率超限       |
+| `INTERNAL_ERROR`      | 500         | 服务器内部错误     |
+| `SERVICE_UNAVAILABLE` | 503         | 服务暂时不可用     |
 
 ---
 
@@ -704,17 +696,17 @@ curl -X POST https://api-staging.mindnote.com/v1/auth/register \
 
 ## API Contracts Status
 
-**Status**: ✅ Specification Complete
-**Base URL**: `https://api.mindnote.com/v1`
-**Authentication**: JWT Bearer Token
-**Documentation**: OpenAPI 3.0 specification available
+**Status**: ✅ Specification Complete **Base URL**: `https://api.mindnote.com/v1`
+**Authentication**: JWT Bearer Token **Documentation**: OpenAPI 3.0 specification available
 **Testing**: Integration tests configured
 
 **Next Steps**:
+
 1. Generate quickstart guide
 2. Create development task list
 3. Implement API documentation website
 
 ---
 
-*API contracts support secure, scalable development environment configuration with comprehensive monitoring and error handling.*
+_API contracts support secure, scalable development environment configuration with comprehensive
+monitoring and error handling._

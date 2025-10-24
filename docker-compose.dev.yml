@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.dev
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://mindnote:${POSTGRES_PASSWORD}@postgres:5432/mindnote_dev
@@ -36,7 +36,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
     ports:
-      - "127.0.0.1:5432:5432"  # Only bind to localhost for security
+      - '127.0.0.1:5432:5432' # Only bind to localhost for security
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
@@ -45,7 +45,7 @@ services:
     networks:
       - mindnote-internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mindnote -d mindnote_dev"]
+      test: ['CMD-SHELL', 'pg_isready -U mindnote -d mindnote_dev']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -53,7 +53,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "127.0.0.1:6379:6379"  # Only bind to localhost for security
+      - '127.0.0.1:6379:6379' # Only bind to localhost for security
     volumes:
       - redis_data:/data
       - docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
@@ -63,7 +63,7 @@ services:
     networks:
       - mindnote-internal
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -72,7 +72,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "127.0.0.1:11434:11434"  # Only bind to localhost for security
+      - '127.0.0.1:11434:11434' # Only bind to localhost for security
     volumes:
       - ollama_data:/root/.ollama
     environment:
@@ -82,7 +82,7 @@ services:
     networks:
       - mindnote-internal
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:11434/api/tags']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -99,7 +99,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - '80:80'
     volumes:
       - docker/nginx/nginx.dev.conf:/etc/nginx/nginx.conf
     depends_on:
@@ -121,7 +121,7 @@ networks:
         - subnet: 172.20.0.0/16
   mindnote-internal:
     driver: bridge
-    internal: true  # Internal network for database and cache services
+    internal: true # Internal network for database and cache services
     ipam:
       config:
         - subnet: 172.21.0.0/16

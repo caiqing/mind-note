@@ -1,0 +1,652 @@
+/**
+ * Badge Component Contract Tests
+ *
+ * Tests for Badge component following TDD approach:
+ * 1. Tests should FAIL before implementation
+ * 2. Tests verify accessibility compliance
+ * 3. Tests cover all variants and states
+ *
+ * Reference: specs/003-ui-ux/tasks.md T016
+ */
+
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+
+// Import the component (this will fail initially as we haven't implemented it yet)
+import { Badge } from '@/components/ui/badge';
+
+// Helper function to get the badge element (not the inner text container)
+const getBadgeElement = (text: string | RegExp): HTMLElement => {
+  return screen.getByText(text).closest('[data-variant]') as HTMLElement;
+};
+
+describe('Badge Component Contract Tests', () => {
+  describe('Basic Rendering', () => {
+    it('should render a badge element', () => {
+      render(<Badge>Badge content</Badge>);
+
+      const badge = screen.getByText('Badge content');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should render with default styles', () => {
+      render(<Badge>Default Badge</Badge>);
+
+      const badge = getBadgeElement('Default Badge');
+      expect(badge).toHaveClass('inline-flex', 'items-center');
+    });
+
+    it('should render children content', () => {
+      render(<Badge>New</Badge>);
+
+      const badge = screen.getByText('New');
+      expect(badge).toHaveTextContent('New');
+    });
+
+    it('should support custom className', () => {
+      render(<Badge className="custom-badge-class">Custom Badge</Badge>);
+
+      const badge = getBadgeElement('Custom Badge');
+      expect(badge).toHaveClass('custom-badge-class');
+    });
+
+    it('should render with text content only', () => {
+      render(<Badge>5</Badge>);
+
+      const badge = screen.getByText('5');
+      expect(badge).toBeInTheDocument();
+    });
+  });
+
+  describe('Variants', () => {
+    it('should render default variant when no variant is specified', () => {
+      render(<Badge>Default</Badge>);
+
+      const badge = getBadgeElement('Default');
+      expect(badge).toHaveAttribute('data-variant', 'default');
+    });
+
+    it('should render secondary variant', () => {
+      render(<Badge variant="secondary">Secondary</Badge>);
+
+      const badge = getBadgeElement('Secondary');
+      expect(badge).toHaveAttribute('data-variant', 'secondary');
+    });
+
+    it('should render destructive variant', () => {
+      render(<Badge variant="destructive">Error</Badge>);
+
+      const badge = getBadgeElement('Error');
+      expect(badge).toHaveAttribute('data-variant', 'destructive');
+    });
+
+    it('should render outline variant', () => {
+      render(<Badge variant="outline">Outline</Badge>);
+
+      const badge = getBadgeElement('Outline');
+      expect(badge).toHaveAttribute('data-variant', 'outline');
+    });
+
+    it('should render success variant', () => {
+      render(<Badge variant="success">Success</Badge>);
+
+      const badge = getBadgeElement('Success');
+      expect(badge).toHaveAttribute('data-variant', 'success');
+    });
+
+    it('should render warning variant', () => {
+      render(<Badge variant="warning">Warning</Badge>);
+
+      const badge = getBadgeElement('Warning');
+      expect(badge).toHaveAttribute('data-variant', 'warning');
+    });
+
+    it('should render info variant', () => {
+      render(<Badge variant="info">Info</Badge>);
+
+      const badge = getBadgeElement('Info');
+      expect(badge).toHaveAttribute('data-variant', 'info');
+    });
+  });
+
+  describe('Sizes', () => {
+    it('should render default size when no size is specified', () => {
+      render(<Badge>Default Size</Badge>);
+
+      const badge = screen.getByText('Default Size');
+      expect(badge).toHaveAttribute('data-size', 'default');
+    });
+
+    it('should render sm size', () => {
+      render(<Badge size="sm">Small</Badge>);
+
+      const badge = screen.getByText('Small');
+      expect(badge).toHaveAttribute('data-size', 'sm');
+    });
+
+    it('should render lg size', () => {
+      render(<Badge size="lg">Large</Badge>);
+
+      const badge = screen.getByText('Large');
+      expect(badge).toHaveAttribute('data-size', 'lg');
+    });
+
+    it('should render xs size', () => {
+      render(<Badge size="xs">Extra Small</Badge>);
+
+      const badge = screen.getByText('Extra Small');
+      expect(badge).toHaveAttribute('data-size', 'xs');
+    });
+  });
+
+  describe('Interactive Features', () => {
+    it('should be clickable when onClick handler is provided', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Clickable Badge</Badge>);
+
+      const badge = screen.getByText('Clickable Badge');
+      fireEvent.click(badge);
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should have button role when clickable', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Clickable Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should support keyboard navigation when clickable', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Clickable Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      badge.focus();
+      fireEvent.keyDown(badge, { key: 'Enter' });
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should support Enter key when clickable', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Clickable Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      fireEvent.keyDown(badge, { key: 'Enter' });
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should support Space key when clickable', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Clickable Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      fireEvent.keyDown(badge, { key: ' ' });
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should show pointer cursor when clickable', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Clickable Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      expect(badge).toHaveClass('cursor-pointer');
+    });
+  });
+
+  describe('States', () => {
+    it('should be enabled by default', () => {
+      render(<Badge>Enabled Badge</Badge>);
+
+      const badge = screen.getByText('Enabled Badge');
+      expect(badge).toHaveAttribute('data-disabled', 'false');
+    });
+
+    it('should be disabled when disabled prop is true', () => {
+      render(<Badge disabled>Disabled Badge</Badge>);
+
+      const badge = screen.getByText('Disabled Badge');
+      expect(badge).toHaveAttribute('data-disabled', 'true');
+    });
+
+    it('should not fire onClick when disabled', () => {
+      const handleClick = vi.fn();
+      render(
+        <Badge disabled onClick={handleClick}>
+          Disabled Badge
+        </Badge>
+      );
+
+      const badge = screen.getByText('Disabled Badge');
+      fireEvent.click(badge);
+
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('should show loading state when loading prop is true', () => {
+      render(<Badge loading>Loading Badge</Badge>);
+
+      const badge = screen.getByText('Loading Badge');
+      expect(badge).toHaveAttribute('data-loading', 'true');
+    });
+
+    it('should show selected state when selected prop is true', () => {
+      render(<Badge selected>Selected Badge</Badge>);
+
+      const badge = screen.getByText('Selected Badge');
+      expect(badge).toHaveAttribute('data-selected', 'true');
+    });
+  });
+
+  describe('Accessibility Attributes', () => {
+    it('should support aria-label for custom accessibility', () => {
+      render(
+        <Badge aria-label="New messages">
+          5
+        </Badge>
+      );
+
+      const badge = screen.getByLabelText('New messages');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should support aria-labelledby for label reference', () => {
+      render(
+        <div>
+          <span id="badge-label">Status</span>
+          <Badge aria-labelledby="badge-label">Active</Badge>
+        </div>
+      );
+
+      const badge = screen.getByText('Active');
+      expect(badge).toHaveAttribute('aria-labelledby', 'badge-label');
+    });
+
+    it('should support aria-describedby for description reference', () => {
+      render(
+        <div>
+          <span id="badge-description">5 unread messages</span>
+          <Badge aria-describedby="badge-description">5</Badge>
+        </div>
+      );
+
+      const badge = screen.getByText('5');
+      expect(badge).toHaveAttribute('aria-describedby', 'badge-description');
+    });
+
+    it('should support aria-live for dynamic content', () => {
+      render(<Badge aria-live="polite">Live Badge</Badge>);
+
+      const badge = screen.getByText('Live Badge');
+      expect(badge).toHaveAttribute('aria-live', 'polite');
+    });
+
+    it('should support aria-atomic for atomic updates', () => {
+      render(<Badge aria-atomic={true}>Atomic Badge</Badge>);
+
+      const badge = screen.getByText('Atomic Badge');
+      expect(badge).toHaveAttribute('aria-atomic', 'true');
+    });
+
+    it('should be focusable when clickable', () => {
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick}>Focusable Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      expect(badge).toHaveAttribute('tabIndex', '0');
+    });
+
+    it('should not be focusable when disabled', () => {
+      render(<Badge disabled>Disabled Badge</Badge>);
+
+      const badge = screen.getByText('Disabled Badge');
+      expect(badge).toHaveAttribute('tabIndex', '-1');
+    });
+  });
+
+  describe('Icon Support', () => {
+    it('should render with left icon', () => {
+      render(
+        <Badge>
+          <Badge.Icon position="left">
+            <span data-testid="left-icon">★</span>
+          </Badge.Icon>
+          Featured
+        </Badge>
+      );
+
+      const icon = screen.getByTestId('left-icon');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveTextContent('★');
+    });
+
+    it('should render with right icon', () => {
+      render(
+        <Badge>
+          Status
+          <Badge.Icon position="right">
+            <span data-testid="right-icon">✓</span>
+          </Badge.Icon>
+        </Badge>
+      );
+
+      const icon = screen.getByTestId('right-icon');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveTextContent('✓');
+    });
+
+    it('should render with both left and right icons', () => {
+      render(
+        <Badge>
+          <Badge.Icon position="left">
+            <span data-testid="left-icon">📧</span>
+          </Badge.Icon>
+          Email
+          <Badge.Icon position="right">
+            <span data-testid="right-icon">3</span>
+          </Badge.Icon>
+        </Badge>
+      );
+
+      const leftIcon = screen.getByTestId('left-icon');
+      const rightIcon = screen.getByTestId('right-icon');
+
+      expect(leftIcon).toBeInTheDocument();
+      expect(rightIcon).toBeInTheDocument();
+    });
+
+    it('should support icon-only badges', () => {
+      render(
+        <Badge>
+          <Badge.Icon>
+            <span data-testid="icon-only">🔔</span>
+          </Badge.Icon>
+        </Badge>
+      );
+
+      const icon = screen.getByTestId('icon-only');
+      expect(icon).toBeInTheDocument();
+    });
+  });
+
+  describe('Counter Functionality', () => {
+    it('should display numeric values', () => {
+      render(<Badge>42</Badge>);
+
+      const badge = screen.getByText('42');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should support max value display', () => {
+      render(<Badge max={99}>123</Badge>);
+
+      const badge = screen.getByText('99+');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should show exact count when below max', () => {
+      render(<Badge max={99}>85</Badge>);
+
+      const badge = screen.getByText('85');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should support custom overflow text', () => {
+      render(<Badge max={99} overflowText="many">123</Badge>);
+
+      const badge = screen.getByText('99many');
+      expect(badge).toBeInTheDocument();
+    });
+  });
+
+  describe('Status Indicators', () => {
+    it('should show online status', () => {
+      render(<Badge status="online">Online</Badge>);
+
+      const badge = screen.getByText('Online');
+      expect(badge).toHaveAttribute('data-status', 'online');
+    });
+
+    it('should show offline status', () => {
+      render(<Badge status="offline">Offline</Badge>);
+
+      const badge = screen.getByText('Offline');
+      expect(badge).toHaveAttribute('data-status', 'offline');
+    });
+
+    it('should show busy status', () => {
+      render(<Badge status="busy">Busy</Badge>);
+
+      const badge = screen.getByText('Busy');
+      expect(badge).toHaveAttribute('data-status', 'busy');
+    });
+
+    it('should show away status', () => {
+      render(<Badge status="away">Away</Badge>);
+
+      const badge = screen.getByText('Away');
+      expect(badge).toHaveAttribute('data-status', 'away');
+    });
+  });
+
+  describe('Responsive Design', () => {
+    it('should support responsive size classes', () => {
+      render(
+        <Badge
+          size="sm"
+          className="md:size-default lg:size-lg"
+        >
+          Responsive Badge
+        </Badge>
+      );
+
+      const badge = screen.getByText('Responsive Badge');
+      expect(badge).toHaveAttribute('data-size', 'sm');
+      expect(badge).toHaveClass('md:size-default', 'lg:size-lg');
+    });
+
+    it('should support responsive variant classes', () => {
+      render(
+        <Badge
+          variant="outline"
+          className="md:variant-secondary lg:variant-success"
+        >
+          Responsive Variant Badge
+        </Badge>
+      );
+
+      const badge = screen.getByText('Responsive Variant Badge');
+      expect(badge).toHaveAttribute('data-variant', 'outline');
+      expect(badge).toHaveClass('md:variant-secondary', 'lg:variant-success');
+    });
+  });
+
+  describe('Animation and Transitions', () => {
+    it('should support pulse animation', () => {
+      render(<Badge pulse>Pulsing Badge</Badge>);
+
+      const badge = screen.getByText('Pulsing Badge');
+      expect(badge).toHaveAttribute('data-pulse', 'true');
+    });
+
+    it('should support bounce animation', () => {
+      render(<Badge bounce>Bouncing Badge</Badge>);
+
+      const badge = screen.getByText('Bouncing Badge');
+      expect(badge).toHaveAttribute('data-bounce', 'true');
+    });
+
+    it('should support fade animation', () => {
+      render(<Badge fade>Fading Badge</Badge>);
+
+      const badge = screen.getByText('Fading Badge');
+      expect(badge).toHaveAttribute('data-fade', 'true');
+    });
+  });
+
+  describe('Custom Content', () => {
+    it('should support complex nested content', () => {
+      render(
+        <Badge>
+          <span data-testid="custom-content">Complex Content</span>
+          <Badge.Icon position="right">
+            <span data-testid="nested-icon">🎯</span>
+          </Badge.Icon>
+        </Badge>
+      );
+
+      const customContent = screen.getByTestId('custom-content');
+      const nestedIcon = screen.getByTestId('nested-icon');
+
+      expect(customContent).toBeInTheDocument();
+      expect(nestedIcon).toBeInTheDocument();
+    });
+
+    it('should support HTML elements as children', () => {
+      render(
+        <Badge>
+          <strong>Bold Text</strong>
+          <span>Normal Text</span>
+        </Badge>
+      );
+
+      const badge = screen.getByText('Bold Text');
+      expect(badge).toBeInTheDocument();
+      expect(badge.querySelector('strong')).toBeInTheDocument();
+    });
+
+    it('should support custom HTML attributes', () => {
+      render(
+        <Badge data-testid="custom-badge" data-priority="high">
+          Priority Badge
+        </Badge>
+      );
+
+      const badge = screen.getByTestId('custom-badge');
+      expect(badge).toHaveAttribute('data-priority', 'high');
+    });
+  });
+
+  describe('Event Handlers', () => {
+    it('should call onMouseEnter handler', () => {
+      const handleMouseEnter = vi.fn();
+      render(<Badge onMouseEnter={handleMouseEnter}>Badge</Badge>);
+
+      const badge = screen.getByText('Badge');
+      fireEvent.mouseEnter(badge);
+
+      expect(handleMouseEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onMouseLeave handler', () => {
+      const handleMouseLeave = vi.fn();
+      render(<Badge onMouseLeave={handleMouseLeave}>Badge</Badge>);
+
+      const badge = screen.getByText('Badge');
+      fireEvent.mouseLeave(badge);
+
+      expect(handleMouseLeave).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onFocus handler', () => {
+      const handleFocus = vi.fn();
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick} onFocus={handleFocus}>Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      fireEvent.focus(badge);
+
+      expect(handleFocus).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onBlur handler', () => {
+      const handleBlur = vi.fn();
+      const handleClick = vi.fn();
+      render(<Badge onClick={handleClick} onBlur={handleBlur}>Badge</Badge>);
+
+      const badge = screen.getByRole('button');
+      fireEvent.blur(badge);
+
+      expect(handleBlur).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Performance Considerations', () => {
+    it('should handle rapid updates efficiently', () => {
+      const { rerender } = render(<Badge count={0}>0</Badge>);
+
+      // Simulate rapid count updates
+      for (let i = 1; i <= 100; i++) {
+        rerender(<Badge count={i}>{i}</Badge>);
+      }
+
+      const badge = screen.getByText('100');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should handle large numbers with max display', () => {
+      render(<Badge max={999}>{10000}</Badge>);
+
+      const badge = screen.getByText('999+');
+      expect(badge).toBeInTheDocument();
+    });
+  });
+
+  describe('Common Use Cases', () => {
+    it('should work as a notification badge', () => {
+      render(
+        <Badge variant="destructive" max={99}>
+          5
+        </Badge>
+      );
+
+      const badge = screen.getByText('5');
+      expect(badge).toHaveAttribute('data-variant', 'destructive');
+    });
+
+    it('should work as a status indicator', () => {
+      render(
+        <Badge variant="success" status="online">
+          Active
+        </Badge>
+      );
+
+      const badge = screen.getByText('Active');
+      expect(badge).toHaveAttribute('data-variant', 'success');
+      expect(badge).toHaveAttribute('data-status', 'online');
+    });
+
+    it('should work as a category label', () => {
+      render(
+        <Badge variant="outline">
+          <Badge.Icon position="left">
+            <span>🏷️</span>
+          </Badge.Icon>
+          Category
+        </Badge>
+      );
+
+      const badge = screen.getByText('Category');
+      expect(badge).toHaveAttribute('data-variant', 'outline');
+    });
+
+    it('should work as a filter tag', () => {
+      render(
+        <Badge variant="secondary" onClick={vi.fn()}>
+          Technology
+          <Badge.Icon position="right">
+            <span>×</span>
+          </Badge.Icon>
+        </Badge>
+      );
+
+      const badge = screen.getByRole('button');
+      expect(badge).toHaveTextContent('Technology');
+    });
+  });
+});
