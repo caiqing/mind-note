@@ -1,17 +1,73 @@
 {
-  "semi": false,
-  "singleQuote": true,
-  "tabWidth": 2,
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "semi": true,
   "trailingComma": "all",
-  "printWidth": 100,
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2,
   "useTabs": false,
+  "quoteProps": "as-needed",
   "bracketSpacing": true,
   "bracketSameLine": false,
   "arrowParens": "avoid",
   "endOfLine": "lf",
-  "quoteProps": "as-needed",
-  "jsxSingleQuote": true,
+  "embeddedLanguageFormatting": "auto",
+  "insertPragma": false,
   "proseWrap": "preserve",
   "htmlWhitespaceSensitivity": "css",
-  "embeddedLanguageFormatting": "auto"
+  "vueIndentScriptAndStyle": false,
+  "singleAttributePerLine": false,
+  "jsxSingleQuote": true,
+  "overrides": [
+    {
+      "files": "*.json",
+      "options": {
+        "printWidth": 120
+      }
+    },
+    {
+      "files": "*.md",
+      "options": {
+        "printWidth": 100,
+        "proseWrap": "always"
+      }
+    },
+    {
+      "files": "*.html",
+      "options": {
+        "printWidth": 120,
+        "htmlWhitespaceSensitivity": "ignore"
+      }
+    },
+    {
+      "files": "*.css",
+      "options": {
+        "printWidth": 120
+      }
+    },
+    {
+      "files": "*.scss",
+      "options": {
+        "printWidth": 120
+      }
+    },
+    {
+      "files": "*.less",
+      "options": {
+        "printWidth": 120
+      }
+    },
+    {
+      "files": "*.yaml",
+      "options": {
+        "printWidth": 120
+      }
+    },
+    {
+      "files": "*.yml",
+      "options": {
+        "printWidth": 120
+      }
+    }
+  ]
 }

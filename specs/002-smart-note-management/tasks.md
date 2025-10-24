@@ -1,8 +1,7 @@
 # Development Tasks: 智能笔记管理
 
-**Branch**: `002-smart-note-management` | **Date**: 2025-10-23
-**Based on**: Implementation Plan ([plan.md](./plan.md))
-**Status**: Ready for Implementation
+**Branch**: `002-smart-note-management` | **Date**: 2025-10-23 **Based on**: Implementation Plan
+([plan.md](./plan.md)) **Status**: Ready for Implementation
 
 ## Task Dependency Graph
 
@@ -34,6 +33,7 @@ graph TD
 ## Phase 0: Research & Setup (P0)
 
 ### Task 0.1: AI Service Research
+
 - **ID**: TASK-001
 - **Priority**: P1
 - **Description**: Research and select AI service for content categorization
@@ -47,6 +47,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 0.2: Development Environment Setup
+
 - **ID**: TASK-002
 - **Priority**: P1
 - **Description**: Setup development environment for the feature branch
@@ -63,6 +64,7 @@ graph TD
 ## Phase 1: Data Model & API Design (P1)
 
 ### Task 1.1: Database Schema Design
+
 - **ID**: TASK-003
 - **Priority**: P1
 - **Description**: Design and implement database schema for notes and related entities
@@ -77,6 +79,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 1.2: API Contract Definition
+
 - **ID**: TASK-004
 - **Priority**: P1
 - **Description**: Define REST API contracts for note management operations
@@ -93,6 +96,7 @@ graph TD
 ## Phase 2: Backend Core Features (P1)
 
 ### Task 2.1: Note CRUD Operations
+
 - **ID**: TASK-005
 - **Priority**: P1
 - **Description**: Implement core note CRUD operations with database integration
@@ -109,6 +113,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 2.2: Auto-save Functionality
+
 - **ID**: TASK-006
 - **Priority**: P1
 - **Description**: Implement automatic saving mechanism for note content
@@ -125,6 +130,7 @@ graph TD
 ## Phase 3: AI Integration (P2)
 
 ### Task 3.1: AI Service Integration
+
 - **ID**: TASK-007
 - **Priority**: P2
 - **Description**: Integrate AI service for automatic content categorization
@@ -140,6 +146,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 3.2: Vector Search Implementation
+
 - **ID**: TASK-008
 - **Priority**: P2
 - **Description**: Implement vector embeddings and similarity search
@@ -153,13 +160,48 @@ graph TD
 - **Estimated Time**: 1.5 days
 - **Assignee**: TBD
 
+### Task 3.3: Note Relationship Mapping
+
+- **ID**: TASK-020
+- **Priority**: P2
+- **Description**: Implement AI-powered note relationship mapping and knowledge graph
+- **Dependencies**: TASK-008, TASK-007
+- **Acceptance Criteria**:
+  - [ ] Analyze note content to identify semantic relationships
+  - [ ] Implement relationship types (references, similar topics, prerequisites)
+  - [ ] Create knowledge graph visualization interface
+  - [ ] Add "Related Notes" suggestions in note sidebar
+  - [ ] Implement relationship strength scoring
+  - [ ] Add manual relationship management for users
+  - [ ] Create relationship discovery API endpoints
+- **Estimated Time**: 2.5 days
+- **Assignee**: TBD
+
+### Task 3.4: AI Conversation Integration
+
+- **ID**: TASK-021
+- **Priority**: P2
+- **Description**: Integrate AI conversation features for note interaction and analysis
+- **Dependencies**: TASK-007, TASK-020
+- **Acceptance Criteria**:
+  - [ ] Implement AI chat interface for note discussion
+  - [ ] Add "Ask AI about this note" functionality
+  - [ ] Create note summarization conversation
+  - [ ] Implement follow-up question suggestions
+  - [ ] Add AI-powered note improvement recommendations
+  - [ ] Create conversation history and context management
+  - [ ] Implement multi-turn dialogue with note context
+- **Estimated Time**: 3 days
+- **Assignee**: TBD
+
 ## Phase 4: Frontend Core Features (P1)
 
 ### Task 4.1: Note Editor Component
+
 - **ID**: TASK-009
 - **Priority**: P1
 - **Description**: Create rich text editor component for note creation and editing
-- **Dependencies**: TASK-002
+- **Dependencies**: None (可独立开发和测试)
 - **Acceptance Criteria**:
   - [ ] Implement rich text editor with formatting options
   - [ ] Add markdown support with live preview
@@ -171,6 +213,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 4.2: Note List Interface
+
 - **ID**: TASK-010
 - **Priority**: P1
 - **Description**: Create note list interface with filtering and sorting
@@ -185,9 +228,28 @@ graph TD
 - **Estimated Time**: 1.5 days
 - **Assignee**: TBD
 
+### Task 3.5: AI Classification Quality Assurance
+
+- **ID**: TASK-022
+- **Priority**: P2
+- **Description**: Implement AI classification accuracy testing and user feedback system
+- **Dependencies**: TASK-007, TASK-012
+- **Acceptance Criteria**:
+  - [ ] Create classification accuracy testing framework
+  - [ ] Implement user feedback collection for AI suggestions
+  - [ ] Add A/B testing for AI classification algorithms
+  - [ ] Create accuracy metrics dashboard (target: >85%)
+  - [ ] Implement continuous learning from user corrections
+  - [ ] Add classification confidence scoring
+  - [ ] Create accuracy reporting and trend analysis
+  - [ ] Implement feedback-driven model improvement
+- **Estimated Time**: 2 days
+- **Assignee**: TBD
+
 ## Phase 5: Advanced Features (P2-P3)
 
 ### Task 5.1: Search and Filtering
+
 - **ID**: TASK-011
 - **Priority**: P2
 - **Description**: Implement advanced search and filtering capabilities
@@ -203,6 +265,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 5.2: AI Tag Management
+
 - **ID**: TASK-012
 - **Priority**: P2
 - **Description**: Create AI-powered tag management interface
@@ -217,6 +280,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 5.3: Import/Export Functionality
+
 - **ID**: TASK-013
 - **Priority**: P3
 - **Description**: Implement note import and export capabilities
@@ -230,23 +294,45 @@ graph TD
 - **Estimated Time**: 1 day
 - **Assignee**: TBD
 
+### Task 4.4: Note Organization Features
+
+- **ID**: TASK-024
+- **Priority**: P3
+- **Description**: Implement note favoriting and archiving functionality
+- **Dependencies**: TASK-005
+- **Acceptance Criteria**:
+  - [ ] Add favoriting/unfavoriting functionality
+  - [ ] Implement archiving/unarchiving with confirmation
+  - [ ] Create filtered views for favorites and archived notes
+  - [ ] Add favorite and archive status to API responses
+  - [ ] Implement bulk operations for multiple notes
+  - [ ] Add keyboard shortcuts for quick actions
+  - [ ] Create organization status indicators in UI
+- **Estimated Time**: 1 day
+- **Assignee**: TBD
+
 ## Phase 6: Testing & Polish (P1)
 
 ### Task 6.1: Unit Tests
+
 - **ID**: TASK-014
 - **Priority**: P1
-- **Description**: Write comprehensive unit tests for all business logic
+- **Description**: Write comprehensive unit tests for all business logic (>90% coverage required)
 - **Dependencies**: TASK-005, TASK-007, TASK-009
 - **Acceptance Criteria**:
-  - [ ] Unit tests for all API endpoints (>90% coverage)
-  - [ ] Tests for AI service integration with mocking
-  - [ ] Component tests for React components
-  - [ ] Database operation tests with fixtures
+  - [ ] Unit tests for all API endpoints (minimum 90% line coverage)
+  - [ ] Tests for AI service integration with mocking (95% coverage)
+  - [ ] Component tests for React components (90% coverage)
+  - [ ] Database operation tests with fixtures (100% coverage)
   - [ ] Performance benchmarks for critical operations
+  - [ ] Jest coverage configuration with enforcement
+  - [ ] CI pipeline coverage check (fail if <90%)
+  - [ ] Coverage report generation and tracking
 - **Estimated Time**: 2 days
 - **Assignee**: TBD
 
 ### Task 6.2: Integration Tests
+
 - **ID**: TASK-015
 - **Priority**: P1
 - **Description**: Write integration tests for end-to-end workflows
@@ -261,6 +347,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 6.3: E2E Tests
+
 - **ID**: TASK-016
 - **Priority**: P2
 - **Description**: Create end-to-end tests with Playwright
@@ -277,6 +364,7 @@ graph TD
 ## Phase 7: Deployment & Documentation (P1)
 
 ### Task 7.1: Performance Optimization
+
 - **ID**: TASK-017
 - **Priority**: P1
 - **Description**: Optimize application performance for production
@@ -291,6 +379,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 7.2: Documentation Update
+
 - **ID**: TASK-018
 - **Priority**: P1
 - **Description**: Update project documentation with new features
@@ -305,6 +394,7 @@ graph TD
 - **Assignee**: TBD
 
 ### Task 7.3: Deployment Preparation
+
 - **ID**: TASK-019
 - **Priority**: P1
 - **Description**: Prepare feature for production deployment
@@ -320,20 +410,25 @@ graph TD
 
 ## Summary Statistics
 
-- **Total Tasks**: 19
-- **Estimated Total Time**: 24.5 days
-- **Critical Path**: TASK-001 → TASK-003 → TASK-005 → TASK-007 → TASK-011 → TASK-014 → TASK-017 → TASK-019
-- **Parallel Work Opportunities**: UI development (TASK-009, TASK-010) can proceed in parallel with backend development
-- **Testing Strategy**: Unit tests integrated throughout development, dedicated testing phase at the end
+- **Total Tasks**: 22 (新增: TASK-020, TASK-021, TASK-022, TASK-024)
+- **Estimated Total Time**: 32 days (包含AI功能扩展)
+- **Critical Path**: TASK-001 → TASK-003 → TASK-005 → TASK-007 → TASK-020 → TASK-021 → TASK-014 →
+  TASK-017 → TASK-019
+- **Parallel Work Opportunities**:
+  - UI开发 (TASK-009, TASK-010, TASK-024) 可独立并行开发
+  - AI功能开发 (TASK-020, TASK-021, TASK-022) 可并行进行
+  - 后端核心功能 (TASK-005, TASK-006) 可与前端组件并行
+- **Testing Strategy**: Unit tests integrated throughout development, dedicated testing phase at the
+  end
 
 ## Risk Assessment
 
-| Risk | Probability | Impact | Mitigation Strategy |
-|------|-------------|--------|-------------------|
-| AI service reliability | Medium | High | Implement fallback to manual categorization |
-| Performance at scale | Medium | Medium | Early performance testing and optimization |
-| Database migration issues | Low | High | Thorough testing in staging environment |
-| User adoption of AI features | Medium | Medium | User feedback collection and iterative improvement |
+| Risk                         | Probability | Impact | Mitigation Strategy                                |
+| ---------------------------- | ----------- | ------ | -------------------------------------------------- |
+| AI service reliability       | Medium      | High   | Implement fallback to manual categorization        |
+| Performance at scale         | Medium      | Medium | Early performance testing and optimization         |
+| Database migration issues    | Low         | High   | Thorough testing in staging environment            |
+| User adoption of AI features | Medium      | Medium | User feedback collection and iterative improvement |
 
 ## Success Metrics
 
@@ -342,10 +437,14 @@ graph TD
 - **Quality**: >90% test coverage, zero critical bugs
 - **User Experience**: Smooth auto-save, responsive UI, helpful AI suggestions
 - **AI Accuracy**: >85% classification accuracy based on user feedback
+- **AI Integration**: Complete relationship mapping and conversation features implemented
+- **Coverage**: All functional requirements (FR-001 to FR-010) fully implemented
+- **Constitution Compliance**: 100% compliance with MindNote AI-Native principles
 
 ---
 
 **Next Steps**:
+
 1. Review and approve this task list
 2. Assign tasks to team members
 3. Begin with Task 0.1 (AI Service Research)

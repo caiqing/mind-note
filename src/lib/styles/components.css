@@ -1,0 +1,531 @@
+/**
+ * Component Styles for MindNote UI System
+ *
+ * This file contains component-specific styles that extend our design tokens.
+ * These styles provide base implementations for common UI patterns and
+ * ensure consistency across all components.
+ *
+ * Reference: specs/003-ui-ux/contracts/ui-components.md
+ */
+
+@layer components {
+  /* ========================================================================== */
+  /* Button Component Styles                                                     */
+  /* ========================================================================== */
+
+  .btn {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    min-height: var(--button-height-md);
+    padding: 0 var(--button-padding-x-md);
+    gap: var(--space-2);
+  }
+
+  .btn-sm {
+    min-height: var(--button-height-sm);
+    padding: 0 var(--button-padding-x-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .btn-lg {
+    min-height: var(--button-height-lg);
+    padding: 0 var(--button-padding-x-lg);
+    font-size: var(--font-size-lg);
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    box-shadow: var(--shadow-primary);
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+    box-shadow: var(--shadow-error);
+  }
+
+  .btn-icon {
+    @apply h-10 w-10;
+    padding: 0;
+  }
+
+  .btn-full-width {
+    @apply w-full;
+  }
+
+  /* ========================================================================== */
+  /* Input Component Styles                                                     */
+  /* ========================================================================== */
+
+  .input {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    min-height: var(--input-height-md);
+    padding: 0 var(--input-padding-x-md);
+    transition: var(--transition-colors);
+  }
+
+  .input-sm {
+    min-height: var(--input-height-sm);
+    padding: 0 var(--input-padding-x-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .input-lg {
+    min-height: var(--input-height-lg);
+    padding: 0 var(--input-padding-x-lg);
+    font-size: var(--font-size-lg);
+  }
+
+  .input-error {
+    @apply border-destructive focus-visible:ring-destructive;
+  }
+
+  .input-success {
+    @apply border-green-500 focus-visible:ring-green-500;
+  }
+
+  .input-with-icon {
+    @apply pl-10;
+  }
+
+  .input-with-right-icon {
+    @apply pr-10;
+  }
+
+  /* ========================================================================== */
+  /* Card Component Styles                                                      */
+  /* ========================================================================== */
+
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+    padding: var(--card-padding-md);
+    border-radius: var(--card-radius);
+    border-width: var(--card-border-width);
+    transition: var(--transition-colors), var(--transition-shadow);
+  }
+
+  .card-sm {
+    padding: var(--card-padding-sm);
+  }
+
+  .card-lg {
+    padding: var(--card-padding-lg);
+  }
+
+  .card-interactive {
+    @apply cursor-pointer hover:shadow-md hover:border-primary/20;
+    transition: var(--transition-colors), var(--transition-shadow), var(--transition-transform);
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px);
+  }
+
+  .card-elevated {
+    box-shadow: var(--shadow-lg);
+    @apply border-0;
+  }
+
+  .card-outlined {
+    @apply border-2;
+  }
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+    padding: var(--card-padding-md) var(--card-padding-md) 0;
+  }
+
+  .card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .card-content {
+    @apply p-6 pt-0;
+    padding: var(--card-padding-md) 0;
+  }
+
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+    padding: var(--card-padding-md) var(--card-padding-md) 0;
+  }
+
+  /* ========================================================================== */
+  /* Badge Component Styles                                                     */
+  /* ========================================================================== */
+
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .badge-default {
+    @apply border-transparent bg-primary text-primary-foreground hover:bg-primary/80;
+  }
+
+  .badge-secondary {
+    @apply border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  .badge-destructive {
+    @apply border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80;
+  }
+
+  .badge-outline {
+    @apply text-foreground;
+  }
+
+  .badge-success {
+    @apply border-transparent bg-green-500 text-white hover:bg-green-600;
+  }
+
+  .badge-warning {
+    @apply border-transparent bg-yellow-500 text-white hover:bg-yellow-600;
+  }
+
+  .badge-info {
+    @apply border-transparent bg-blue-500 text-white hover:bg-blue-600;
+  }
+
+  /* ========================================================================== */
+  /* Dialog Component Styles                                                    */
+  /* ========================================================================== */
+
+  .dialog-overlay {
+    @apply fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0;
+  }
+
+  .dialog-content {
+    @apply fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2xl);
+  }
+
+  .dialog-header {
+    @apply flex flex-col space-y-1.5 text-center sm:text-left;
+  }
+
+  .dialog-title {
+    @apply text-lg font-semibold leading-none tracking-tight;
+  }
+
+  .dialog-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .dialog-footer {
+    @apply flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2;
+  }
+
+  /* ========================================================================== */
+  /* Tabs Component Styles                                                      */
+  /* ========================================================================== */
+
+  .tabs {
+    @apply w-full;
+  }
+
+  .tabs-list {
+    @apply inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground;
+  }
+
+  .tabs-list-underline {
+    @apply relative border-b bg-transparent p-0;
+  }
+
+  .tabs-list-pills {
+    @apply bg-background p-1 border rounded-lg;
+  }
+
+  .tabs-trigger {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm;
+  }
+
+  .tabs-list-underline .tabs-trigger {
+    @apply border-b-2 border-transparent rounded-none bg-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none;
+  }
+
+  .tabs-list-pills .tabs-trigger {
+    @apply rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground;
+  }
+
+  .tabs-content {
+    @apply mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* ========================================================================== */
+  /* Progress Component Styles                                                  */
+  /* ========================================================================== */
+
+  .progress {
+    @apply relative h-4 w-full overflow-hidden rounded-full bg-secondary;
+  }
+
+  .progress-sm {
+    @apply h-2;
+  }
+
+  .progress-lg {
+    @apply h-6;
+  }
+
+  .progress-indicator {
+    @apply h-full w-full flex-1 bg-primary transition-all;
+    transition: var(--transition-base);
+  }
+
+  .progress-animated .progress-indicator {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 200% 100%;
+    animation: progress-shimmer 2s infinite;
+  }
+
+  .progress-success .progress-indicator {
+    @apply bg-green-500;
+  }
+
+  .progress-warning .progress-indicator {
+    @apply bg-yellow-500;
+  }
+
+  .progress-error .progress-indicator {
+    @apply bg-red-500;
+  }
+
+  /* ========================================================================== */
+  /* SearchBar Component Styles                                                 */
+  /* ========================================================================== */
+
+  .search-bar {
+    @apply relative flex w-full max-w-sm items-center space-x-2;
+  }
+
+  .search-input {
+    @apply pl-10;
+  }
+
+  .search-icon {
+    @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none;
+  }
+
+  .search-clear {
+    @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground;
+  }
+
+  .search-suggestions {
+    @apply absolute top-full left-0 right-0 z-50 mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto;
+  }
+
+  .search-suggestion {
+    @apply px-3 py-2 hover:bg-accent cursor-pointer text-sm;
+  }
+
+  .search-suggestion-active {
+    @apply bg-accent;
+  }
+
+  /* ========================================================================== */
+  /* Theme Switcher Component Styles                                            */
+  /* ========================================================================== */
+
+  .theme-switcher {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input;
+  }
+
+  .theme-switcher-thumb {
+    @apply pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0;
+  }
+
+  /* ========================================================================== */
+  /* Form Component Styles                                                      */
+  /* ========================================================================== */
+
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  }
+
+  .form-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .form-message {
+    @apply text-sm;
+  }
+
+  .form-error {
+    @apply text-destructive;
+  }
+
+  .form-success {
+    @apply text-green-600;
+  }
+
+  /* ========================================================================== */
+  /* Loading States                                                             */
+  /* ========================================================================== */
+
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-muted border-t-primary;
+  }
+
+  .loading-dots {
+    @apply inline-flex space-x-1;
+  }
+
+  .loading-dots span {
+    @apply w-2 h-2 bg-current rounded-full animate-pulse;
+  }
+
+  .loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  /* ========================================================================== */
+  /* Skeleton Loading States                                                    */
+  /* ========================================================================== */
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+
+  .skeleton-text {
+    @apply h-4 w-full;
+  }
+
+  .skeleton-text-sm {
+    @apply h-3 w-full;
+  }
+
+  .skeleton-text-lg {
+    @apply h-6 w-full;
+  }
+
+  .skeleton-avatar {
+    @apply h-10 w-10 rounded-full;
+  }
+
+  .skeleton-button {
+    @apply h-10 w-20 rounded-md;
+  }
+
+  /* ========================================================================== */
+  /* Utility Classes                                                            */
+  /* ========================================================================== */
+
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section {
+    @apply py-16 md:py-24;
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* ========================================================================== */
+  /* Animations                                                                 */
+  /* ========================================================================== */
+
+  @keyframes progress-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn var(--transition-base) ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp var(--transition-base) ease-out;
+  }
+
+  .animate-slide-down {
+    animation: slideDown var(--transition-base) ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn var(--transition-base) ease-out;
+  }
+}

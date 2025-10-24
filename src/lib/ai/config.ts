@@ -51,7 +51,8 @@ export function getAIServiceConfig(): AIServiceConfig {
       zhipu: {
         name: '智谱AI GLM',
         apiKey: process.env.ZHIPU_API_KEY || '',
-        baseURL: process.env.ZHIPU_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4',
+        baseURL:
+          process.env.ZHIPU_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4',
         model: process.env.ZHIPU_MODEL || 'glm-4',
         maxTokens: 4096,
         temperature: 0.3,
@@ -81,7 +82,9 @@ export function getAIServiceConfig(): AIServiceConfig {
       qwen: {
         name: '通义千问',
         apiKey: process.env.QWEN_API_KEY || '',
-        baseURL: process.env.QWEN_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        baseURL:
+          process.env.QWEN_BASE_URL ||
+          'https://dashscope.aliyuncs.com/compatible-mode/v1',
         model: process.env.QWEN_MODEL || 'qwen-turbo',
         maxTokens: 4096,
         temperature: 0.3,
@@ -100,7 +103,10 @@ export function getAIServiceConfig(): AIServiceConfig {
       },
     },
     primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'openai',
-    fallbackProviders: (process.env.AI_PROVIDERS_PRIORITY || 'anthropic,zhipu,deepseek,kimi,qwen,ollama').split(','),
+    fallbackProviders: (
+      process.env.AI_PROVIDERS_PRIORITY ||
+      'anthropic,zhipu,deepseek,kimi,qwen,ollama'
+    ).split(','),
     retryAttempts: 3,
     timeoutMs: 30000,
   };
@@ -139,8 +145,9 @@ export function getFallbackProviders(excludeProvider?: string): string[] {
   const config = getAIServiceConfig();
   const availableProviders = getAvailableProviders();
 
-  return config.fallbackProviders.filter(provider =>
-    availableProviders.includes(provider) && provider !== excludeProvider
+  return config.fallbackProviders.filter(
+    provider =>
+      availableProviders.includes(provider) && provider !== excludeProvider,
   );
 }
 

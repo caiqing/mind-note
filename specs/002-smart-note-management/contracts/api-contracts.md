@@ -1,13 +1,12 @@
 # API Contracts: Smart Note Management
 
-**Version**: 1.0.0
-**Date**: 2025-10-23
-**Base URL**: `http://localhost:3000/api/v1`
+**Version**: 1.0.0 **Date**: 2025-10-23 **Base URL**: `http://localhost:3000/api/v1`
 **Authentication**: Bearer Token (NextAuth.js)
 
 ## Overview
 
-智能笔记管理功能的RESTful API设计，支持笔记的完整生命周期管理、AI分析处理和高级搜索功能。API遵循REST设计原则，提供统一的错误处理和响应格式。
+智能笔记管理功能的RESTful
+API设计，支持笔记的完整生命周期管理、AI分析处理和高级搜索功能。API遵循REST设计原则，提供统一的错误处理和响应格式。
 
 ## API Architecture
 
@@ -41,16 +40,19 @@ graph TD
 ## Authentication & Authorization
 
 ### Authentication Header
+
 ```http
 Authorization: Bearer <JWT_TOKEN>
 ```
 
 ### User Context
+
 所有API请求都需要有效的用户会话，系统会自动从JWT token中提取用户信息。
 
 ## Common Response Format
 
 ### Success Response
+
 ```json
 {
   "success": true,
@@ -66,6 +68,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 ### Error Response
+
 ```json
 {
   "success": false,
@@ -86,6 +89,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 ### Paginated Response
+
 ```json
 {
   "success": true,
@@ -110,23 +114,24 @@ Authorization: Bearer <JWT_TOKEN>
 
 ## Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `VALIDATION_ERROR` | 400 | Request validation failed |
-| `UNAUTHORIZED` | 401 | Authentication required |
-| `FORBIDDEN` | 403 | Access denied |
-| `NOT_FOUND` | 404 | Resource not found |
-| `CONFLICT` | 409 | Resource conflict |
-| `RATE_LIMITED` | 429 | Rate limit exceeded |
-| `AI_SERVICE_ERROR` | 502 | AI service unavailable |
-| `INTERNAL_ERROR` | 500 | Internal server error |
-| `DATABASE_ERROR` | 500 | Database operation failed |
+| Code               | HTTP Status | Description               |
+| ------------------ | ----------- | ------------------------- |
+| `VALIDATION_ERROR` | 400         | Request validation failed |
+| `UNAUTHORIZED`     | 401         | Authentication required   |
+| `FORBIDDEN`        | 403         | Access denied             |
+| `NOT_FOUND`        | 404         | Resource not found        |
+| `CONFLICT`         | 409         | Resource conflict         |
+| `RATE_LIMITED`     | 429         | Rate limit exceeded       |
+| `AI_SERVICE_ERROR` | 502         | AI service unavailable    |
+| `INTERNAL_ERROR`   | 500         | Internal server error     |
+| `DATABASE_ERROR`   | 500         | Database operation failed |
 
 ## Core API Endpoints
 
 ### 1. Notes Management
 
 #### Create Note
+
 ```http
 POST /api/v1/notes
 Content-Type: application/json
@@ -144,6 +149,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -169,11 +175,13 @@ Content-Type: application/json
 ```
 
 #### Get Note by ID
+
 ```http
 GET /api/v1/notes/{noteId}
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -213,6 +221,7 @@ GET /api/v1/notes/{noteId}
 ```
 
 #### Update Note
+
 ```http
 PUT /api/v1/notes/{noteId}
 Content-Type: application/json
@@ -229,11 +238,13 @@ Content-Type: application/json
 ```
 
 #### Delete Note
+
 ```http
 DELETE /api/v1/notes/{noteId}
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -245,11 +256,13 @@ DELETE /api/v1/notes/{noteId}
 ```
 
 #### List Notes
+
 ```http
 GET /api/v1/notes?page=1&limit=20&status=PUBLISHED&categoryId=1&tags=important,work&search=productivity&sortBy=createdAt&sortOrder=desc
 ```
 
 **Query Parameters**:
+
 - `page`: Page number (default: 1)
 - `limit`: Items per page (default: 20, max: 100)
 - `status`: Filter by status (DRAFT, PUBLISHED, ARCHIVED)
@@ -260,6 +273,7 @@ GET /api/v1/notes?page=1&limit=20&status=PUBLISHED&categoryId=1&tags=important,w
 - `sortOrder`: Sort order (asc, desc)
 
 #### Auto-save Note
+
 ```http
 POST /api/v1/notes/{noteId}/autosave
 Content-Type: application/json
@@ -272,6 +286,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -286,6 +301,7 @@ Content-Type: application/json
 ### 2. Categories Management
 
 #### Create Category
+
 ```http
 POST /api/v1/categories
 Content-Type: application/json
@@ -300,11 +316,13 @@ Content-Type: application/json
 ```
 
 #### Get Categories
+
 ```http
 GET /api/v1/categories?includeEmpty=false
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -333,11 +351,13 @@ GET /api/v1/categories?includeEmpty=false
 ### 3. Tags Management
 
 #### Get Popular Tags
+
 ```http
 GET /api/v1/tags/popular?limit=20
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -355,6 +375,7 @@ GET /api/v1/tags/popular?limit=20
 ```
 
 #### Suggest Tags
+
 ```http
 GET /api/v1/tags/suggest?q=productivity&limit=10
 ```
@@ -362,6 +383,7 @@ GET /api/v1/tags/suggest?q=productivity&limit=10
 ### 4. Search & Discovery
 
 #### Full-text Search
+
 ```http
 POST /api/v1/search
 Content-Type: application/json
@@ -389,6 +411,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -399,9 +422,7 @@ Content-Type: application/json
         "title": "Productivity Tools Review",
         "content": "Review of latest productivity tools...",
         "relevanceScore": 0.95,
-        "highlights": [
-          "Latest <mark>productivity</mark> <mark>tools</mark> for remote work"
-        ],
+        "highlights": ["Latest <mark>productivity</mark> <mark>tools</mark> for remote work"],
         "createdAt": "2025-10-20T14:30:00Z"
       }
     ],
@@ -420,11 +441,13 @@ Content-Type: application/json
 ```
 
 #### Similar Notes
+
 ```http
 GET /api/v1/notes/{noteId}/similar?limit=5&excludeProcessed=false
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -445,6 +468,7 @@ GET /api/v1/notes/{noteId}/similar?limit=5&excludeProcessed=false
 ### 5. AI Processing
 
 #### Trigger AI Analysis
+
 ```http
 POST /api/v1/notes/{noteId}/ai-analyze
 Content-Type: application/json
@@ -461,6 +485,7 @@ Content-Type: application/json
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -473,11 +498,13 @@ Content-Type: application/json
 ```
 
 #### Get AI Analysis Status
+
 ```http
 GET /api/v1/ai/tasks/{taskId}
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -502,6 +529,7 @@ GET /api/v1/ai/tasks/{taskId}
 ```
 
 #### Batch AI Analysis
+
 ```http
 POST /api/v1/ai/batch-analyze
 Content-Type: application/json
@@ -518,11 +546,13 @@ Content-Type: application/json
 ```
 
 #### AI Provider Status
+
 ```http
 GET /api/v1/ai/providers/status
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -558,6 +588,7 @@ GET /api/v1/ai/providers/status
 ### 6. Import/Export
 
 #### Import Notes
+
 ```http
 POST /api/v1/import
 Content-Type: multipart/form-data
@@ -572,6 +603,7 @@ options: {
 ```
 
 #### Export Notes
+
 ```http
 POST /api/v1/export
 Content-Type: application/json
@@ -595,11 +627,13 @@ Content-Type: application/json
 ### 7. Analytics & Insights
 
 #### Get Note Statistics
+
 ```http
 GET /api/v1/analytics/notes?period=30d&groupBy=day
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -611,12 +645,12 @@ GET /api/v1/analytics/notes?period=30d&groupBy=day
       "aiProcessedNotes": 142,
       "averageNoteLength": 850,
       "topCategories": [
-        {"name": "Work", "count": 45},
-        {"name": "Personal", "count": 38}
+        { "name": "Work", "count": 45 },
+        { "name": "Personal", "count": 38 }
       ],
       "topTags": [
-        {"name": "important", "count": 62},
-        {"name": "todo", "count": 48}
+        { "name": "important", "count": 62 },
+        { "name": "todo", "count": 48 }
       ]
     },
     "timeline": [
@@ -632,11 +666,13 @@ GET /api/v1/analytics/notes?period=30d&groupBy=day
 ```
 
 #### Get AI Usage Statistics
+
 ```http
 GET /api/v1/analytics/ai-usage?period=30d
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -652,7 +688,7 @@ GET /api/v1/analytics/ai-usage?period=30d
       {
         "provider": "zhipu",
         "requests": 800,
-        "cost": 6.40,
+        "cost": 6.4,
         "tokens": 160000,
         "avgResponseTime": 1200
       }
@@ -671,6 +707,7 @@ GET /api/v1/analytics/ai-usage?period=30d
 ## Request/Response Validation
 
 ### Note Creation/Update Schema
+
 ```typescript
 interface NoteRequest {
   title: string; // Required, max 200 chars
@@ -704,6 +741,7 @@ interface NoteResponse {
 ```
 
 ### AI Analysis Request Schema
+
 ```typescript
 interface AIAnalysisRequest {
   operations: ('categorize' | 'tag' | 'summarize')[];
@@ -719,16 +757,17 @@ interface AIAnalysisRequest {
 
 ## Rate Limiting
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| Notes CRUD | 1000 requests | 15 minutes |
-| AI Analysis | 100 requests | 15 minutes |
-| Search | 500 requests | 15 minutes |
-| Import/Export | 10 requests | 1 hour |
+| Endpoint      | Limit         | Window     |
+| ------------- | ------------- | ---------- |
+| Notes CRUD    | 1000 requests | 15 minutes |
+| AI Analysis   | 100 requests  | 15 minutes |
+| Search        | 500 requests  | 15 minutes |
+| Import/Export | 10 requests   | 1 hour     |
 
 ## Webhook Events
 
 ### Note Events
+
 ```json
 {
   "event": "note.created",
@@ -742,6 +781,7 @@ interface AIAnalysisRequest {
 ```
 
 ### AI Processing Events
+
 ```json
 {
   "event": "ai.processing.completed",
@@ -759,28 +799,30 @@ interface AIAnalysisRequest {
 ## SDK Examples
 
 ### JavaScript/TypeScript
+
 ```typescript
 import { MindNoteAPI } from '@mindnote/sdk';
 
 const api = new MindNoteAPI({
   baseURL: 'http://localhost:3000/api/v1',
-  token: 'your-jwt-token'
+  token: 'your-jwt-token',
 });
 
 // Create note
 const note = await api.notes.create({
   title: 'My Note',
   content: 'Note content',
-  tags: ['important']
+  tags: ['important'],
 });
 
 // AI analysis
 const analysis = await api.ai.analyze(note.id, {
-  operations: ['categorize', 'tag', 'summarize']
+  operations: ['categorize', 'tag', 'summarize'],
 });
 ```
 
 ### Python
+
 ```python
 from mindnote_sdk import MindNoteClient
 
@@ -806,6 +848,7 @@ results = client.search.notes(
 ## Testing
 
 ### API Testing Examples
+
 ```bash
 # Health check
 curl -X GET http://localhost:3000/api/v1/health
@@ -842,6 +885,7 @@ curl -X POST http://localhost:3000/api/v1/search \
 ---
 
 **Next Steps**:
+
 1. Implement API routes in Next.js
 2. Create request/response validation schemas
 3. Set up authentication middleware

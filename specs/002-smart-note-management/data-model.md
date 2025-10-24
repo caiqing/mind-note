@@ -1,8 +1,7 @@
 # Data Model Design: Smart Note Management
 
-**Date**: 2025-10-23
-**Purpose**: Design and document the data model for smart note management feature
-**Feature**: 002-smart-note-management
+**Date**: 2025-10-23 **Purpose**: Design and document the data model for smart note management
+feature **Feature**: 002-smart-note-management
 
 ## Overview
 
@@ -147,11 +146,13 @@ erDiagram
 **用途**: 存储用户账户信息和偏好设置
 
 **关键字段**:
+
 - `aiPreferences`: JSON字段存储AI相关偏好（如首选AI服务商、标签偏好等）
 - `settings`: 用户应用设置（界面主题、语言等）
 - `emailVerified`: 邮箱验证状态
 
 **AI相关设计**:
+
 ```sql
 ai_preferences JSON DEFAULT '{
   "primaryProvider": "openai",
@@ -168,6 +169,7 @@ ai_preferences JSON DEFAULT '{
 **用途**: 存储笔记内容和元数据
 
 **AI相关字段**:
+
 - `contentVector`: pgvector向量嵌入，用于语义搜索
 - `aiProcessed`: 标记是否已完成AI分析
 - `aiSummary`: AI生成的摘要
@@ -175,6 +177,7 @@ ai_preferences JSON DEFAULT '{
 - `aiProcessedAt`: AI处理时间戳
 
 **数据完整性约束**:
+
 ```sql
 -- 标题不能为空
 CHECK (LENGTH(TRIM(title)) > 0)
@@ -189,6 +192,7 @@ CHECK (view_count >= 0)
 ```
 
 **向量搜索优化**:
+
 ```sql
 -- HNSW索引 (快速精确搜索)
 @@index([contentVector], map: "idx_content_vector_hnsw", using: HNSW)
@@ -201,11 +205,13 @@ CHECK (view_count >= 0)
 **用途**: 层级化笔记分类管理
 
 **设计特点**:
+
 - 支持无限层级分类（通过`parent_id`自引用）
 - 用户级别的分类隔离
 - 支持颜色和图标自定义
 
 **分类层级示例**:
+
 ```
 工作 (parent_id: null)
 ├── 项目A (parent_id: 1)
@@ -221,6 +227,7 @@ CHECK (view_count >= 0)
 **用途**: 扁平化标签管理，支持多对多关系
 
 **统计字段**:
+
 - `usageCount`: 标签使用次数，便于热门标签推荐
 - `category`: 标签分类（如：技术、生活、工作等）
 
@@ -229,6 +236,7 @@ CHECK (view_count >= 0)
 **用途**: 实现笔记和标签的多对多关系
 
 **设计考虑**:
+
 - 复合主键确保同一笔记不会重复添加相同标签
 - 记录标签添加时间，用于分析用户行为
 
@@ -237,6 +245,7 @@ CHECK (view_count >= 0)
 **用途**: 存储笔记间的关联关系
 
 **关系类型**:
+
 - `SIMILAR`: 相似内容
 - `REFERENCE`: 引用关系
 - `SEQUENCE`: 序列关系
@@ -244,6 +253,7 @@ CHECK (view_count >= 0)
 - `VERSION`: 版本关系
 
 **AI生成标识**:
+
 - `aiGenerated`: 标记关系是否由AI自动发现
 - `strengthScore`: 关系强度评分（0-1）
 
@@ -252,6 +262,7 @@ CHECK (view_count >= 0)
 **用途**: 记录所有AI服务的调用和处理结果
 
 **关键信息**:
+
 - `processingType`: 处理类型（分类、标签、摘要等）
 - `provider`: AI服务提供商
 - `model`: 使用的具体模型
@@ -264,6 +275,7 @@ CHECK (view_count >= 0)
 **用途**: 收集用户对AI分析结果的反馈
 
 **反馈类型**:
+
 - `CATEGORY_CORRECTION`: 分类修正
 - `TAG_ADJUSTMENT`: 标签调整
 - `SUMMARY_QUALITY`: 摘要质量
@@ -275,27 +287,35 @@ CHECK (view_count >= 0)
 ### 主要查询模式分析
 
 1. **用户笔记列表查询**:
+
    ```sql
    WHERE user_id = ? ORDER BY created_at DESC
    ```
+
    索引: `[userId, createdAt(sort: Desc)]`
 
 2. **按状态筛选笔记**:
+
    ```sql
    WHERE user_id = ? AND status = ?
    ```
+
    索引: `[userId, status]`
 
 3. **全文搜索**:
+
    ```sql
    WHERE content_vector <=> ? (向量相似度搜索)
    ```
+
    索引: 向量索引（HNSW + IVFFlat）
 
 4. **标签筛选**:
+
    ```sql
    WHERE tags @> ARRAY['tag1', 'tag2']
    ```
+
    索引: GIN索引用于数组类型
 
 5. **AI处理状态查询**:
@@ -339,13 +359,13 @@ CREATE INDEX idx_user_feedback_rating ON user_feedback(feedback_type, rating DES
 
 ### 向量嵌入设计
 
-**嵌入维度**: 1536维（OpenAI text-embedding-ada-002标准）
-**距离函数**: 余弦相似度（cosine similarity）
-**索引策略**: HNSW（快速精确搜索）+ IVFFlat（大规模搜索）
+**嵌入维度**: 1536维（OpenAI text-embedding-ada-002标准） **距离函数**: 余弦相似度（cosine
+similarity） **索引策略**: HNSW（快速精确搜索）+ IVFFlat（大规模搜索）
 
 ### 向量搜索查询模式
 
 1. **相似笔记搜索**:
+
    ```sql
    SELECT *,
           content_vector <=> ?::vector as similarity_score
@@ -393,6 +413,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ### 版本迁移
 
 使用Prisma Migrate进行版本化管理：
+
 ```bash
 npx prisma migrate dev --name add-vector-search
 npx prisma migrate dev --name add-ai-processing-logs
@@ -404,6 +425,7 @@ npx prisma migrate dev --name optimize-performance-indexes
 ### 1. 查询优化
 
 **分区策略**: 对大表按时间分区
+
 ```sql
 -- 按月分区AI处理日志表
 CREATE TABLE ai_processing_logs_2025_01 PARTITION OF ai_processing_logs
@@ -413,6 +435,7 @@ FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
 ### 2. 缓存策略
 
 **Redis缓存层**:
+
 - 用户笔记列表缓存（TTL: 5分钟）
 - AI分析结果缓存（TTL: 1小时）
 - 热门标签缓存（TTL: 30分钟）
@@ -420,6 +443,7 @@ FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
 ### 3. 批量处理
 
 **AI处理队列**:
+
 ```sql
 -- 获取待处理的笔记批次
 SELECT id, content
@@ -498,6 +522,7 @@ GROUP BY provider, model, processing_type;
 ### 1. 多租户支持
 
 为未来的团队协作功能预留设计：
+
 ```sql
 -- 租户表设计
 CREATE TABLE tenants (
@@ -560,6 +585,7 @@ GROUP BY DATE(created_at);
 ---
 
 **Next Steps**:
+
 1. 执行数据库迁移创建表结构
 2. 实现AI处理队列和批量处理逻辑
 3. 开发向量搜索和相似性推荐功能

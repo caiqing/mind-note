@@ -1,8 +1,7 @@
 # Quick Start Guide: Smart Note Management
 
-**Version**: 1.0.0
-**Date**: 2025-10-23
-**Purpose**: Quick setup and development guide for smart note management feature
+**Version**: 1.0.0 **Date**: 2025-10-23 **Purpose**: Quick setup and development guide for smart
+note management feature
 
 ## 🚀 Quick Start
 
@@ -85,13 +84,13 @@ const response = await fetch('/api/v1/notes', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    Authorization: `Bearer ${token}`,
   },
   body: JSON.stringify({
     title: '我的第一个智能笔记',
     content: '这是一个测试笔记的内容，包含一些重要信息。',
-    tags: ['测试', '重要']
-  })
+    tags: ['测试', '重要'],
+  }),
 });
 
 const note = await response.json();
@@ -106,16 +105,16 @@ const analysisResponse = await fetch(`/api/v1/notes/${note.data.id}/ai-analyze`,
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    Authorization: `Bearer ${token}`,
   },
   body: JSON.stringify({
     operations: ['categorize', 'tag', 'summarize'],
     provider: 'auto',
     options: {
       language: 'zh-CN',
-      maxTags: 5
-    }
-  })
+      maxTags: 5,
+    },
+  }),
 });
 
 const analysis = await analysisResponse.json();
@@ -128,8 +127,8 @@ console.log('AI分析任务已启动:', analysis.data.taskId);
 // 检查分析状态
 const statusResponse = await fetch(`/api/v1/ai/tasks/${analysis.data.taskId}`, {
   headers: {
-    'Authorization': `Bearer ${token}`
-  }
+    Authorization: `Bearer ${token}`,
+  },
 });
 
 const status = await statusResponse.json();
@@ -216,7 +215,7 @@ describe('POST /api/v1/notes', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({
         title: 'Test Note',
-        content: 'Test content'
+        content: 'Test content',
       });
 
     expect(response.status).toBe(201);
@@ -276,13 +275,13 @@ docker-compose logs postgres | grep ai_processing
 ```javascript
 // 检查AI服务状态
 const statusResponse = await fetch('/api/v1/ai/providers/status', {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 console.log('AI服务状态:', await statusResponse.json());
 
 // 查看AI使用统计
 const usageResponse = await fetch('/api/v1/analytics/ai-usage?period=7d', {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 console.log('AI使用统计:', await usageResponse.json());
 ```
@@ -310,6 +309,7 @@ time curl -X POST http://localhost:3000/api/v1/search \
 **症状**: AI分析返回502错误
 
 **解决方案**:
+
 ```bash
 # 检查API密钥配置
 echo $OPENAI_API_KEY
@@ -327,6 +327,7 @@ curl -X POST https://api.openai.com/v1/chat/completions \
 **症状**: 搜索结果为空或不相关
 
 **解决方案**:
+
 ```bash
 # 检查pgvector扩展
 docker-compose exec postgres psql -U mindnote -d mindnote_dev -c "SELECT * FROM pg_extension WHERE extname = 'vector'"
@@ -344,6 +345,7 @@ npm run db:seed
 **症状**: API响应时间过长
 
 **解决方案**:
+
 ```bash
 # 检查数据库查询性能
 docker-compose exec postgres psql -U mindnote -d mindnote_dev -c "SELECT * FROM pg_stat_statements WHERE mean_time > 1000 ORDER BY mean_time DESC LIMIT 10;"
@@ -359,13 +361,13 @@ npx prisma db push --force-reset
 
 ### 关键性能指标
 
-| 指标 | 目标值 | 监控方法 |
-|------|--------|----------|
-| API响应时间 | <500ms (P95) | APM工具 |
-| AI分析时间 | <3秒 | AI使用统计 |
-| 数据库查询 | <100ms | 慢查询日志 |
-| 缓存命中率 | >80% | Redis监控 |
-| 错误率 | <1% | 错误日志 |
+| 指标        | 目标值       | 监控方法   |
+| ----------- | ------------ | ---------- |
+| API响应时间 | <500ms (P95) | APM工具    |
+| AI分析时间  | <3秒         | AI使用统计 |
+| 数据库查询  | <100ms       | 慢查询日志 |
+| 缓存命中率  | >80%         | Redis监控  |
+| 错误率      | <1%          | 错误日志   |
 
 ### 监控命令
 

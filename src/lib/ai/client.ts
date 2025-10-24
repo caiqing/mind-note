@@ -3,7 +3,12 @@
  * 支持多个AI服务提供商的统一调用接口
  */
 
-import { getAIServiceConfig, getPrimaryProvider, getFallbackProviders, AIProvider } from './config';
+import {
+  getAIServiceConfig,
+  getPrimaryProvider,
+  getFallbackProviders,
+  AIProvider,
+} from './config';
 
 export interface AIResponse {
   content: string;
@@ -134,7 +139,10 @@ export class AIServiceManager {
   /**
    * 生成笔记标签
    */
-  async generateTags(content: string, existingTags?: string[]): Promise<AIResponse> {
+  async generateTags(
+    content: string,
+    existingTags?: string[],
+  ): Promise<AIResponse> {
     const request: AIRequest = {
       content,
       includeMetadata: true,
@@ -163,7 +171,9 @@ export class AIServiceManager {
   /**
    * 批量处理笔记分析
    */
-  async batchAnalyze(notes: Array<{ id: string; content: string }>): Promise<Map<string, AIResponse>> {
+  async batchAnalyze(
+    notes: Array<{ id: string; content: string }>,
+  ): Promise<Map<string, AIResponse>> {
     const results = new Map<string, AIResponse>();
     const batchSize = 5; // 限制并发数量
     const delayBetweenBatches = 1000; // 批次间延迟1秒
@@ -171,7 +181,7 @@ export class AIServiceManager {
     for (let i = 0; i < notes.length; i += batchSize) {
       const batch = notes.slice(i, i + batchSize);
 
-      const batchPromises = batch.map(async (note) => {
+      const batchPromises = batch.map(async note => {
         try {
           const response = await this.executeRequest({
             content: note.content,
@@ -204,8 +214,13 @@ export class AIServiceManager {
   /**
    * 获取服务状态
    */
-  async getServiceStatus(): Promise<Record<string, { available: boolean; responseTime?: number }>> {
-    const status: Record<string, { available: boolean; responseTime?: number }> = {};
+  async getServiceStatus(): Promise<
+    Record<string, { available: boolean; responseTime?: number }>
+    > {
+    const status: Record<
+      string,
+      { available: boolean; responseTime?: number }
+    > = {};
 
     for (const [provider, client] of this.clients) {
       try {
@@ -229,27 +244,36 @@ export const aiServiceManager = new AIServiceManager();
 /**
  * 便捷函数：生成笔记分类
  */
-export async function generateNoteCategories(content: string): Promise<AIResponse> {
+export async function generateNoteCategories(
+  content: string,
+): Promise<AIResponse> {
   return aiServiceManager.generateCategories(content);
 }
 
 /**
  * 便捷函数：生成笔记标签
  */
-export async function generateNoteTags(content: string, existingTags?: string[]): Promise<AIResponse> {
+export async function generateNoteTags(
+  content: string,
+  existingTags?: string[],
+): Promise<AIResponse> {
   return aiServiceManager.generateTags(content, existingTags);
 }
 
 /**
  * 便捷函数：生成笔记摘要
  */
-export async function generateNoteSummary(content: string): Promise<AIResponse> {
+export async function generateNoteSummary(
+  content: string,
+): Promise<AIResponse> {
   return aiServiceManager.generateSummary(content);
 }
 
 /**
  * 便捷函数：批量分析笔记
  */
-export async function batchAnalyzeNotes(notes: Array<{ id: string; content: string }>): Promise<Map<string, AIResponse>> {
+export async function batchAnalyzeNotes(
+  notes: Array<{ id: string; content: string }>,
+): Promise<Map<string, AIResponse>> {
   return aiServiceManager.batchAnalyze(notes);
 }

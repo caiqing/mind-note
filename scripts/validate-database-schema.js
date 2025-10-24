@@ -29,7 +29,9 @@ async function validateDatabaseSchema() {
       console.log('❌ pgvector扩展未安装，请运行: CREATE EXTENSION vector;');
       process.exit(1);
     } else {
-      console.log(`✅ pgvector扩展已安装 (版本: ${vectorExtension[0].extversion})\n`);
+      console.log(
+        `✅ pgvector扩展已安装 (版本: ${vectorExtension[0].extversion})\n`,
+      );
     }
 
     // 3. 检查表结构
@@ -41,12 +43,20 @@ async function validateDatabaseSchema() {
     `;
 
     const requiredTables = [
-      'users', 'notes', 'categories', 'tags', 'note_tags',
-      'note_relationships', 'ai_processing_logs', 'user_feedback'
+      'users',
+      'notes',
+      'categories',
+      'tags',
+      'note_tags',
+      'note_relationships',
+      'ai_processing_logs',
+      'user_feedback',
     ];
 
     const existingTables = tables.map(t => t.table_name);
-    const missingTables = requiredTables.filter(table => !existingTables.includes(table));
+    const missingTables = requiredTables.filter(
+      table => !existingTables.includes(table),
+    );
 
     if (missingTables.length > 0) {
       console.log('❌ 缺少必要的表:', missingTables.join(', '));
@@ -84,12 +94,15 @@ async function validateDatabaseSchema() {
       'idx_notes_user_created',
       'idx_content_vector_hnsw',
       'idx_content_vector_l2',
-      'idx_tags_usage_count_desc'
+      'idx_tags_usage_count_desc',
     ];
 
     const existingIndexes = indexes.map(i => i.indexname);
-    const missingIndexes = criticalIndexes.filter(index =>
-      !existingIndexes.some(existing => existing.includes(index.replace('idx_', '').replace('_desc', '')))
+    const missingIndexes = criticalIndexes.filter(
+      index =>
+        !existingIndexes.some(existing =>
+          existing.includes(index.replace('idx_', '').replace('_desc', '')),
+        ),
     );
 
     if (missingIndexes.length > 0) {
@@ -110,12 +123,12 @@ async function validateDatabaseSchema() {
     const expectedConstraints = [
       'check_title_not_empty',
       'check_content_not_empty',
-      'check_version_positive'
+      'check_version_positive',
     ];
 
     const existingConstraints = constraints.map(c => c.constraint_name);
-    const missingConstraints = expectedConstraints.filter(constraint =>
-      !existingConstraints.includes(constraint)
+    const missingConstraints = expectedConstraints.filter(
+      constraint => !existingConstraints.includes(constraint),
     );
 
     if (missingConstraints.length > 0) {
@@ -131,7 +144,7 @@ async function validateDatabaseSchema() {
     const startNoteQuery = Date.now();
     await prisma.note.findFirst({
       select: { id: true, title: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
     const noteQueryTime = Date.now() - startNoteQuery;
 
@@ -140,7 +153,7 @@ async function validateDatabaseSchema() {
     // 测试标签查询性能
     const startTagQuery = Date.now();
     await prisma.tag.findFirst({
-      orderBy: { usageCount: 'desc' }
+      orderBy: { usageCount: 'desc' },
     });
     const tagQueryTime = Date.now() - startTagQuery;
 
@@ -173,14 +186,14 @@ async function validateDatabaseSchema() {
     console.log(`✅ AI处理日志表包含 ${aiLogsCount} 条记录`);
 
     const processedNotes = await prisma.note.count({
-      where: { aiProcessed: true }
+      where: { aiProcessed: true },
     });
     console.log(`✅ 已处理的笔记数量: ${processedNotes}`);
 
     const vectorNotes = await prisma.note.count({
       where: {
-        NOT: { contentVector: null }
-      }
+        NOT: { contentVector: null },
+      },
     });
     console.log(`✅ 包含向量的笔记数量: ${vectorNotes}`);
 
@@ -193,7 +206,6 @@ async function validateDatabaseSchema() {
     console.log('✅ 索引配置合理');
     console.log('✅ 数据完整性约束有效');
     console.log('✅ AI功能支持完备');
-
   } catch (error) {
     console.error('❌ 数据库验证失败:', error);
     process.exit(1);
@@ -206,7 +218,7 @@ async function validateDatabaseSchema() {
 if (require.main === module) {
   validateDatabaseSchema()
     .then(() => process.exit(0))
-    .catch((error) => {
+    .catch(error => {
       console.error(error);
       process.exit(1);
     });

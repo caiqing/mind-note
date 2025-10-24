@@ -1,8 +1,7 @@
 # AI Service Contracts: Smart Note Management
 
-**Version**: 1.0.0
-**Date**: 2025-10-23
-**Purpose**: Define AI service integration contracts and interfaces
+**Version**: 1.0.0 **Date**: 2025-10-23 **Purpose**: Define AI service integration contracts and
+interfaces
 
 ## Overview
 
@@ -76,6 +75,7 @@ interface AIError {
 ## Category Analysis Contract
 
 ### Request Schema
+
 ```typescript
 interface CategoryRequest extends AIRequest {
   existingCategories?: string[];
@@ -99,6 +99,7 @@ interface CategoryPrediction {
 ```
 
 ### OpenAI Implementation
+
 ```typescript
 class OpenAICategoryAnalyzer implements BaseAIClient {
   async generateCategories(content: string): Promise<CategoryResponse> {
@@ -128,13 +129,13 @@ ${content}
 `;
 
     const response = await this.openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: 'gpt-4-turbo-preview',
       messages: [
-        { role: "system", content: "你是一个专业的笔记分类助手。" },
-        { role: "user", content: prompt }
+        { role: 'system', content: '你是一个专业的笔记分类助手。' },
+        { role: 'user', content: prompt },
       ],
       temperature: 0.3,
-      response_format: { type: "json_object" }
+      response_format: { type: 'json_object' },
     });
 
     return this.parseCategoryResponse(response.choices[0].message.content);
@@ -143,23 +144,24 @@ ${content}
 ```
 
 ### 智谱AI Implementation
+
 ```typescript
 class ZhipuCategoryAnalyzer implements BaseAIClient {
   async generateCategories(content: string): Promise<CategoryResponse> {
     const response = await this.client.chat.completions.create({
-      model: "glm-4",
+      model: 'glm-4',
       messages: [
         {
-          role: "system",
-          content: "你是一个专业的中文笔记分类助手，请为笔记内容推荐合适的分类。"
+          role: 'system',
+          content: '你是一个专业的中文笔记分类助手，请为笔记内容推荐合适的分类。',
         },
         {
-          role: "user",
-          content: `请分析以下笔记内容并推荐分类：\n\n${content}`
-        }
+          role: 'user',
+          content: `请分析以下笔记内容并推荐分类：\n\n${content}`,
+        },
       ],
       temperature: 0.3,
-      max_tokens: 1000
+      max_tokens: 1000,
     });
 
     return this.parseCategoryResponse(response.choices[0].message.content);
@@ -170,6 +172,7 @@ class ZhipuCategoryAnalyzer implements BaseAIClient {
 ## Tag Generation Contract
 
 ### Request Schema
+
 ```typescript
 interface TagRequest extends AIRequest {
   existingTags?: string[];
@@ -183,7 +186,7 @@ enum TagType {
   PRIORITY = 'priority',
   STATUS = 'status',
   EMOTION = 'emotion',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 interface TagResponse {
@@ -204,6 +207,7 @@ interface TagPrediction {
 ### Tag Generation Examples
 
 #### OpenAI Prompt Template
+
 ```typescript
 const tagPrompt = `
 为以下笔记内容生成相关的标签。
@@ -237,6 +241,7 @@ ${content}
 ## Summary Generation Contract
 
 ### Request Schema
+
 ```typescript
 interface SummaryRequest extends AIRequest {
   maxLength?: number; // default: 200 characters
@@ -248,7 +253,7 @@ interface SummaryRequest extends AIRequest {
 enum SummaryStyle {
   BULLET = 'bullet',
   PARAGRAPH = 'paragraph',
-  KEY_POINTS = 'key_points'
+  KEY_POINTS = 'key_points',
 }
 
 interface SummaryResponse {
@@ -264,6 +269,7 @@ interface SummaryResponse {
 ### Summary Generation Examples
 
 #### DeepSeek Implementation
+
 ```typescript
 class DeepSeekSummarizer implements BaseAIClient {
   async generateSummary(content: string, options?: SummaryOptions): Promise<SummaryResponse> {
@@ -286,13 +292,13 @@ ${style === 'key_points' ? '- 请以要点形式输出' : ''}
 `;
 
     const response = await this.client.chat.completions.create({
-      model: "deepseek-chat",
+      model: 'deepseek-chat',
       messages: [
-        { role: "system", content: "你是一个专业的内容摘要助手。" },
-        { role: "user", content: prompt }
+        { role: 'system', content: '你是一个专业的内容摘要助手。' },
+        { role: 'user', content: prompt },
       ],
       temperature: 0.2,
-      max_tokens: 500
+      max_tokens: 500,
     });
 
     return this.parseSummaryResponse(response.choices[0].message.content, options);
@@ -303,6 +309,7 @@ ${style === 'key_points' ? '- 请以要点形式输出' : ''}
 ## Keyword Extraction Contract
 
 ### Request Schema
+
 ```typescript
 interface KeywordRequest extends AIRequest {
   maxKeywords?: number; // default: 10
@@ -329,6 +336,7 @@ interface KeywordPrediction {
 ## Sentiment Analysis Contract
 
 ### Request Schema
+
 ```typescript
 interface SentimentRequest extends AIRequest {
   granularity?: 'document' | 'sentence' | 'aspect';
@@ -358,6 +366,7 @@ interface EmotionResult {
 ## Batch Processing Contract
 
 ### Request Schema
+
 ```typescript
 interface BatchRequest {
   items: BatchItem[];
@@ -383,6 +392,7 @@ type AIOperation = 'categorize' | 'tag' | 'summarize' | 'extract_keywords' | 'an
 ```
 
 ### Response Schema
+
 ```typescript
 interface BatchResponse {
   batchId: string;
@@ -414,6 +424,7 @@ interface BatchSummary {
 ## Error Handling Contracts
 
 ### Error Types
+
 ```typescript
 enum AIErrorType {
   AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
@@ -424,7 +435,7 @@ enum AIErrorType {
   PROCESSING_ERROR = 'PROCESSING_ERROR',
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
   NETWORK_ERROR = 'NETWORK_ERROR',
-  PARSING_ERROR = 'PARSING_ERROR'
+  PARSING_ERROR = 'PARSING_ERROR',
 }
 
 interface AIErrorResponse {
@@ -442,6 +453,7 @@ interface AIErrorResponse {
 ```
 
 ### Retry Logic
+
 ```typescript
 interface RetryConfig {
   maxAttempts: number;
@@ -460,14 +472,15 @@ const defaultRetryConfig: RetryConfig = {
     AIErrorType.NETWORK_ERROR,
     AIErrorType.TIMEOUT_ERROR,
     AIErrorType.PROCESSING_ERROR,
-    AIErrorType.RATE_LIMIT_ERROR
-  ]
+    AIErrorType.RATE_LIMIT_ERROR,
+  ],
 };
 ```
 
 ## Quality Assurance Contracts
 
 ### Response Validation
+
 ```typescript
 interface ResponseValidator {
   validate(response: AIResponse): ValidationResult;
@@ -488,6 +501,7 @@ interface ValidationError {
 ```
 
 ### Quality Metrics
+
 ```typescript
 interface QualityMetrics {
   accuracy: number; // 分类准确率
@@ -508,6 +522,7 @@ interface QualityAssessment {
 ## Cost Management Contracts
 
 ### Cost Tracking
+
 ```typescript
 interface CostTracker {
   trackUsage(usage: TokenUsage, provider: string): void;
@@ -536,6 +551,7 @@ interface BudgetStatus {
 ## Configuration Management
 
 ### Provider Configuration
+
 ```typescript
 interface ProviderConfig {
   name: string;
@@ -565,6 +581,7 @@ interface RateLimitConfig {
 ## Integration Examples
 
 ### Multi-Provider Usage
+
 ```typescript
 class AIServiceOrchestrator {
   private providers: Map<string, BaseAIClient>;
@@ -576,7 +593,7 @@ class AIServiceOrchestrator {
     try {
       const result = await provider.generateResponse({
         content,
-        ...options
+        ...options,
       });
 
       await this.trackUsage(provider.name, result.tokensUsed);
@@ -598,6 +615,7 @@ class AIServiceOrchestrator {
 ```
 
 ### Usage Examples
+
 ```typescript
 // 基础分类分析
 const categoryResult = await aiService.analyzeNote(noteContent, {
@@ -605,22 +623,25 @@ const categoryResult = await aiService.analyzeNote(noteContent, {
   provider: 'zhipu',
   options: {
     maxCategories: 3,
-    confidence: 0.8
-  }
+    confidence: 0.8,
+  },
 });
 
 // 批量分析
-const batchResult = await aiService.batchAnalyze([
-  { id: '1', content: note1 },
-  { id: '2', content: note2 },
-  { id: '3', content: note3 }
-], {
-  operations: ['categorize', 'tag', 'summarize'],
-  options: {
-    batchSize: 2,
-    maxConcurrency: 2
-  }
-});
+const batchResult = await aiService.batchAnalyze(
+  [
+    { id: '1', content: note1 },
+    { id: '2', content: note2 },
+    { id: '3', content: note3 },
+  ],
+  {
+    operations: ['categorize', 'tag', 'summarize'],
+    options: {
+      batchSize: 2,
+      maxConcurrency: 2,
+    },
+  },
+);
 
 // 高级分析
 const advancedResult = await aiService.advancedAnalysis(noteContent, {
@@ -630,14 +651,15 @@ const advancedResult = await aiService.advancedAnalysis(noteContent, {
     language: 'zh-CN',
     maxTags: 8,
     summaryLength: 150,
-    qualityThreshold: 0.85
-  }
+    qualityThreshold: 0.85,
+  },
 });
 ```
 
 ## Testing Contracts
 
 ### Mock Services
+
 ```typescript
 interface MockAIClient extends BaseAIClient {
   setResponses(responses: Record<string, any>): void;
@@ -655,8 +677,8 @@ describe('AI Service Integration', () => {
     mockClient.setResponses({
       categorize: {
         categories: [{ name: 'Work', confidence: 0.9 }],
-        confidence: 0.9
-      }
+        confidence: 0.9,
+      },
     });
   });
 
@@ -671,6 +693,7 @@ describe('AI Service Integration', () => {
 ## Monitoring & Analytics
 
 ### Performance Metrics
+
 ```typescript
 interface PerformanceMetrics {
   responseTime: number;
@@ -692,6 +715,7 @@ interface MonitoringDashboard {
 ---
 
 **Implementation Notes**:
+
 1. 所有AI服务提供商都必须实现BaseAIClient接口
 2. 响应格式必须标准化，便于上层应用统一处理
 3. 错误处理和重试逻辑必须健壮，保证服务可靠性
