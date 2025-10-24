@@ -78,7 +78,8 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(./scripts/run-ai-migration.sh:*)",
       "Bash(psql:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
