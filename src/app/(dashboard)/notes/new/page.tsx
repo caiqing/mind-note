@@ -26,26 +26,36 @@ export default function NewNotePage() {
   const [loading, setLoading] = React.useState(false);
 
   // Event handlers
-  const handleSaveNote = React.useCallback(async (data: any) => {
-    setLoading(true);
+  const handleSaveNote = React.useCallback(
+    async (data: {
+      title: string;
+      content: string;
+      tags: string[];
+      summary?: string;
+    }) => {
+      setLoading(true);
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log('Creating new note:', data);
+        // eslint-disable-next-line no-console
+        console.log('Creating new note:', data);
 
-      // In real app, would save to backend and get the new note ID
-      // Then navigate to the note detail page or notes list
+        // In real app, would save to backend and get the new note ID
+        // Then navigate to the note detail page or notes list
 
-      // For now, navigate back to notes list
-      router.push('/notes');
-    } catch (error) {
-      console.error('Failed to save note:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+        // For now, navigate back to notes list
+        router.push('/notes');
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save note:', error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router],
+  );
 
   const handleCancel = React.useCallback(() => {
     // Navigate back to notes list
@@ -53,18 +63,18 @@ export default function NewNotePage() {
   }, [router]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className='container mx-auto px-4 py-8 max-w-4xl'>
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className='mb-6'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center space-x-4'>
+            <Button variant='outline' size='sm' onClick={handleCancel}>
+              <ArrowLeft className='h-4 w-4 mr-2' />
               返回
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">新建笔记</h1>
-              <p className="text-muted-foreground text-sm mt-1">
+              <h1 className='text-2xl font-bold tracking-tight'>新建笔记</h1>
+              <p className='text-muted-foreground text-sm mt-1'>
                 开始创建您的智能笔记
               </p>
             </div>
@@ -73,32 +83,30 @@ export default function NewNotePage() {
       </div>
 
       {/* Note Editor */}
-      <div className="min-h-[600px]">
+      <div className='min-h-[600px]'>
         <NoteEditor
-          initialTitle=""
-          initialContent=""
+          initialTitle=''
+          initialContent=''
           initialTags={[]}
           onSave={handleSaveNote}
           onCancel={handleCancel}
           autoSave={true}
           enableAI={true}
           loading={loading}
-          placeholder="开始输入您的内容..."
+          placeholder='开始输入您的内容...'
         />
       </div>
 
       {/* Footer Info */}
-      <div className="mt-8 pt-6 border-t">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className='mt-8 pt-6 border-t'>
+        <div className='flex items-center justify-between text-sm text-muted-foreground'>
           <div>
-            <span className="inline-flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+            <span className='inline-flex items-center'>
+              <div className='w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse' />
               自动保存已启用
             </span>
           </div>
-          <div>
-            支持Markdown语法 • AI智能建议 • 实时预览
-          </div>
+          <div>支持Markdown语法 • AI智能建议 • 实时预览</div>
         </div>
       </div>
     </div>

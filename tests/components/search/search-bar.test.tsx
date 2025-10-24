@@ -63,7 +63,6 @@ vi.mock('@/components/ui/popover', () => ({
   Popover: ({ children }: any) => <div>{children}</div>,
   PopoverContent: ({ children }: any) => <div>{children}</div>,
   PopoverTrigger: ({ children }: any) => <>{children}</>
->
 }));
 
 vi.mock('@/components/ui/command', () => ({
