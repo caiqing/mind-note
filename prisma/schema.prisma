@@ -43,13 +43,13 @@ model Note {
   title           String
   content         String
   contentHash     String    @map("content_hash")
-  contentVector   Float[]?  @map("content_vector") // pgvector
+  contentVector   Bytes?    @map("content_vector") // pgvector
   categoryId      Int?      @map("category_id")
-  tags            String[]  @default("{}")
+  tags            String[]  @default([])
   metadata        Json      @default("{}")
   aiProcessed     Boolean   @default(false) @map("ai_processed")
   aiSummary       String?   @map("ai_summary") @db.Text
-  aiKeywords      String[]  @default("{}") @map("ai_keywords")
+  aiKeywords      String[]  @default([]) @map("ai_keywords")
   version         Int       @default(1)
   status          NoteStatus @default(DRAFT)
   isPublic        Boolean   @default(false) @map("is_public")
@@ -60,31 +60,12 @@ model Note {
 
   // Add constraints (will be applied in migration)
   @@map("notes")
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_title_not_empty
-    CHECK (LENGTH(TRIM(title)) > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_content_not_empty
-    CHECK (LENGTH(TRIM(content)) > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_content_hash_not_empty
-    CHECK (LENGTH(TRIM(content_hash)) > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_version_positive
-    CHECK (version > 0)
-  """)
-  @@Raw("""
-    ALTER TABLE notes ADD CONSTRAINT check_view_count_positive
-    CHECK (view_count >= 0)
-  """)
 
   // Relations
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   category         Category?    @relation(fields: [categoryId], references: [id])
   noteTags         NoteTag[]
+  versions         NoteVersion[]
   sourceRelations  NoteRelationship[] @relation("SourceNote")
   targetRelations  NoteRelationship[] @relation("TargetNote")
   aiProcessingLogs AiProcessingLog[]
@@ -98,11 +79,9 @@ model Note {
   @@index([isPublic, status])
   @@index([viewCount(sort: Desc)])
   @@index([aiProcessedAt])
-  @@map("notes")
 
   // Vector search index for pgvector (for AI functionality)
-  @@index([contentVector], map: "idx_content_vector_hnsw", using: HNSW)
-  @@index([contentVector], map: "idx_content_vector_l2", using: IVFFlat, options: { listCount: 100 })
+  // Note: pgvector indexes will be created in migration
 }
 
 // 标签表
@@ -117,7 +96,7 @@ model Tag {
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
-  user     User      @relation(fields: [createdBy], references: [id])
+  user     User?     @relation(fields: [createdBy], references: [id])
   noteTags NoteTag[]
 
   @@index([usageCount(sort: Desc)])
@@ -142,7 +121,7 @@ model Category {
   // Relations
   parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
-  user     User      @relation(fields: [createdBy], references: [id])
+  user     User?     @relation(fields: [createdBy], references: [id])
   notes    Note[]
 
   @@index([parentId, sortOrder])
@@ -222,6 +201,23 @@ model AiProcessingLog {
   @@map("ai_processing_logs")
 }
 
+// 笔记版本表
+model NoteVersion {
+  id        String   @id @default(cuid())
+  noteId    String   @map("note_id")
+  title     String
+  content   String   @db.Text
+  version   Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, version(sort: Desc)])
+  @@index([noteId, createdAt(sort: Desc)])
+  @@map("note_versions")
+}
+
 // 用户反馈表
 model UserFeedback {
   id          String       @id @default(cuid())
@@ -290,14 +286,3 @@ enum FeedbackType {
   RELATIONSHIP
 }
 
-// Add database constraints for data integrity
-model DatabaseConstraints {
-  // This model represents database constraints
-  // In PostgreSQL, these will be added as table constraints
-
-  // Example of constraints that would be added:
-  // - CHECK (strength_score >= 0 AND strength_score <= 1) for NoteRelationship
-  // - CHECK (rating >= 1 AND rating <= 5) for UserFeedback
-  // - CHECK (LENGTH(title) > 0) for Note
-  // - CHECK (LENGTH(content) > 0) for Note
-}

@@ -1,13 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Server external packages configuration (moved from experimental)
+  serverExternalPackages: ['pg', 'ioredis'],
+
   // Development optimizations
   experimental: {
-    // Enable React Strict Mode in development
-    reactStrictMode: true,
-
-    // Optimize server startup
-    serverComponentsExternalPackages: ['pg', 'ioredis'],
-
     // Enable Turbopack for faster builds (Next.js 15)
     turbo: {
       loaders: {
@@ -26,8 +23,8 @@ const nextConfig = {
         aggregateTimeout: 300,
       }
 
-      // Improve source map generation for debugging
-      config.devtool = 'eval-cheap-module-source-map'
+      // Improve source map generation for debugging (use proper devtool)
+      config.devtool = 'eval-source-map'
     }
 
     // Add custom aliases for cleaner imports
@@ -169,7 +166,6 @@ const nextConfig = {
 // Environment-specific overrides
 if (process.env.NODE_ENV === 'development') {
   // Development-only configurations
-  nextConfig.swcMinify = false // Disable SWC minification for faster builds
   nextConfig.compiler = {
     removeConsole: false, // Keep console logs in development
   }

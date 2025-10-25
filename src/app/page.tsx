@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -10,6 +12,69 @@ export default function Home() {
             智能记录、自动归类、关联分析的下一代笔记应用
           </p>
 
+          {/* Demo Section */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">功能演示</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+              <Link href="/demo/category-simple" className="block group">
+                <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                  <h3 className="text-xl font-semibold mb-3 text-blue-600 group-hover:text-blue-700">
+                    分类管理演示
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    简化版分类选择和管理功能，支持层级结构和搜索
+                  </p>
+                  <div className="text-blue-600 font-medium text-sm">
+                    体验演示 →
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/demo/category-tag-editor" className="block group">
+                <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                  <h3 className="text-xl font-semibold mb-3 text-green-600 group-hover:text-green-700">
+                    分类标签编辑器
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    完整的笔记分类和标签管理功能，支持层级分类和智能标签
+                  </p>
+                  <div className="text-green-600 font-medium text-sm">
+                    体验演示 →
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/demo/filtered-notes" className="block group">
+                <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                  <h3 className="text-xl font-semibold mb-3 text-purple-600 group-hover:text-purple-700">
+                    笔记筛选系统
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    强大的分类、标签和搜索筛选功能，支持多维度过滤
+                  </p>
+                  <div className="text-purple-600 font-medium text-sm">
+                    体验演示 →
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/demo/tag-cloud" className="block group">
+                <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                  <h3 className="text-xl font-semibold mb-3 text-orange-600 group-hover:text-orange-700">
+                    标签云可视化
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    交互式标签云和数据统计展示，直观呈现标签使用情况
+                  </p>
+                  <div className="text-orange-600 font-medium text-sm">
+                    体验演示 →
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Features */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-semibold mb-4 text-blue-600">智能记录</h2>
