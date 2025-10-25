@@ -1,0 +1,24 @@
+{
+  "budgets": [
+    {
+      "path": "static/js/*.js",
+      "maxSize": "244kb",
+      "warningThreshold": "200kb"
+    },
+    {
+      "path": "static/css/*.css",
+      "maxSize": "50kb",
+      "warningThreshold": "40kb"
+    },
+    {
+      "path": "node_modules/**/*",
+      "maxSize": "500kb",
+      "warningThreshold": "400kb"
+    },
+    {
+      "path": "*.{js,css,html}",
+      "maxSize": "300kb",
+      "warningThreshold": "250kb"
+    }
+  ]
+}

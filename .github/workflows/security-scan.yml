@@ -1,0 +1,323 @@
+name: Security Scan Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Ï)Ìh2¹ÐL‰hkÏ
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - dependencies
+          - code
+          - container
+      severity:
+        description: 'Minimum severity level'
+        required: true
+        default: 'medium'
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - critical
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # VkÏ
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=${{ github.event.inputs.severity || 'moderate' }} --json > npm-audit.json || true
+
+          # ã¡¡Óœ
+          if [ -s npm-audit.json ]; then
+            echo "## Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat npm-audit.json | jq '{vulnerabilities: (.vulnerabilities | length), metadata: .metadata}' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: Run Snyk dependency scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=${{ github.event.inputs.severity || 'medium' }} --json=snyk-results.json
+
+      - name: Upload Snyk results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  # ã‰hkÏ
+  code-scan:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        language: ['javascript', 'typescript']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build for CodeQL analysis
+        run: npm run build --if-present
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{ matrix.language }}"
+
+      - name: Run ESLint security rules
+        run: |
+          npx eslint . --ext .js,.jsx,.ts,.tsx \
+            --config eslint.config.security.js \
+            --format json > eslint-security-report.json || true
+
+          if [ -s eslint-security-report.json ]; then
+            echo "## ESLint Security Issues" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat eslint-security-report.json | jq '.' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+          output: semgrep-report.json
+          output-format: json
+
+      - name: Upload Semgrep results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: semgrep-report.sarif
+
+  # ¹h‰hkÏ
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'push' || github.event.inputs.scan_type == 'container' || github.event.inputs.scan_type == 'full'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: mindnote:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mindnote:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: '${{ github.event.inputs.severity || "MEDIUM,HIGH,CRITICAL" }}'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v3
+        with:
+          image: 'mindnote:test'
+          severity-cutoff: '${{ github.event.inputs.severity || "medium" }}'
+          format: 'sarif'
+          output-file: 'grype-results.sarif'
+
+      - name: Upload Grype results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'grype-results.sarif
+
+  # Æ¥Ä2kÏ
+  secrets-scan:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: Run detect-secrets
+        run: |
+          pip install detect-secrets
+          detect-secrets scan --all-files --baseline .secrets.baseline || true
+          detect-secrets audit .secrets.baseline
+
+      - name: Upload secrets scan results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: secrets-scan-results
+          path: |
+            gitleaks-report.json
+            trufflehog-report.json
+            .secrets.baseline
+          retention-days: 30
+
+  # ‰h¥J
+  security-report:
+    name: Security Report Generation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [dependency-scan, code-scan, container-scan, secrets-scan]
+    if: always()
+
+    steps:
+      - name: Generate comprehensive security report
+        run: |
+          cat > security-summary-report.md << EOF
+          # Security Scan Summary Report
+
+          **Date:** $(date)
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          **Scan Type:** ${{ github.event.inputs.scan_type || 'full' }}
+
+          ## Scan Results Summary
+
+          | Scan Type | Status | Findings |
+          |-----------|--------|----------|
+          | Dependency Scan | ${{ needs.dependency-scan.result }} | Check artifact |
+          | Code Analysis | ${{ needs.code-scan.result }} | Check SARIF |
+          | Container Scan | ${{ needs.container-scan.result }} | Check SARIF |
+          | Secrets Scan | ${{ needs.secrets-scan.result }} | Check artifact |
+
+          ## Recommendations
+
+          1. **High Priority:** Address any CRITICAL or HIGH severity vulnerabilities immediately
+          2. **Medium Priority:** Review and fix MEDIUM severity issues in next sprint
+          3. **Low Priority:** Address LOW severity issues in future maintenance
+          4. **Regular Scans:** Security scans should be run regularly
+
+          ---
+
+          *This report was automatically generated by the security scan pipeline*
+          EOF
+
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          cat security-summary-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-summary-report
+          path: security-summary-report.md
+          retention-days: 90
+
+      - name: Comment PR with security summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const report = `## = Security Scan Results
+
+            Security scan completed for commit ${{ github.sha }}
+
+            **Status:** ${{ job.status }}
+
+            Please check the Security tab in GitHub for detailed findings.`;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+      - name: Security gate check
+        run: |
+          # Àå/&	%ÍÝÄ
+          if [[ "${{ needs.code-scan.result }}" == "failure" || "${{ needs.secrets-scan.result }}" == "failure" ]]; then
+            echo "L Security gate failed: Critical security issues detected"
+            exit 1
+          fi
+
+          echo " Security gate passed: No critical security issues blocking deployment"

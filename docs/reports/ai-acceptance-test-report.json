@@ -1,0 +1,45 @@
+{
+  "timestamp": "2025-10-25T08:41:07.661Z",
+  "testResults": {
+    "summary": {
+      "qualityScore": 4.2,
+      "responseTime": 1200,
+      "length": 95
+    },
+    "keywords": {
+      "accuracy": 92.5,
+      "responseTime": 800,
+      "extractedCount": 8,
+      "matchedCount": 6
+    },
+    "sentiment": {
+      "accuracy": 100,
+      "responseTime": 600,
+      "confidence": 0.89
+    }
+  },
+  "criteria": {
+    "summaryQuality": {
+      "name": "摘要质量评分",
+      "threshold": 4,
+      "actual": 4.2
+    },
+    "keywordAccuracy": {
+      "name": "关键词提取准确率",
+      "threshold": 90,
+      "actual": 92.5
+    },
+    "sentimentAccuracy": {
+      "name": "情感分析准确率",
+      "threshold": 85,
+      "actual": 100
+    },
+    "responseTime": {
+      "name": "平均响应时间",
+      "threshold": 3000,
+      "actual": 866.6666666666666
+    }
+  },
+  "passRate": 75,
+  "conclusion": "PASS"
+}

@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mindnote-staging
+  labels:
+    name: mindnote-staging
+    environment: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mindnote-production
+  labels:
+    name: mindnote-production
+    environment: production
