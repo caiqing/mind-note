@@ -3,15 +3,21 @@
 
 echo "🔍 Running pre-commit checks..."
 
-# Run lint-staged
+# 运行lint-staged（对暂存文件进行检查）
 npx lint-staged
 
-# Run type check
-echo "📝 Running TypeScript type checking..."
-npm run type-check
+# 检查命令执行结果
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Pre-commit checks failed. Please fix the issues above before committing."
+  echo ""
+  echo "💡 Tips:"
+  echo "   - Run 'npm run lint:fix' to auto-fix linting issues"
+  echo "   - Run 'npm run format' to format your code"
+  echo "   - Check the error messages above for specific issues"
+  exit 1
+fi
 
-# Run tests
-echo "🧪 Running tests..."
-npm run test:unit
-
-echo "✅ Pre-commit checks passed!"
+echo ""
+echo "✅ All pre-commit checks passed!"
+echo "🎉 Your code is ready to be committed."

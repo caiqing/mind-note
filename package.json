@@ -134,6 +134,22 @@
     "tsx": "^4.19.2",
     "vitest": "^1.6.1"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{css,scss,less}": [
+      "prettier --write"
+    ],
+    "package.json": [
+      "prettier --write",
+      "npm run lint"
+    ]
+  },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"

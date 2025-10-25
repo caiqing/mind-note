@@ -1,7 +1,6 @@
 /**
- * 安全的命令执行工具
- *
- * 使用execFile替代exec，防止命令注入攻击
+ * Safe execFile wrapper utility
+ * 安全的execFile包装工具
  */
 
 import { execFile } from 'child_process'
@@ -10,14 +9,18 @@ import { promisify } from 'util'
 const execFileAsync = promisify(execFile)
 
 export interface ExecResult {
+  success: boolean
   stdout: string
   stderr: string
-  status: number
-  success: boolean
+  exitCode: number | null
 }
 
 /**
- * 安全执行命令，不会发生命令注入
+ * 安全地执行命令文件，避免命令注入
+ * @param command 要执行的命令
+ * @param args 命令参数数组
+ * @param options 执行选项
+ * @returns 执行结果
  */
 export async function execFileNoThrow(
   command: string,
@@ -26,71 +29,78 @@ export async function execFileNoThrow(
     cwd?: string
     env?: NodeJS.ProcessEnv
     timeout?: number
+    encoding?: BufferEncoding
+    maxBuffer?: number
   } = {}
 ): Promise<ExecResult> {
   try {
     const { stdout, stderr } = await execFileAsync(command, args, {
-      cwd: options.cwd || process.cwd(),
-      env: {
-        ...process.env,
-        ...options.env
-      },
-      timeout: options.timeout || 30000,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024, // 1MB
+      timeout: 30000, // 30 seconds
+      ...options
     })
 
     return {
+      success: true,
       stdout: stdout || '',
       stderr: stderr || '',
-      status: 0,
-      success: true
+      exitCode: 0
     }
   } catch (error: any) {
     return {
+      success: false,
       stdout: error.stdout || '',
       stderr: error.stderr || error.message || '',
-      status: error.status || 1,
-      success: false
+      exitCode: error.code || error.status || 1
     }
   }
 }
 
 /**
- * 同步执行命令（仅用于绝对安全的场景）
+ * 验证命令是否安全（只允许特定的命令）
+ * @param command 命令名称
+ * @returns 是否安全
  */
-export function execFileSyncNoThrow(
+export function isCommandSafe(command: string): boolean {
+  const allowedCommands = [
+    'git',
+    'npm',
+    'node',
+    'yarn',
+    'pnpm',
+    'docker',
+    'docker-compose',
+    'npx',
+    'tsc',
+    'jest',
+    'eslint',
+    'prettier'
+  ]
+
+  return allowedCommands.includes(command.split(' ')[0])
+}
+
+/**
+ * 安全执行命令（带安全性检查）
+ * @param command 命令
+ * @param args 参数
+ * @param options 选项
+ * @returns 执行结果
+ */
+export async function safeExecFile(
   command: string,
   args: string[] = [],
-  options: {
-    cwd?: string
-    env?: NodeJS.ProcessEnv
-    timeout?: number
-  } = {}
-): ExecResult {
-  try {
-    const { execFileSync } = require('child_process')
-    const stdout = execFileSync(command, args, {
-      cwd: options.cwd || process.cwd(),
-      env: {
-        ...process.env,
-        ...options.env
-      },
-      timeout: options.timeout || 30000,
-      encoding: 'utf8'
-    })
-
+  options: Parameters<typeof execFileNoThrow>[2] = {}
+): Promise<ExecResult> {
+  if (!isCommandSafe(command)) {
     return {
-      stdout: stdout || '',
-      stderr: '',
-      status: 0,
-      success: true
-    }
-  } catch (error: any) {
-    return {
-      stdout: error.stdout || '',
-      stderr: error.stderr || error.message || '',
-      status: error.status || 1,
-      success: false
+      success: false,
+      stdout: '',
+      stderr: `Command "${command}" is not allowed for security reasons`,
+      exitCode: 1
     }
   }
+
+  return execFileNoThrow(command, args, options)
 }
