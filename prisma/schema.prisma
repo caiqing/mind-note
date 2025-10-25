@@ -43,7 +43,7 @@ model Note {
   title           String
   content         String    @db.Text
   contentHash     String    @map("content_hash")
-  contentVector   Bytes?    @map("content_vector") // pgvector
+  contentVector   Unsupported("vector(1536)")? @map("content_vector") // pgvector
 
   // AI分析结果字段
   aiProcessed     Boolean   @default(false) @map("ai_processed")
@@ -52,8 +52,8 @@ model Note {
   aiKeyConcepts   String[]  @default([]) @map("ai_key_concepts")
   aiCategory      String    @default("other") @map("ai_category")
   aiTags          String[]  @default([]) @map("ai_tags")
-  aiSentiment     String    @default("neutral") @map("ai_sentiment")
-  aiConfidence    Float     @default(0.0) @map("ai_confidence")
+  aiSentiment     String?   @map("ai_sentiment")
+  aiConfidence    Float?    @default(0.0) @map("ai_confidence")
   aiModel         String?   @map("ai_model")
   aiProvider      String?   @map("ai_provider")
   aiTokens        Int       @default(0) @map("ai_tokens")

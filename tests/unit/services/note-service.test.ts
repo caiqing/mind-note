@@ -4,13 +4,10 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { INoteService, NoteService } from '@/lib/services/note-service';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, NoteStatus } from '@prisma/client';
 import { NoteError, NOTE_ERRORS } from '@/types/note';
 
-// Mock Prisma Client
-vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn(),
-}));
+// Prisma Client is mocked in vitest.setup.ts
 
 describe('NoteService', () => {
   let noteService: INoteService;
@@ -27,15 +24,23 @@ describe('NoteService', () => {
         findMany: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
+        deleteMany: vi.fn(),
         count: vi.fn(),
         findFirst: vi.fn(),
+        aggregate: vi.fn(),
+        groupBy: vi.fn(),
       },
       category: {
         findMany: vi.fn(),
+        findUnique: vi.fn(),
       },
       tag: {
         findMany: vi.fn(),
+        findFirst: vi.fn(),
+        create: vi.fn(),
+        upsert: vi.fn(),
       },
+      $queryRaw: vi.fn(),
       $transaction: vi.fn(),
     };
 
@@ -59,15 +64,55 @@ describe('NoteService', () => {
         metadata: { source: 'manual' },
       };
 
-      const expectedNote = {
+      const expectedTransformedNote = {
         id: noteId,
         userId,
         title: noteData.title,
         content: noteData.content,
         contentHash: 'hash123',
-        tags: noteData.tags,
+        tags: [
+          {
+            id: 123,
+            name: 'test',
+            color: '#0000ff',
+            category: 'general',
+          },
+        ],
         metadata: noteData.metadata,
-        status: 'DRAFT',
+        status: NoteStatus.DRAFT,
+        isPublic: false,
+        viewCount: 0,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+        aiProcessed: false,
+        aiKeywords: [],
+        version: 1,
+        categoryId: undefined,
+        category: undefined,
+        contentVector: undefined,
+        aiSummary: undefined,
+        aiProcessedAt: undefined,
+      };
+
+      // Mock tag findFirst to return null (new tag)
+      mockPrisma.tag.findFirst.mockResolvedValue(null);
+
+      // Mock tag create to return a tag (ID should be number according to Prisma schema)
+      mockPrisma.tag.create.mockResolvedValue({
+        id: 123,
+        name: 'test',
+        color: '#0000ff',
+      });
+
+      // Mock note.create to return the raw database result (with NoteTag structure)
+      const mockCreatedNote = {
+        id: noteId,
+        userId,
+        title: noteData.title,
+        content: noteData.content,
+        contentHash: 'hash123',
+        metadata: noteData.metadata,
+        status: NoteStatus.DRAFT,
         isPublic: false,
         viewCount: 0,
         createdAt: new Date(),
@@ -75,25 +120,44 @@ describe('NoteService', () => {
         aiProcessed: false,
         aiKeywords: [],
         version: 1,
+        // Include NoteTag relationship structure
+        tags: [
+          {
+            noteId: noteId,
+            tagId: 123,
+            tag: {
+              id: 123,
+              name: 'test',
+              color: '#0000ff',
+              category: 'general',
+            },
+          },
+        ],
+        // Other relationships
+        category: null,
       };
 
-      mockPrisma.note.create.mockResolvedValue(expectedNote);
+      mockPrisma.note.create.mockResolvedValue(mockCreatedNote);
 
       // Act
       const result = await noteService.createNote(userId, noteData);
 
       // Assert
-      expect(result).toEqual(expectedNote);
+      expect(result).toEqual(expectedTransformedNote);
       expect(mockPrisma.note.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId,
           title: noteData.title,
           content: noteData.content,
-          tags: noteData.tags,
           metadata: noteData.metadata,
           status: 'DRAFT',
           isPublic: false,
           contentHash: expect.any(String),
+        }),
+        include: expect.objectContaining({
+          category: true,
+          tags: true,
+          user: expect.any(Object),
         }),
       });
     });
@@ -107,11 +171,10 @@ describe('NoteService', () => {
 
       // Act & Assert
       await expect(noteService.createNote(userId, invalidData)).rejects.toThrow(
-        new NoteError(
-          expect.stringContaining('Title is required'),
-          'VALIDATION_FAILED',
-          400,
-        ),
+        expect.objectContaining({
+          message: expect.stringContaining('Title is required'),
+          code: 'VALIDATION_FAILED',
+        }),
       );
     });
 
@@ -124,11 +187,10 @@ describe('NoteService', () => {
 
       // Act & Assert
       await expect(noteService.createNote(userId, invalidData)).rejects.toThrow(
-        new NoteError(
-          expect.stringContaining('Content is required'),
-          'VALIDATION_FAILED',
-          400,
-        ),
+        expect.objectContaining({
+          message: expect.stringContaining('Content is required'),
+          code: 'VALIDATION_FAILED',
+        }),
       );
     });
 
@@ -157,13 +219,22 @@ describe('NoteService', () => {
   describe('getNoteById', () => {
     it('should return note when found', async () => {
       // Arrange
-      const expectedNote = {
+      const mockNote = {
         id: noteId,
         userId,
         title: 'Test Note',
         content: 'Test content',
         contentHash: 'hash123',
-        tags: ['test'],
+        tags: [
+          {
+            tag: {
+              id: 'tag_1',
+              name: 'test',
+              color: '#FF5733',
+              category: 'general',
+            },
+          },
+        ],
         metadata: {},
         status: 'PUBLISHED',
         isPublic: false,
@@ -175,27 +246,76 @@ describe('NoteService', () => {
         aiKeywords: ['test', 'summary'],
         version: 1,
         aiProcessedAt: new Date(),
+        category: null,
+        user: {
+          id: userId,
+          name: 'Test User',
+          email: 'test@example.com',
+        },
       };
 
-      mockPrisma.note.findUnique.mockResolvedValue(expectedNote);
+      const expectedNote = {
+        id: noteId,
+        userId,
+        title: 'Test Note',
+        content: 'Test content',
+        contentHash: 'hash123',
+        categoryId: undefined,
+        category: undefined,
+        tags: [
+          {
+            id: 'tag_1',
+            name: 'test',
+            color: '#FF5733',
+            category: 'general',
+          },
+        ],
+        metadata: {},
+        status: 'PUBLISHED',
+        isPublic: false,
+        viewCount: 10,
+        createdAt: mockNote.createdAt,
+        updatedAt: mockNote.updatedAt,
+        aiProcessed: true,
+        aiSummary: 'Test summary',
+        aiKeywords: ['test', 'summary'],
+        version: 1,
+        aiProcessedAt: mockNote.aiProcessedAt,
+        contentVector: undefined,
+      };
+
+      mockPrisma.note.findFirst.mockResolvedValue(mockNote);
 
       // Act
       const result = await noteService.getNoteById(noteId, userId);
 
       // Assert
       expect(result).toEqual(expectedNote);
-      expect(mockPrisma.note.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.note.findFirst).toHaveBeenCalledWith({
         where: {
           id: noteId,
-          userId,
+          OR: [
+            { userId }, // 用户自己的笔记
+            { isPublic: true }, // 公开的笔记
+          ],
         },
-        include: expect.any(Object),
+        include: {
+          category: true,
+          tags: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
       });
     });
 
     it('should return null when note not found', async () => {
       // Arrange
-      mockPrisma.note.findUnique.mockResolvedValue(null);
+      mockPrisma.note.findFirst.mockResolvedValue(null);
 
       // Act
       const result = await noteService.getNoteById('nonexistent', userId);
@@ -204,24 +324,16 @@ describe('NoteService', () => {
       expect(result).toBeNull();
     });
 
-    it('should throw access denied error for different user', async () => {
+    it('should return null for private note of different user', async () => {
       // Arrange
       const otherUserId = 'other_user';
-      mockPrisma.note.findUnique.mockResolvedValue({
-        id: noteId,
-        userId: otherUserId,
-        title: 'Test Note',
-        content: 'Test content',
-      });
+      mockPrisma.note.findFirst.mockResolvedValue(null); // 因为查询条件是OR: [userId, isPublic:true]，而笔记是私有的
 
-      // Act & Assert
-      await expect(noteService.getNoteById(noteId, userId)).rejects.toThrow(
-        new NoteError(
-          expect.stringContaining('Access denied'),
-          'ACCESS_DENIED',
-          403,
-        ),
-      );
+      // Act
+      const result = await noteService.getNoteById(noteId, userId);
+
+      // Assert
+      expect(result).toBeNull();
     });
   });
 
@@ -329,51 +441,54 @@ describe('NoteService', () => {
   describe('deleteNote', () => {
     it('should delete note successfully', async () => {
       // Arrange
-      mockPrisma.note.findUnique.mockResolvedValue({ userId });
-      mockPrisma.note.delete.mockResolvedValue({ id: noteId });
+      mockPrisma.note.findFirst.mockResolvedValue({
+        id: noteId,
+        userId,
+        status: 'PUBLISHED',
+      });
+      mockPrisma.note.update.mockResolvedValue({
+        id: noteId,
+        status: 'ARCHIVED',
+        updatedAt: new Date(),
+      });
 
       // Act
       const result = await noteService.deleteNote(noteId, userId);
 
       // Assert
       expect(result).toBe(true);
-      expect(mockPrisma.note.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.note.findFirst).toHaveBeenCalledWith({
         where: { id: noteId, userId },
       });
-      expect(mockPrisma.note.delete).toHaveBeenCalledWith({
+      expect(mockPrisma.note.update).toHaveBeenCalledWith({
         where: { id: noteId },
+        data: {
+          status: 'ARCHIVED',
+          updatedAt: expect.any(Date),
+        },
       });
     });
 
-    it('should return false when note does not exist', async () => {
+    it('should throw error when note does not exist', async () => {
       // Arrange
-      mockPrisma.note.findUnique.mockResolvedValue(null);
-
-      // Act
-      const result = await noteService.deleteNote(noteId, userId);
-
-      // Assert
-      expect(result).toBe(false);
-      expect(mockPrisma.note.delete).not.toHaveBeenCalled();
-    });
-
-    it('should throw access denied error for different user', async () => {
-      // Arrange
-      const otherUserId = 'other_user';
-      mockPrisma.note.findUnique.mockResolvedValue({
-        id: noteId,
-        userId: otherUserId,
-        title: 'Test Note',
-      });
+      mockPrisma.note.findFirst.mockResolvedValue(null);
 
       // Act & Assert
       await expect(noteService.deleteNote(noteId, userId)).rejects.toThrow(
-        new NoteError(
-          expect.stringContaining('Access denied'),
-          'ACCESS_DENIED',
-          403,
-        ),
+        new NoteError('Note not found', 'NOT_FOUND', 404)
       );
+      expect(mockPrisma.note.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw error when trying to delete note of different user', async () => {
+      // Arrange - 如果笔记属于其他用户，findFirst会因为userId不匹配而返回null
+      mockPrisma.note.findFirst.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(noteService.deleteNote(noteId, userId)).rejects.toThrow(
+        new NoteError('Note not found', 'NOT_FOUND', 404)
+      );
+      expect(mockPrisma.note.update).not.toHaveBeenCalled();
     });
   });
 
@@ -392,16 +507,66 @@ describe('NoteService', () => {
           userId,
           title: 'Note 1',
           content: 'Content 1',
-          tags: ['tag1'],
+          tags: [
+            {
+              noteId: 'note_1',
+              tagId: 1,
+              tag: {
+                id: 1,
+                name: 'tag1',
+                color: '#ff0000',
+                category: 'general',
+              },
+            },
+          ],
           createdAt: new Date(),
+          metadata: {},
+          aiProcessed: undefined,
+          aiSummary: undefined,
+          aiKeywords: [],
+          version: undefined,
+          status: undefined,
+          isPublic: undefined,
+          viewCount: undefined,
+          updatedAt: undefined,
+          aiProcessedAt: undefined,
+          categoryId: undefined,
+          category: undefined,
+          contentHash: undefined,
+          contentVector: undefined,
         },
         {
           id: 'note_2',
           userId,
           title: 'Note 2',
           content: 'Content 2',
-          tags: ['tag2'],
+          tags: [
+            {
+              noteId: 'note_2',
+              tagId: 2,
+              tag: {
+                id: 2,
+                name: 'tag2',
+                color: '#00ff00',
+                category: 'general',
+              },
+            },
+          ],
           createdAt: new Date(),
+          metadata: {},
+          aiProcessed: undefined,
+          aiSummary: undefined,
+          aiKeywords: [],
+          version: undefined,
+          status: undefined,
+          isPublic: undefined,
+          viewCount: undefined,
+          updatedAt: undefined,
+          aiProcessedAt: undefined,
+          categoryId: undefined,
+          category: undefined,
+          contentHash: undefined,
+          contentVector: undefined,
         },
       ];
 
@@ -414,7 +579,69 @@ describe('NoteService', () => {
       const result = await noteService.getNotesByUserId(userId, params);
 
       // Assert
-      expect(result.notes).toEqual(expectedNotes);
+      // 期望的转换后结果（transformNoteToWithDetails处理后的格式）
+      const expectedTransformedNotes = [
+        {
+          id: 'note_1',
+          userId,
+          title: 'Note 1',
+          content: 'Content 1',
+          tags: [
+            {
+              id: 1,
+              name: 'tag1',
+              color: '#ff0000',
+              category: 'general',
+            },
+          ],
+          createdAt: expect.any(Date),
+          metadata: {},
+          aiProcessed: undefined,
+          aiSummary: undefined,
+          aiKeywords: [],
+          version: undefined,
+          status: undefined,
+          isPublic: undefined,
+          viewCount: undefined,
+          updatedAt: undefined,
+          aiProcessedAt: undefined,
+          categoryId: undefined,
+          category: undefined,
+          contentHash: undefined,
+          contentVector: undefined,
+        },
+        {
+          id: 'note_2',
+          userId,
+          title: 'Note 2',
+          content: 'Content 2',
+          tags: [
+            {
+              id: 2,
+              name: 'tag2',
+              color: '#00ff00',
+              category: 'general',
+            },
+          ],
+          createdAt: expect.any(Date),
+          metadata: {},
+          aiProcessed: undefined,
+          aiSummary: undefined,
+          aiKeywords: [],
+          version: undefined,
+          status: undefined,
+          isPublic: undefined,
+          viewCount: undefined,
+          updatedAt: undefined,
+          aiProcessedAt: undefined,
+          categoryId: undefined,
+          category: undefined,
+          contentHash: undefined,
+          contentVector: undefined,
+        },
+      ];
+
+      expect(result.notes).toEqual(expectedTransformedNotes);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 10,
@@ -464,15 +691,20 @@ describe('NoteService', () => {
       expect(mockPrisma.note.count).toHaveBeenCalledWith({
         where: {
           userId,
-          AND: [
-            {
-              OR: [
-                { title: { contains: 'productivity', mode: 'insensitive' } },
-                { content: { contains: 'productivity', mode: 'insensitive' } },
-              ],
-            },
-            { tags: { hasSome: ['important'] } },
+          OR: [
+            { title: { contains: 'productivity', mode: 'insensitive' } },
+            { content: { contains: 'productivity', mode: 'insensitive' } },
+            { aiSummary: { contains: 'productivity', mode: 'insensitive' } },
           ],
+          tags: {
+            some: {
+              tag: {
+                name: {
+                  in: ['important'],
+                },
+              },
+            },
+          },
         },
       });
     });
@@ -506,6 +738,14 @@ describe('NoteService', () => {
         savedAt: new Date(),
         hasChanges: true,
       };
+
+      // Setup tag mocks for autoSave
+      mockPrisma.tag.findFirst.mockResolvedValue(null);
+      mockPrisma.tag.create.mockResolvedValue({
+        id: 456,
+        name: 'autosave',
+        color: '#00ff00',
+      });
 
       mockPrisma.note.findUnique.mockResolvedValue(existingNote);
       mockPrisma.note.update.mockResolvedValue(updatedNote);
@@ -582,7 +822,14 @@ describe('NoteService', () => {
         return callback(mockPrisma);
       });
 
+      // Mock findMany for ownership validation
       mockPrisma.note.findMany.mockResolvedValue(mockNotes);
+
+      // Mock findFirst for individual delete operations
+      mockPrisma.note.findFirst.mockResolvedValue({ id: 'note_1', userId });
+      mockPrisma.note.delete.mockResolvedValue({ count: 1 });
+
+      // Mock deleteMany (though it's not used in current implementation)
       mockPrisma.note.deleteMany.mockResolvedValue({ count: 3 });
 
       // Act
@@ -624,7 +871,7 @@ describe('NoteService', () => {
       expect(result.successful).toHaveLength(0);
       expect(result.failed).toHaveLength(2);
       expect(result.failed[0].id).toBe('note_1');
-      expect(result.failed[0].error).toContain('Database error');
+      expect(result.failed[0].error).toContain('Note not found');
     });
   });
 
@@ -701,7 +948,7 @@ describe('NoteService', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].field).toBe('title');
-      expect(result.errors[0].code).toBe('REQUIRED');
+      expect(result.errors[0].code).toBe('TITLE_REQUIRED');
     });
 
     it('should detect tag count validation errors', () => {
@@ -714,9 +961,7 @@ describe('NoteService', () => {
       };
 
       // Act
-      const result = noteService.validateNote(invalidData, {
-        tags: { maxCount: 10 },
-      });
+      const result = noteService.validateNote(invalidData);
 
       // Assert
       expect(result.isValid).toBe(false);

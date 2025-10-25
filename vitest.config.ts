@@ -8,7 +8,7 @@ import { resolve } from 'path';
 export default defineConfig({
   test: {
     // 测试环境
-    environment: 'jsdom',
+    environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
 
     // 全局配置
