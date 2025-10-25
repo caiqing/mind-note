@@ -1,655 +1,503 @@
-/**
- * 情感分析服务 - T103.5
- * 统一的情感分析服务，支持多AI提供商和智能算法
- */
+// AI情感分析服务
+// 实现多种模型的智能情感分析功能
 
-import { AnalysisProvider } from '@/types/ai-analysis';
-import { createOpenAIProviderV2 } from '../providers/openai-provider-v2';
-import { createClaudeProvider } from '../providers/claude-provider';
-import { aiConfig } from '../ai-config';
+import { BaseAIService } from './base-service'
+import { Logger } from './logger'
+import { AIProvider } from '@/lib/ai/types'
+import { aiConfig } from '@/lib/ai/config'
+import { openaiProvider } from '@/lib/ai/providers/openai-provider'
+import { claudeProvider } from '@/lib/ai/providers/claude-provider'
 
-export interface SentimentRequest {
-  content: string;
-  language?: 'zh' | 'en';
-  detailLevel?: 'basic' | 'detailed' | 'comprehensive';
-  includeEmotions?: boolean;
-  includeConfidence?: boolean;
-  preferredProvider?: string;
-  userId: string;
+export interface SentimentOptions {
+  language?: 'zh' | 'en' | 'auto'
+  granularity?: 'document' | 'sentence' | 'aspect'
+  includeEmotions?: boolean
+  detailedAnalysis?: boolean
+  customThresholds?: {
+    positive: number
+    negative: number
+    neutral: number
+  }
 }
 
 export interface SentimentResult {
-  sentiment: 'positive' | 'negative' | 'neutral';
-  polarity: number; // -1 到 1
-  confidence: number; // 0 到 1
-  intensity: number; // 0 到 1
-  emotions?: EmotionAnalysis[];
-  aspects?: AspectSentiment[];
-  provider: string;
-  model: string;
-  processingTime: number;
-  cost: number;
-  tokens: {
-    input: number;
-    output: number;
-    total: number;
-  };
+  polarity: 'positive' | 'negative' | 'neutral'
+  score: number // -1 到 1
+  confidence: number // 0 到 1
+  magnitude: number // 0 到 1
+  emotions?: EmotionResult[]
+  aspects?: AspectResult[]
+  sentences?: SentenceSentiment[]
+  provider: string
   metadata: {
-    requestId: string;
-    processedAt: Date;
-    version: string;
-    algorithm: string;
-    language: string;
-    detailLevel: string;
-  };
+    originalLength: number
+    processingTime: number
+    estimatedCost: number
+    options: SentimentOptions
+  }
 }
 
-export interface EmotionAnalysis {
-  emotion: string; // joy, anger, fear, sadness, surprise, disgust, trust, anticipation
-  intensity: number; // 0 到 1
-  confidence: number; // 0 到 1
-  triggers: string[]; // 触发该情感的关键词或短语
+export interface EmotionResult {
+  emotion: 'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'trust' | 'anticipation'
+  score: number // 0 到 1
+  confidence: number // 0 到 1
+  keywords?: string[]
 }
 
-export interface AspectSentiment {
-  aspect: string; // 方面/主题
-  sentiment: 'positive' | 'negative' | 'neutral';
-  confidence: number;
-  keywords: string[];
-  context: string;
+export interface AspectResult {
+  aspect: string // 方面名称
+  sentiment: 'positive' | 'negative' | 'neutral'
+  score: number // -1 到 1
+  confidence: number // 0 到 1
+  snippets: string[] // 相关文本片段
 }
 
-export class SentimentService {
-  private providers: Map<string, AnalysisProvider> = new Map();
-  private fallbackOrder: string[];
+export interface SentenceSentiment {
+  sentence: string
+  sentiment: 'positive' | 'negative' | 'neutral'
+  score: number // -1 到 1
+  confidence: number // 0 到 1
+  startIndex: number
+  endIndex: number
+}
+
+export class SentimentService extends BaseAIService {
+  private logger = Logger.getInstance()
 
   constructor() {
-    this.initializeProviders();
+    super('SentimentService')
   }
 
-  private initializeProviders(): void {
-    // 初始化可用的提供商
-    try {
-      const openaiProvider = createOpenAIProviderV2();
-      this.providers.set('openai', openaiProvider);
-      console.log('✅ OpenAI provider initialized for sentiment analysis');
-    } catch (error) {
-      console.warn('⚠️ OpenAI provider not available for sentiment analysis:', error);
-    }
+  /**
+   * 分析文本情感
+   */
+  async analyzeSentiment(
+    noteId: string,
+    noteContent: string,
+    options: SentimentOptions = {}
+  ): Promise<SentimentResult> {
+    const startTime = Date.now()
+    this.logger.info('开始情感分析', { noteId, contentLength: noteContent.length })
 
     try {
-      const claudeProvider = createClaudeProvider();
-      this.providers.set('anthropic', claudeProvider);
-      console.log('✅ Claude provider initialized for sentiment analysis');
-    } catch (error) {
-      console.warn('⚠️ Claude provider not available for sentiment analysis:', error);
-    }
+      // 预处理内容
+      const processedContent = this.preprocessContent(noteContent)
+      if (!processedContent || processedContent.length < 10) {
+        throw new Error('内容过短，无法进行情感分析')
+      }
 
-    // 设置fallback顺序
-    this.fallbackOrder = aiConfig.getFallbackOrder().filter(provider =>
-      this.providers.has(provider)
-    );
+      // 检查预算
+      const estimatedCost = this.estimateSentimentCost(processedContent, options)
+      if (!(await this.checkBudget(estimatedCost))) {
+        throw new Error('预算不足，无法进行情感分析')
+      }
 
-    if (this.fallbackOrder.length === 0) {
-      throw new Error('No AI providers available for sentiment analysis');
-    }
+      // 选择最佳模型
+      const provider = this.selectBestProvider(options)
 
-    console.log(`📋 Available providers for sentiment analysis: ${this.fallbackOrder.join(', ')}`);
-  }
+      // 生成情感分析
+      const result = await this.analyzeSentimentWithProvider(
+        provider,
+        processedContent,
+        options
+      )
 
-  async analyzeSentiment(request: SentimentRequest): Promise<SentimentResult> {
-    const requestId = `sentiment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const startTime = Date.now();
-
-    console.log(`💭 Analyzing sentiment (Request: ${requestId})`);
-    console.log(`Content length: ${request.content.length} characters`);
-    console.log(`Detail level: ${request.detailLevel || 'basic'}`);
-    console.log(`Include emotions: ${request.includeEmotions || false}`);
-
-    let lastError: Error | null = null;
-
-    // 尝试按优先级顺序使用提供商
-    const providersToTry = request.preferredProvider && this.providers.has(request.preferredProvider)
-      ? [request.preferredProvider, ...this.fallbackOrder.filter(p => p !== request.preferredProvider)]
-      : this.fallbackOrder;
-
-    for (const providerName of providersToTry) {
-      try {
-        console.log(`🔄 Trying sentiment analysis with provider: ${providerName}`);
-
-        const provider = this.providers.get(providerName)!;
-        const result = await this.analyzeSentimentWithProvider(provider, request, requestId);
-
-        console.log(`✅ Sentiment analysis completed with ${providerName}`);
-        return result;
-
-      } catch (error) {
-        lastError = error as Error;
-        console.warn(`❌ Provider ${providerName} failed for sentiment analysis:`, error);
-
-        // 如果不是最后一个提供商，继续尝试下一个
-        if (providersToTry.indexOf(providerName) < providersToTry.length - 1) {
-          console.log(`🔄 Falling back to next provider...`);
-          continue;
+      const sentimentResult: SentimentResult = {
+        ...result,
+        provider: provider.name,
+        metadata: {
+          originalLength: processedContent.length,
+          processingTime: Date.now() - startTime,
+          estimatedCost,
+          options
         }
       }
-    }
 
-    // 所有提供商都失败了
-    throw new Error(`All providers failed to analyze sentiment. Last error: ${lastError?.message}`);
+      // 记录成功
+      this.logger.info('情感分析完成', {
+        noteId,
+        provider: provider.name,
+        sentiment: sentimentResult.polarity,
+        score: sentimentResult.score,
+        confidence: sentimentResult.confidence,
+        processingTime: sentimentResult.metadata.processingTime
+      })
+
+      // 记录花费
+      this.recordSpending(estimatedCost)
+
+      return sentimentResult
+
+    } catch (error) {
+      this.logger.error('情感分析失败', {
+        noteId,
+        error: error.message,
+        processingTime: Date.now() - startTime
+      })
+      throw error
+    }
   }
 
+  /**
+   * 批量情感分析
+   */
+  async analyzeBatchSentiment(
+    notes: Array<{
+      id: string
+      content: string
+      options?: SentimentOptions
+    }>
+  ): Promise<Array<{
+    noteId: string
+    result?: SentimentResult
+    error?: string
+  }>> {
+    this.logger.info('开始批量情感分析', { count: notes.length })
+
+    const results = []
+    const concurrencyLimit = 3 // 并发限制
+
+    for (let i = 0; i < notes.length; i += concurrencyLimit) {
+      const batch = notes.slice(i, i + concurrencyLimit)
+
+      const batchPromises = batch.map(async (note) => {
+        try {
+          const result = await this.analyzeSentiment(
+            note.id,
+            note.content,
+            note.options
+          )
+          return { noteId: note.id, result }
+        } catch (error) {
+          this.logger.warn('单个笔记情感分析失败', {
+            noteId: note.id,
+            error: error.message
+          })
+          return { noteId: note.id, error: error.message }
+        }
+      })
+
+      const batchResults = await Promise.all(batchPromises)
+      results.push(...batchResults)
+
+      // 避免API限制，批次间稍作延迟
+      if (i + concurrencyLimit < notes.length) {
+        await this.delay(1000)
+      }
+    }
+
+    const successCount = results.filter(r => r.result).length
+    this.logger.info('批量情感分析完成', {
+      total: notes.length,
+      success: successCount,
+      failed: notes.length - successCount
+    })
+
+    return results
+  }
+
+  /**
+   * 使用指定提供商进行情感分析
+   */
   private async analyzeSentimentWithProvider(
-    provider: AnalysisProvider,
-    request: SentimentRequest,
-    requestId: string
-  ): Promise<SentimentResult> {
-    const startTime = Date.now();
-
-    // 构建提示模板
-    const prompt = this.buildPrompt(request);
-
-    // 分析情感
-    const rawSentiment = await provider.analyzeSentiment(prompt);
-
-    const processingTime = Date.now() - startTime;
-
-    // 后处理和结构化
-    const processedResult = this.processSentimentResult(rawSentiment, request);
-
-    // 计算置信度和强度
-    const confidence = this.calculateConfidence(processedResult, request);
-    const intensity = this.calculateIntensity(processedResult, request);
-
-    // 提取情感分析（如果需要）
-    let emotions: EmotionAnalysis[] | undefined;
-    if (request.includeEmotions) {
-      emotions = await this.extractEmotions(provider, request.content, request.language || 'zh');
-    }
-
-    // 提取方面情感（详细分析）
-    let aspects: AspectSentiment[] | undefined;
-    if (request.detailLevel === 'comprehensive') {
-      aspects = await this.extractAspectSentiments(provider, request.content, request.language || 'zh');
-    }
-
-    // 估算成本
-    const inputTokens = this.estimateTokens(prompt);
-    const outputTokens = this.estimateTokens(JSON.stringify(rawSentiment));
-    let cost = 0;
-    try {
-      cost = aiConfig.calculateCost(provider.name, this.getModelName(provider), inputTokens, outputTokens);
-    } catch (error) {
-      // 如果成本计算失败，使用默认成本估算
-      cost = ((inputTokens + outputTokens) / 1000) * 0.0001; // 默认费率
-    }
-
-    return {
-      sentiment: processedResult.sentiment,
-      polarity: processedResult.polarity,
-      confidence,
-      intensity,
-      emotions,
-      aspects,
-      provider: provider.name,
-      model: this.getModelName(provider),
-      processingTime,
-      cost,
-      tokens: {
-        input: inputTokens,
-        output: outputTokens,
-        total: inputTokens + outputTokens,
-      },
-      metadata: {
-        requestId,
-        processedAt: new Date(),
-        version: '1.0.0',
-        algorithm: `ai-${provider.name}-sentiment`,
-        language: request.language || 'zh',
-        detailLevel: request.detailLevel || 'basic',
-      },
-    };
-  }
-
-  private buildPrompt(request: SentimentRequest): string {
-    const {
-      content,
-      language = 'zh',
-      detailLevel = 'basic',
-      includeEmotions = false,
-      includeConfidence = true,
-    } = request;
-
-    let prompt = '';
-
-    if (language === 'zh') {
-      prompt = `请分析以下文本的情感倾向：\n\n"${content}"\n\n`;
-
-      if (detailLevel === 'basic') {
-        prompt += `请返回JSON格式的分析结果：
-{
-  "sentiment": "positive/negative/neutral",
-  "polarity": -1到1的数值（负数表示负面，正数表示正面，0表示中性）,
-  "confidence": 0到1的置信度
-}`;
-      } else if (detailLevel === 'detailed') {
-        prompt += `请返回详细的分析结果：
-{
-  "sentiment": "positive/negative/neutral",
-  "polarity": -1到1的数值,
-  "confidence": 0到1的置信度,
-  "reasoning": "分析理由",
-  "keyPhrases": ["影响情感判断的关键短语"]
-}`;
-      } else if (detailLevel === 'comprehensive') {
-        prompt += `请返回全面的分析结果：
-{
-  "sentiment": "positive/negative/neutral",
-  "polarity": -1到1的数值,
-  "confidence": 0到1的置信度,
-  "reasoning": "详细分析理由",
-  "keyPhrases": ["影响情感判断的关键短语"],
-  "emotionalWords": ["情感词汇"],
-  "intensity": 0到1的情感强度
-}`;
-      }
-
-      if (includeEmotions) {
-        prompt += `\n\n另外请识别主要情感（最多3个）：
-{
-  "emotions": [
-    {
-      "emotion": "joy/anger/fear/sadness/surprise/disgust/trust/anticipation",
-      "intensity": 0到1的强度
-    }
-  ]
-}`;
-      }
-    } else {
-      // 英文提示
-      prompt = `Please analyze the sentiment of the following text:\n\n"${content}"\n\n`;
-
-      if (detailLevel === 'basic') {
-        prompt += `Please return the analysis in JSON format:
-{
-  "sentiment": "positive/negative/neutral",
-  "polarity": number between -1 and 1,
-  "confidence": number between 0 and 1
-}`;
-      } else if (detailLevel === 'detailed') {
-        prompt += `Please return detailed analysis in JSON format:
-{
-  "sentiment": "positive/negative/neutral",
-  "polarity": number between -1 and 1,
-  "confidence": number between 0 and 1,
-  "reasoning": "analysis reasoning",
-  "keyPhrases": ["key phrases affecting sentiment"]
-}`;
-      } else if (detailLevel === 'comprehensive') {
-        prompt += `Please return comprehensive analysis in JSON format:
-{
-  "sentiment": "positive/negative/neutral",
-  "polarity": number between -1 and 1,
-  "confidence": number between 0 and 1,
-  "reasoning": "detailed analysis reasoning",
-  "keyPhrases": ["key phrases affecting sentiment"],
-  "emotionalWords": ["emotional words"],
-  "intensity": number between 0 and 1
-}`;
-      }
-
-      if (includeEmotions) {
-        prompt += `\n\nAlso identify primary emotions (max 3):
-{
-  "emotions": [
-    {
-      "emotion": "joy/anger/fear/sadness/surprise/disgust/trust/anticipation",
-      "intensity": number between 0 and 1
-    }
-  ]
-}`;
-      }
-    }
-
-    return prompt;
-  }
-
-  private processSentimentResult(rawResult: any, request: SentimentRequest): {
-    sentiment: 'positive' | 'negative' | 'neutral';
-    polarity: number;
-    confidence: number;
-    reasoning?: string;
-    keyPhrases?: string[];
-    emotionalWords?: string[];
-    intensity?: number;
-  } {
-    // 尝试解析JSON结果
-    let parsed = rawResult;
-    if (typeof rawResult === 'string') {
-      try {
-        parsed = JSON.parse(rawResult);
-      } catch (e) {
-        // 如果解析失败，使用文本分析
-        parsed = this.parseTextSentiment(rawResult, request.language || 'zh');
-      }
-    }
-
-    // 标准化结果
-    return {
-      sentiment: this.normalizeSentiment(parsed.sentiment),
-      polarity: this.normalizePolarity(parsed.polarity),
-      confidence: this.normalizeConfidence(parsed.confidence),
-      reasoning: parsed.reasoning,
-      keyPhrases: parsed.keyPhrases || [],
-      emotionalWords: parsed.emotionalWords || [],
-      intensity: parsed.intensity,
-    };
-  }
-
-  private normalizeSentiment(sentiment: any): 'positive' | 'negative' | 'neutral' {
-    if (typeof sentiment !== 'string') {
-      return 'neutral';
-    }
-
-    const s = sentiment.toLowerCase().trim();
-    if (s.includes('positive') || s.includes('正面') || s.includes('积极')) {
-      return 'positive';
-    } else if (s.includes('negative') || s.includes('负面') || s.includes('消极')) {
-      return 'negative';
-    } else {
-      return 'neutral';
-    }
-  }
-
-  private normalizePolarity(polarity: any): number {
-    const num = Number(polarity);
-    if (isNaN(num)) {
-      return 0;
-    }
-    return Math.max(-1, Math.min(1, num));
-  }
-
-  private normalizeConfidence(confidence: any): number {
-    const num = Number(confidence);
-    if (isNaN(num)) {
-      return 0.5;
-    }
-    return Math.max(0, Math.min(1, num));
-  }
-
-  private parseTextSentiment(text: string, language: string): any {
-    // 简单的文本情感解析逻辑
-    const positiveWords = language === 'zh'
-      ? ['好', '棒', '优秀', '喜欢', '满意', '开心', '快乐', '高兴', '赞']
-      : ['good', 'great', 'excellent', 'like', 'happy', 'joy', 'wonderful', 'amazing'];
-
-    const negativeWords = language === 'zh'
-      ? ['差', '坏', '糟糕', '讨厌', '不满', '难过', '失望', '愤怒', '垃圾']
-      : ['bad', 'terrible', 'awful', 'hate', 'sad', 'disappointed', 'angry', 'garbage'];
-
-    const textLower = text.toLowerCase();
-    let positiveCount = 0;
-    let negativeCount = 0;
-
-    positiveWords.forEach(word => {
-      if (textLower.includes(word)) positiveCount++;
-    });
-
-    negativeWords.forEach(word => {
-      if (textLower.includes(word)) negativeCount++;
-    });
-
-    const totalWords = positiveCount + negativeCount;
-    if (totalWords === 0) {
-      return { sentiment: 'neutral', polarity: 0, confidence: 0.5 };
-    }
-
-    const sentiment = positiveCount > negativeCount ? 'positive' :
-                     negativeCount > positiveCount ? 'negative' : 'neutral';
-    const polarity = (positiveCount - negativeCount) / Math.max(totalWords, 1);
-    const confidence = Math.min(totalWords / 5, 1); // 最多5个词达到完全置信
-
-    return { sentiment, polarity, confidence };
-  }
-
-  private calculateConfidence(processedResult: any, request: SentimentRequest): number {
-    // 基于多个因素计算置信度
-    let confidence = processedResult.confidence || 0.5;
-
-    // 基于内容长度调整
-    const contentLength = request.content.length;
-    if (contentLength < 10) {
-      confidence *= 0.7; // 短文本置信度较低
-    } else if (contentLength > 100) {
-      confidence *= 1.1; // 长文本置信度较高
-    }
-
-    // 基于关键词数量调整
-    if (processedResult.keyPhrases && processedResult.keyPhrases.length > 0) {
-      confidence *= 1.05;
-    }
-
-    return Math.min(1, confidence);
-  }
-
-  private calculateIntensity(processedResult: any, request: SentimentRequest): number {
-    // 计算情感强度
-    let intensity = 0.5; // 基础强度
-
-    // 基于极性值
-    if (processedResult.polarity) {
-      intensity = Math.abs(processedResult.polarity);
-    }
-
-    // 基于情感词汇数量
-    if (processedResult.emotionalWords && processedResult.emotionalWords.length > 0) {
-      intensity = Math.min(1, intensity + (processedResult.emotionalWords.length * 0.1));
-    }
-
-    // 基于推理详细程度
-    if (processedResult.reasoning && processedResult.reasoning.length > 50) {
-      intensity = Math.min(1, intensity + 0.1);
-    }
-
-    return intensity;
-  }
-
-  private async extractEmotions(
-    provider: AnalysisProvider,
+    provider: AIProvider,
     content: string,
-    language: string
-  ): Promise<EmotionAnalysis[]> {
-    const emotionPrompt = language === 'zh'
-      ? `请分析以下文本中的主要情感（最多3个）：\n\n"${content}"\n\n返回JSON格式：
-{
-  "emotions": [
-    {
-      "emotion": "joy/anger/fear/sadness/surprise/disgust/trust/anticipation",
-      "intensity": 0到1的强度,
-      "triggers": ["触发该情感的关键词"]
-    }
-  ]
-}`
-      : `Please analyze the primary emotions in the following text (max 3):\n\n"${content}"\n\nReturn in JSON format:
-{
-  "emotions": [
-    {
-      "emotion": "joy/anger/fear/sadness/surprise/disgust/trust/anticipation",
-      "intensity": number between 0 and 1,
-      "triggers": ["trigger keywords for this emotion"]
-    }
-  ]
-}`;
+    options: SentimentOptions
+  ): Promise<Omit<SentimentResult, 'provider' | 'metadata'>> {
+    const prompt = this.buildSentimentPrompt(content, options)
 
-    try {
-      const result = await provider.analyzeSentiment(emotionPrompt);
-      const parsed = typeof result === 'string' ? JSON.parse(result) : result;
-
-      return (parsed.emotions || []).map((emotion: any) => ({
-        emotion: emotion.emotion,
-        intensity: Math.max(0, Math.min(1, Number(emotion.intensity) || 0.5)),
-        confidence: 0.8, // 默认置信度
-        triggers: emotion.triggers || [],
-      }));
-    } catch (error) {
-      console.warn('Failed to extract emotions:', error);
-      return [];
-    }
-  }
-
-  private async extractAspectSentiments(
-    provider: AnalysisProvider,
-    content: string,
-    language: string
-  ): Promise<AspectSentiment[]> {
-    const aspectPrompt = language === 'zh'
-      ? `请分析以下文本中不同方面的情感倾向：\n\n"${content}"\n\n返回JSON格式：
-{
-  "aspects": [
-    {
-      "aspect": "方面名称",
-      "sentiment": "positive/negative/neutral",
-      "confidence": 0到1的置信度,
-      "keywords": ["相关关键词"],
-      "context": "相关上下文"
-    }
-  ]
-}`
-      : `Please analyze aspect-based sentiments in the following text:\n\n"${content}"\n\nReturn in JSON format:
-{
-  "aspects": [
-    {
-      "aspect": "aspect name",
-      "sentiment": "positive/negative/neutral",
-      "confidence": number between 0 and 1,
-      "keywords": ["relevant keywords"],
-      "context": "relevant context"
-    }
-  ]
-}`;
-
-    try {
-      const result = await provider.analyzeSentiment(aspectPrompt);
-      const parsed = typeof result === 'string' ? JSON.parse(result) : result;
-
-      return (parsed.aspects || []).map((aspect: any) => ({
-        aspect: aspect.aspect,
-        sentiment: this.normalizeSentiment(aspect.sentiment),
-        confidence: this.normalizeConfidence(aspect.confidence),
-        keywords: aspect.keywords || [],
-        context: aspect.context || '',
-      }));
-    } catch (error) {
-      console.warn('Failed to extract aspect sentiments:', error);
-      return [];
-    }
-  }
-
-  private getModelName(provider: AnalysisProvider): string {
-    // 尝试从provider获取model名称
-    if ('model' in provider && typeof provider.model === 'string') {
-      return provider.model;
-    }
-
-    // 根据provider名称返回默认模型
     switch (provider.name) {
       case 'openai':
-        return 'gpt-3.5-turbo';
+        return await this.analyzeWithOpenAI(prompt, options, content)
       case 'anthropic':
-        return 'claude-3-haiku-20240307';
+        return await this.analyzeWithClaude(prompt, options, content)
       default:
-        return 'default-model';
+        throw new Error(`不支持的提供商: ${provider.name}`)
     }
   }
 
-  private estimateTokens(text: string): number {
-    const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-    const otherChars = text.length - chineseChars;
-    return Math.ceil(chineseChars / 1.5 + otherChars / 4);
-  }
+  /**
+   * 构建情感分析提示词
+   */
+  private buildSentimentPrompt(
+    content: string,
+    options: SentimentOptions
+  ): string {
+    const {
+      language = 'zh',
+      granularity = 'document',
+      includeEmotions = false,
+      detailedAnalysis = false,
+      customThresholds
+    } = options
 
-  // 批量情感分析
-  async analyzeBatchSentiments(requests: SentimentRequest[]): Promise<SentimentResult[]> {
-    console.log(`📦 Processing ${requests.length} sentiment analysis requests...`);
+    let prompt = ''
 
-    const results: SentimentResult[] = [];
-    const batchSize = 3; // 控制并发数
-
-    for (let i = 0; i < requests.length; i += batchSize) {
-      const batch = requests.slice(i, i + batchSize);
-      console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(requests.length / batchSize)}`);
-
-      const batchPromises = batch.map(request =>
-        this.analyzeSentiment(request).catch(error => {
-          console.error(`❌ Failed to analyze sentiment for content:`, error);
-          return null;
-        })
-      );
-
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults.filter(r => r !== null) as SentimentResult[]);
+    // 基础指令
+    const languageMap = {
+      zh: '中文',
+      en: 'English',
+      auto: '中文（如果原文是中文）'
     }
 
-    console.log(`✅ Batch processing completed. ${results.length}/${requests.length} analyses completed.`);
-    return results;
-  }
+    prompt += `请对以下文本进行情感分析，使用${languageMap[language]}进行分析和回答。\n\n`
+    prompt += `文本内容：${content}\n\n`
 
-  // 获取可用的提供商列表
-  getAvailableProviders(): string[] {
-    return Array.from(this.providers.keys());
-  }
-
-  // 检查服务健康状态
-  async healthCheck(): Promise<{ status: 'healthy' | 'degraded' | 'unhealthy'; providers: string[]; details: any }> {
-    const availableProviders = this.getAvailableProviders();
-
-    if (availableProviders.length === 0) {
-      return {
-        status: 'unhealthy',
-        providers: [],
-        details: { error: 'No providers available' }
-      };
+    // 分析粒度要求
+    switch (granularity) {
+      case 'document':
+        prompt += `分析要求：对整个文档进行整体情感分析。\n`
+        break
+      case 'sentence':
+        prompt += `分析要求：对每个句子进行分别的情感分析。\n`
+        break
+      case 'aspect':
+        prompt += `分析要求：进行基于方面的情感分析，识别文本中的不同方面及其情感倾向。\n`
+        break
     }
 
-    if (availableProviders.length === 1) {
-      return {
-        status: 'degraded',
-        providers: availableProviders,
-        details: { warning: 'Only one provider available' }
-      };
+    // 自定义阈值
+    if (customThresholds) {
+      prompt += `情感阈值设定：\n`
+      prompt += `- 正面情感阈值：${customThresholds.positive}\n`
+      prompt += `- 负面情感阈值：${customThresholds.negative}\n`
+      prompt += `- 中性情感阈值：${customThresholds.neutral}\n\n`
+    }
+
+    // 情感分析要求
+    prompt += `请提供以下分析结果：\n`
+    prompt += `1. 情感极性 (positive/negative/neutral)\n`
+    prompt += `2. 情感分数 (-1到1之间，-1最负面，1最正面，0中性)\n`
+    prompt += `3. 置信度 (0到1之间)\n`
+    prompt += `4. 情感强度/幅度 (0到1之间，表示情感的强烈程度)\n`
+
+    // 附加分析
+    if (includeEmotions) {
+      prompt += `5. 具体情感类型分析 (joy, sadness, anger, fear, surprise, disgust等)\n`
+    }
+
+    if (detailedAnalysis) {
+      prompt += `6. 详细的分析说明和理由\n`
+    }
+
+    // 输出格式要求
+    prompt += `\n请严格按照以下JSON格式输出：
+{
+  "polarity": "positive|negative|neutral",
+  "score": -1.0到1.0的数值,
+  "confidence": 0.0到1.0的数值,
+  "magnitude": 0.0到1.0的数值,
+  ${includeEmotions ? '"emotions": [{"emotion": "joy", "score": 0.8, "confidence": 0.9, "keywords": ["开心", "快乐"]}],' : ''}
+  ${granularity === 'aspect' ? '"aspects": [{"aspect": "方面名称", "sentiment": "positive", "score": 0.7, "confidence": 0.8, "snippets": ["相关文本片段"]}],' : ''}
+  ${granularity === 'sentence' ? '"sentences": [{"sentence": "句子内容", "sentiment": "positive", "score": 0.8, "confidence": 0.9, "startIndex": 0, "endIndex": 10}],' : ''}
+  ${detailedAnalysis ? '"reasoning": "详细分析说明",' : ''}
+  "suggestions": ["改进建议1", "改进建议2"]
+}`
+
+    return prompt
+  }
+
+  /**
+   * 使用OpenAI进行情感分析
+   */
+  private async analyzeWithOpenAI(
+    prompt: string,
+    options: SentimentOptions,
+    originalContent: string
+  ): Promise<Omit<SentimentResult, 'provider' | 'metadata'>> {
+    try {
+      const response = await openaiProvider.generateText({
+        prompt,
+        model: 'gpt-3.5-turbo',
+        maxTokens: 800,
+        temperature: 0.2
+      })
+
+      // 解析JSON响应
+      const result = this.parseSentimentResponse(response.text)
+
+      // 如果需要句子级分析，额外处理
+      if (options.granularity === 'sentence' && !result.sentences) {
+        result.sentences = await this.analyzeSentenceSentiment(originalContent)
+      }
+
+      return result
+
+    } catch (error) {
+      this.logger.error('OpenAI情感分析失败', { error: error.message })
+      throw new Error(`OpenAI情感分析失败: ${error.message}`)
+    }
+  }
+
+  /**
+   * 使用Claude进行情感分析
+   */
+  private async analyzeWithClaude(
+    prompt: string,
+    options: SentimentOptions,
+    originalContent: string
+  ): Promise<Omit<SentimentResult, 'provider' | 'metadata'>> {
+    try {
+      const response = await claudeProvider.generateText({
+        prompt,
+        model: 'claude-3-haiku-20240307',
+        maxTokens: 800,
+        temperature: 0.2
+      })
+
+      const result = this.parseSentimentResponse(response.text)
+
+      // 如果需要句子级分析，额外处理
+      if (options.granularity === 'sentence' && !result.sentences) {
+        result.sentences = await this.analyzeSentenceSentiment(originalContent)
+      }
+
+      return result
+
+    } catch (error) {
+      this.logger.error('Claude情感分析失败', { error: error.message })
+      throw new Error(`Claude情感分析失败: ${error.message}`)
+    }
+  }
+
+  /**
+   * 解析情感分析响应
+   */
+  private parseSentimentResponse(response: string): Omit<SentimentResult, 'provider' | 'metadata'> {
+    try {
+      // 尝试解析JSON
+      const cleanResponse = response.trim()
+      if (cleanResponse.startsWith('{')) {
+        const parsed = JSON.parse(cleanResponse)
+        return {
+          polarity: parsed.polarity || 'neutral',
+          score: parsed.score || 0,
+          confidence: parsed.confidence || 0.5,
+          magnitude: parsed.magnitude || 0,
+          emotions: parsed.emotions || [],
+          aspects: parsed.aspects || [],
+          sentences: parsed.sentences || []
+        }
+      }
+    } catch (error) {
+      this.logger.warn('JSON解析失败，尝试文本提取', { response: response.substring(0, 100) })
+    }
+
+    // 备用方案：简单规则分析
+    return this.fallbackSentimentAnalysis(response)
+  }
+
+  /**
+   * 备用情感分析（基于规则）
+   */
+  private fallbackSentimentAnalysis(text: string): Omit<SentimentResult, 'provider' | 'metadata'> {
+    const positiveWords = ['好', '棒', '优秀', '喜欢', '开心', '满意', 'good', 'great', 'excellent', 'happy', 'love']
+    const negativeWords = ['差', '糟糕', '讨厌', '不满', '难过', '失望', 'bad', 'terrible', 'hate', 'sad', 'disappointed']
+
+    const lowerText = text.toLowerCase()
+    const positiveCount = positiveWords.filter(word => lowerText.includes(word)).length
+    const negativeCount = negativeWords.filter(word => lowerText.includes(word)).length
+
+    let polarity: 'positive' | 'negative' | 'neutral'
+    let score: number
+
+    if (positiveCount > negativeCount) {
+      polarity = 'positive'
+      score = Math.min(0.8, positiveCount / (positiveCount + negativeCount))
+    } else if (negativeCount > positiveCount) {
+      polarity = 'negative'
+      score = Math.max(-0.8, -negativeCount / (positiveCount + negativeCount))
+    } else {
+      polarity = 'neutral'
+      score = 0
     }
 
     return {
-      status: 'healthy',
-      providers: availableProviders,
-      details: { fallbackOrder: this.fallbackOrder }
-    };
+      polarity,
+      score,
+      confidence: 0.6,
+      magnitude: Math.abs(score),
+      emotions: [],
+      aspects: [],
+      sentences: []
+    }
   }
 
-  // 获取服务统计信息
-  getStats(): {
-    totalProviders: number;
-    availableProviders: number;
-    fallbackOrder: string[];
-    supportedLanguages: string[];
-    supportedDetailLevels: string[];
-    supportedEmotions: string[];
-  } {
-    return {
-      totalProviders: this.providers.size,
-      availableProviders: this.getAvailableProviders().length,
-      fallbackOrder: this.fallbackOrder,
-      supportedLanguages: ['zh', 'en'],
-      supportedDetailLevels: ['basic', 'detailed', 'comprehensive'],
-      supportedEmotions: ['joy', 'anger', 'fear', 'sadness', 'surprise', 'disgust', 'trust', 'anticipation'],
-    };
+  /**
+   * 句子级情感分析
+   */
+  private async analyzeSentenceSentiment(content: string): Promise<SentenceSentiment[]> {
+    const sentences = content.split(/[.!?。！？]/).filter(s => s.trim().length > 0)
+    const results: SentenceSentiment[] = []
+
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i].trim()
+      if (sentence.length < 5) continue
+
+      const startIndex = content.indexOf(sentence)
+      const endIndex = startIndex + sentence.length
+
+      // 简单的句子情感分析
+      const sentiment = this.fallbackSentimentAnalysis(sentence)
+
+      results.push({
+        sentence,
+        sentiment: sentiment.polarity,
+        score: sentiment.score,
+        confidence: sentiment.confidence,
+        startIndex,
+        endIndex
+      })
+    }
+
+    return results
+  }
+
+  /**
+   * 预处理内容
+   */
+  private preprocessContent(content: string): string {
+    // 移除多余的空白字符
+    let processed = content
+      .replace(/\s+/g, ' ')
+      .replace(/\n\s*\n/g, '\n')
+      .trim()
+
+    // 保留文本内容，只清理空白
+    return processed
+  }
+
+  /**
+   * 选择最佳提供商
+   */
+  private selectBestProvider(options: SentimentOptions): AIProvider {
+    // 情感分析优先使用OpenAI（情感分析表现更好）
+    return aiConfig.providers.openai
+  }
+
+  /**
+   * 估算情感分析成本
+   */
+  private estimateSentimentCost(content: string, options: SentimentOptions): number {
+    // 简单的成本估算（基于内容长度和分析复杂度）
+    let baseCost = content.length * 0.000001
+
+    // 根据分析复杂度调整成本
+    if (options.includeEmotions) baseCost *= 1.5
+    if (options.granularity === 'sentence') baseCost *= 2.0
+    if (options.granularity === 'aspect') baseCost *= 2.5
+    if (options.detailedAnalysis) baseCost *= 1.3
+
+    return baseCost
+  }
+
+  /**
+   * 延迟函数
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
-// 单例实例
-export const sentimentService = new SentimentService();
-
-// 工厂函数
-export function createSentimentService(): SentimentService {
-  return new SentimentService();
-}
+// 导出单例实例
+export const sentimentService = new SentimentService()

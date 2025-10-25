@@ -1,407 +1,393 @@
-/**
- * 摘要服务测试用例 - T103.3
- */
+// 摘要服务测试
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SummaryService, createSummaryService } from '../summary-service';
-import { SummaryRequest } from '../summary-service';
+import { SummaryService } from '../summary-service'
+import { openaiProvider } from '@/lib/ai/providers/openai-provider'
+import { claudeProvider } from '@/lib/ai/providers/claude-provider'
 
 // Mock providers
-vi.mock('../../providers/openai-provider-v2', () => ({
-  createOpenAIProviderV2: vi.fn(),
-}));
-
-vi.mock('../../providers/claude-provider', () => ({
-  createClaudeProvider: vi.fn(),
-}));
-
-vi.mock('../../ai-config', () => ({
+jest.mock('@/lib/ai/providers/openai-provider')
+jest.mock('@/lib/ai/providers/claude-provider')
+jest.mock('@/lib/ai/config', () => ({
   aiConfig: {
-    getFallbackOrder: vi.fn(),
-    calculateCost: vi.fn(),
-  },
-}));
+    providers: {
+      openai: {
+        name: 'openai',
+        type: 'openai' as const
+      },
+      anthropic: {
+        name: 'anthropic',
+        type: 'anthropic' as const
+      }
+    },
+    settings: {
+      analysisTimeout: 30000,
+      defaultProvider: 'openai'
+    }
+  }
+}))
 
-import { createOpenAIProviderV2 } from '../../providers/openai-provider-v2';
-import { createClaudeProvider } from '../../providers/claude-provider';
-import { aiConfig } from '../../ai-config';
+const mockOpenaiProvider = openaiProvider as jest.Mocked<typeof openaiProvider>
+const mockClaudeProvider = claudeProvider as jest.Mocked<typeof claudeProvider>
 
 describe('SummaryService', () => {
-  let service: SummaryService;
-  let mockOpenAIProvider: any;
-  let mockClaudeProvider: any;
+  let summaryService: SummaryService
 
   beforeEach(() => {
-    // Mock providers
-    mockOpenAIProvider = {
-      name: 'openai',
-      generateSummary: vi.fn(),
-    };
-
-    mockClaudeProvider = {
-      name: 'anthropic',
-      generateSummary: vi.fn(),
-    };
-
-    (createOpenAIProviderV2 as vi.Mock).mockReturnValue(mockOpenAIProvider);
-    (createClaudeProvider as vi.Mock).mockReturnValue(mockClaudeProvider);
-
-    // Mock config
-    (aiConfig.getFallbackOrder as vi.Mock).mockReturnValue(['openai', 'anthropic']);
-    (aiConfig.calculateCost as vi.Mock).mockReturnValue(0.001);
-
-    // Suppress console output for tests
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    service = createSummaryService();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('constructor', () => {
-    it('应该正确初始化所有可用的提供商', () => {
-      expect(createOpenAIProviderV2).toHaveBeenCalled();
-      expect(createClaudeProvider).toHaveBeenCalled();
-    });
-
-    it('应该设置正确的fallback顺序', () => {
-      expect(aiConfig.getFallbackOrder).toHaveBeenCalled();
-    });
-
-    it('应该在没有提供商时抛出错误', () => {
-      (createOpenAIProviderV2 as vi.Mock).mockImplementation(() => {
-        throw new Error('OpenAI not available');
-      });
-      (createClaudeProvider as vi.Mock).mockImplementation(() => {
-        throw new Error('Claude not available');
-      });
-
-      expect(() => createSummaryService()).toThrow('No AI providers available');
-    });
-  });
+    summaryService = new SummaryService()
+    jest.clearAllMocks()
+  })
 
   describe('generateSummary', () => {
-    const mockRequest: SummaryRequest = {
-      content: '这是一个测试内容，用于验证摘要生成服务的功能。包含了多个句子和一些关键信息。',
-      userId: 'test-user-001',
-    };
+    const mockNoteId = 'note-123'
+    const mockTitle = '测试笔记标题'
+    const mockContent = '这是一个测试笔记的内容。它包含了一些重要的信息和数据。我们需要对这些信息进行整理和分析。'
 
-    it('应该使用首选提供商生成摘要', async () => {
-      mockOpenAIProvider.generateSummary.mockResolvedValue('这是一个测试摘要。');
-
-      const result = await service.generateSummary(mockRequest);
-
-      expect(result).toMatchObject({
-        summary: '这是一个测试摘要。',
-        provider: 'openai',
-        processingTime: expect.any(Number),
-        cost: 0.001,
-        tokens: expect.objectContaining({
-          input: expect.any(Number),
-          output: expect.any(Number),
-          total: expect.any(Number),
+    it('应该成功生成基础摘要', async () => {
+      // Arrange
+      mockOpenaiProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: '这是一个包含重要信息的测试笔记，需要进行整理和分析。',
+          keyPoints: ['重要信息', '数据整理', '分析需求']
         }),
-        quality: expect.objectContaining({
-          score: expect.any(Number),
-          length: expect.any(Number),
-          adherence: expect.any(Number),
+        usage: { promptTokens: 50, completionTokens: 30, totalTokens: 80 }
+      })
+
+      // Act
+      const result = await summaryService.generateSummary(
+        mockNoteId,
+        mockTitle,
+        mockContent
+      )
+
+      // Assert
+      expect(result).toBeDefined()
+      expect(result.text).toBe('这是一个包含重要信息的测试笔记，需要进行整理和分析。')
+      expect(result.keyPoints).toEqual(['重要信息', '数据整理', '分析需求'])
+      expect(result.provider).toBe('openai')
+      expect(result.quality).toBeDefined()
+      expect(result.metadata).toBeDefined()
+    })
+
+    it('应该处理短内容错误', async () => {
+      // Arrange
+      const shortContent = '短内容'
+
+      // Act & Assert
+      await expect(
+        summaryService.generateSummary(mockNoteId, mockTitle, shortContent)
+      ).rejects.toThrow('内容过短，无法生成有意义的摘要')
+    })
+
+    it('应该根据内容长度选择合适的提供商', async () => {
+      // Arrange
+      const longContent = 'A'.repeat(1000)
+      mockClaudeProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: '这是一个长内容的摘要',
+          keyPoints: []
         }),
-        metadata: expect.objectContaining({
-          requestId: expect.stringMatching(/^summary_/),
-          processedAt: expect.any(Date),
-          version: '1.0.0',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
+      })
+
+      // Act
+      const result = await summaryService.generateSummary(
+        mockNoteId,
+        mockTitle,
+        longContent,
+        { maxLength: 600 }
+      )
+
+      // Assert
+      expect(mockClaudeProvider.generateText).toHaveBeenCalled()
+      expect(result.provider).toBe('anthropic')
+    })
+
+    it('应该处理不同的摘要风格', async () => {
+      // Arrange
+      mockOpenaiProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: '• 要点1\n• 要点2\n• 要点3',
+          keyPoints: ['关键点1', '关键点2']
         }),
-      });
+        usage: { promptTokens: 60, completionTokens: 40, totalTokens: 100 }
+      })
 
-      expect(mockOpenAIProvider.generateSummary).toHaveBeenCalled();
-      expect(mockClaudeProvider.generateSummary).not.toHaveBeenCalled();
-    });
+      // Act
+      const result = await summaryService.generateSummary(
+        mockNoteId,
+        mockTitle,
+        mockContent,
+        { style: 'bullet' }
+      )
 
-    it('应该在首选提供商失败时使用fallback提供商', async () => {
-      mockOpenAIProvider.generateSummary.mockRejectedValue(new Error('OpenAI failed'));
-      mockClaudeProvider.generateSummary.mockResolvedValue('这是Claude生成的摘要。');
+      // Assert
+      expect(result.text).toBe('• 要点1\n• 要点2\n• 要点3')
+      expect(result.metadata.options?.style).toBe('bullet')
+    })
 
-      const result = await service.generateSummary(mockRequest);
+    it('应该处理预算不足的情况', async () => {
+      // Arrange - 模拟预算检查失败
+      const checkBudgetSpy = jest.spyOn(summaryService as any, 'checkBudget')
+      checkBudgetSpy.mockResolvedValue(false)
 
-      expect(result.provider).toBe('anthropic');
-      expect(result.summary).toBe('这是Claude生成的摘要。');
-      expect(mockOpenAIProvider.generateSummary).toHaveBeenCalled();
-      expect(mockClaudeProvider.generateSummary).toHaveBeenCalled();
-    });
+      // Act & Assert
+      await expect(
+        summaryService.generateSummary(mockNoteId, mockTitle, mockContent)
+      ).rejects.toThrow('预算不足，无法生成摘要')
 
-    it('应该在所有提供商都失败时抛出错误', async () => {
-      mockOpenAIProvider.generateSummary.mockRejectedValue(new Error('OpenAI failed'));
-      mockClaudeProvider.generateSummary.mockRejectedValue(new Error('Claude failed'));
-
-      await expect(service.generateSummary(mockRequest)).rejects.toThrow('All providers failed to generate summary');
-    });
-
-    it('应该使用指定的首选提供商', async () => {
-      const requestWithPreference: SummaryRequest = {
-        ...mockRequest,
-        preferredProvider: 'anthropic',
-      };
-
-      mockClaudeProvider.generateSummary.mockResolvedValue('Claude摘要');
-
-      const result = await service.generateSummary(requestWithPreference);
-
-      expect(result.provider).toBe('anthropic');
-      expect(mockClaudeProvider.generateSummary).toHaveBeenCalled();
-      expect(mockOpenAIProvider.generateSummary).not.toHaveBeenCalled();
-    });
-
-    it('应该处理自定义参数', async () => {
-      const customRequest: SummaryRequest = {
-        content: '长内容...' + '更多内容。'.repeat(50),
-        maxLength: 50,
-        style: 'bullet',
-        language: 'en',
-        focus: ['技术', '创新'],
-        userId: 'test-user-001',
-      };
-
-      mockOpenAIProvider.generateSummary.mockResolvedValue('Custom summary');
-
-      await service.generateSummary(customRequest);
-
-      const prompt = mockOpenAIProvider.generateSummary.mock.calls[0][0];
-      expect(prompt).toContain('长度控制在50字以内');
-      expect(prompt).toContain('使用要点形式（• 项目符号）');
-      expect(prompt).toContain('使用英文');
-      expect(prompt).toContain('特别关注以下方面：技术、创新');
-    });
-  });
+      checkBudgetSpy.mockRestore()
+    })
+  })
 
   describe('generateBatchSummaries', () => {
-    it('应该批量处理多个摘要请求', async () => {
-      const requests: SummaryRequest[] = [
-        { content: '内容1', userId: 'user1' },
-        { content: '内容2', userId: 'user2' },
-        { content: '内容3', userId: 'user3' },
-      ];
+    const mockNotes = [
+      {
+        id: 'note-1',
+        title: '笔记1',
+        content: '这是第一个笔记的内容'
+      },
+      {
+        id: 'note-2',
+        title: '笔记2',
+        content: '这是第二个笔记的内容'
+      },
+      {
+        id: 'note-3',
+        title: '笔记3',
+        content: '这是第三个笔记的内容'
+      }
+    ]
 
-      mockOpenAIProvider.generateSummary
-        .mockResolvedValueOnce('摘要1')
-        .mockResolvedValueOnce('摘要2')
-        .mockResolvedValueOnce('摘要3');
+    it('应该成功处理批量摘要生成', async () => {
+      // Arrange
+      mockOpenaiProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: '摘要内容',
+          keyPoints: ['要点']
+        }),
+        usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 }
+      })
 
-      const results = await service.generateBatchSummaries(requests);
+      // Act
+      const results = await summaryService.generateBatchSummaries(mockNotes)
 
-      expect(results).toHaveLength(3);
-      expect(results[0].summary).toBe('摘要1');
-      expect(results[1].summary).toBe('摘要2');
-      expect(results[2].summary).toBe('摘要3');
-    });
+      // Assert
+      expect(results).toHaveLength(3)
+      expect(results[0].summary).toBeDefined()
+      expect(results[0].noteId).toBe('note-1')
+      expect(results[1].summary).toBeDefined()
+      expect(results[1].noteId).toBe('note-2')
+      expect(results[2].summary).toBeDefined()
+      expect(results[2].noteId).toBe('note-3')
+    })
 
-    it('应该处理部分失败的请求', async () => {
-      const requests: SummaryRequest[] = [
-        { content: '内容1', userId: 'user1' },
-        { content: '内容2', userId: 'user2' },
-        { content: '内容3', userId: 'user3' },
-      ];
+    it('应该处理部分失败的批量操作', async () => {
+      // Arrange
+      mockOpenaiProvider.generateText
+        .mockResolvedValueOnce({
+          text: JSON.stringify({
+            summary: '成功摘要',
+            keyPoints: []
+          }),
+          usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 }
+        })
+        .mockRejectedValueOnce(new Error('API错误'))
+        .mockResolvedValueOnce({
+          text: JSON.stringify({
+            summary: '另一个成功摘要',
+            keyPoints: []
+          }),
+          usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 }
+        })
 
-      mockOpenAIProvider.generateSummary
-        .mockResolvedValueOnce('摘要1')
-        .mockRejectedValueOnce(new Error('Failed'))
-        .mockResolvedValueOnce('摘要3');
+      // Act
+      const results = await summaryService.generateBatchSummaries(mockNotes)
 
-      const results = await service.generateBatchSummaries(requests);
+      // Assert
+      expect(results).toHaveLength(3)
+      expect(results[0].summary).toBeDefined()
+      expect(results[0].error).toBeUndefined()
+      expect(results[1].error).toBe('API错误')
+      expect(results[1].summary).toBeUndefined()
+      expect(results[2].summary).toBeDefined()
+      expect(results[2].error).toBeUndefined()
+    })
+  })
 
-      expect(results).toHaveLength(2);
-      expect(results[0].summary).toBe('摘要1');
-      expect(results[1].summary).toBe('摘要3');
-    });
+  describe('generateComparativeSummaries', () => {
+    const mockTitle = '对比测试标题'
+    const mockContent = '这是用于对比测试的内容。包含了一些需要摘要的信息。'
 
-    it('应该控制并发数量', async () => {
-      const requests: SummaryRequest[] = Array.from({ length: 10 }, (_, i) => ({
-        content: `内容${i + 1}`,
-        userId: `user${i + 1}`,
-      }));
+    it('应该生成多个提供商的摘要对比', async () => {
+      // Arrange
+      mockOpenaiProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: 'OpenAI生成的摘要',
+          keyPoints: ['要点1', '要点2']
+        }),
+        usage: { promptTokens: 40, completionTokens: 30, totalTokens: 70 }
+      })
 
-      let concurrentCalls = 0;
-      let maxConcurrentCalls = 0;
+      mockClaudeProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: 'Claude生成的摘要',
+          keyPoints: ['要点A', '要点B']
+        }),
+        usage: { promptTokens: 40, completionTokens: 30, totalTokens: 70 }
+      })
 
-      mockOpenAIProvider.generateSummary.mockImplementation(async () => {
-        concurrentCalls++;
-        maxConcurrentCalls = Math.max(maxConcurrentCalls, concurrentCalls);
-        await new Promise(resolve => setTimeout(resolve, 10));
-        concurrentCalls--;
-        return `摘要${concurrentCalls}`;
-      });
+      // Act
+      const results = await summaryService.generateComparativeSummaries(
+        mockTitle,
+        mockContent,
+        ['openai', 'anthropic']
+      )
 
-      await service.generateBatchSummaries(requests);
+      // Assert
+      expect(results).toHaveLength(2)
+      expect(results[0].provider).toBe('openai')
+      expect(results[0].summary.text).toBe('OpenAI生成的摘要')
+      expect(results[1].provider).toBe('anthropic')
+      expect(results[1].summary.text).toBe('Claude生成的摘要')
+    })
 
-      expect(maxConcurrentCalls).toBeLessThanOrEqual(3); // batchSize = 3
-    });
-  });
+    it('应该按质量排序结果', async () => {
+      // Arrange
+      mockOpenaiProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: '质量较低的摘要',
+          keyPoints: ['要点']
+        }),
+        usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 }
+      })
 
-  describe('质量计算', () => {
-    it('应该正确计算理想长度摘要的质量分数', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        maxLength: 100,
-        userId: 'user1',
-      };
+      mockClaudeProvider.generateText.mockResolvedValue({
+        text: JSON.stringify({
+          summary: '这是一个质量很高的摘要，包含了所有重要信息。',
+          keyPoints: ['重要要点1', '重要要点2', '重要要点3']
+        }),
+        usage: { promptTokens: 50, completionTokens: 40, totalTokens: 90 }
+      })
 
-      mockOpenAIProvider.generateSummary.mockResolvedValue('这是一个50字的摘要，长度刚好合适。'.repeat(2));
+      // Act
+      const results = await summaryService.generateComparativeSummaries(
+        mockTitle,
+        mockContent,
+        ['openai', 'anthropic']
+      )
 
-      const result = await service.generateSummary(request);
+      // Assert
+      expect(results[0].summary.quality.overall).toBeGreaterThanOrEqual(
+        results[1].summary.quality.overall
+      )
+    })
 
-      expect(result.quality.length).toBe(50);
-      expect(result.quality.adherence).toBe(1.0);
-      expect(result.quality.score).toBeGreaterThan(0.8);
-    });
+    it('应该处理不存在的提供商', async () => {
+      // Act
+      const results = await summaryService.generateComparativeSummaries(
+        mockTitle,
+        mockContent,
+        ['nonexistent']
+      )
 
-    it('应该对超长摘要进行质量惩罚', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        maxLength: 50,
-        userId: 'user1',
-      };
+      // Assert
+      expect(results).toHaveLength(0)
+    })
+  })
 
-      mockOpenAIProvider.generateSummary.mockResolvedValue('这是一个100字的摘要，明显超过了50字的限制要求。'.repeat(2));
+  describe('content preprocessing', () => {
+    it('应该正确处理Markdown内容', () => {
+      const markdownContent = `
+# 标题
 
-      const result = await service.generateSummary(request);
+这是一个包含 **粗体** 和 *斜体* 的段落。
 
-      expect(result.quality.length).toBeGreaterThan(50);
-      expect(result.quality.adherence).toBeLessThan(1.0);
-      expect(result.quality.score).toBeLessThan(1.0);
-    });
+## 子标题
 
-    it('应该对过短摘要进行质量惩罚', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        maxLength: 100,
-        userId: 'user1',
-      };
+这里有一个 \`代码片段\` 和一个 [链接](https://example.com)。
 
-      mockOpenAIProvider.generateSummary.mockResolvedValue('短摘要');
+\`\`\`javascript
+console.log('代码块');
+\`\`\`
 
-      const result = await service.generateSummary(request);
+![图片](image.jpg)
+      `
 
-      expect(result.quality.length).toBeLessThan(30); // 100 * 0.3 = 30
-      expect(result.quality.score).toBeLessThan(1.0);
-    });
-  });
+      const processed = (summaryService as any).preprocessContent(markdownContent)
 
-  describe('服务方法', () => {
-    it('应该返回可用的提供商列表', () => {
-      const providers = service.getAvailableProviders();
-      expect(providers).toContain('openai');
-      expect(providers).toContain('anthropic');
-    });
+      expect(processed).not.toContain('#')
+      expect(processed).not.toContain('**')
+      expect(processed).not.toContain('*')
+      expect(processed).not.toContain('`')
+      expect(processed).not.toContain('[')
+      expect(processed).not.toContain('![')
+      expect(processed).toContain('标题')
+      expect(processed).toContain('粗体')
+      expect(processed).toContain('斜体')
+    })
 
-    it('应该执行健康检查', async () => {
-      const health = await service.healthCheck();
+    it('应该移除多余空白字符', () => {
+      const messyContent = '  多个   空格\n\n\n换行符  \t\t制表符  '
 
-      expect(health.status).toBe('healthy');
-      expect(health.providers).toContain('openai');
-      expect(health.providers).toContain('anthropic');
-    });
+      const processed = (summaryService as any).preprocessContent(messyContent)
 
-    it('应该在只有一个提供商时返回degraded状态', async () => {
-      (createClaudeProvider as vi.Mock).mockImplementation(() => {
-        throw new Error('Claude not available');
-      });
+      expect(processed).toBe('多个 空格 换行符 制表符')
+    })
+  })
 
-      const degradedService = createSummaryService();
-      const health = await degradedService.healthCheck();
+  describe('quality evaluation', () => {
+    it('应该正确计算摘要质量指标', async () => {
+      const original = '这是一个包含多个重要概念的原始文本内容，需要进行准确的摘要。'
+      const summary = '这是包含重要概念的原始文本摘要。'
 
-      expect(health.status).toBe('degraded');
-      expect(health.providers).toEqual(['openai']);
-    });
+      const quality = await (summaryService as any).evaluateSummaryQuality(
+        original,
+        summary,
+        {}
+      )
 
-    it('应该返回服务统计信息', () => {
-      const stats = service.getStats();
+      expect(quality).toBeDefined()
+      expect(quality.clarity).toBeGreaterThanOrEqual(0)
+      expect(quality.clarity).toBeLessThanOrEqual(1)
+      expect(quality.completeness).toBeGreaterThanOrEqual(0)
+      expect(quality.completeness).toBeLessThanOrEqual(1)
+      expect(quality.conciseness).toBeGreaterThanOrEqual(0)
+      expect(quality.conciseness).toBeLessThanOrEqual(1)
+      expect(quality.relevance).toBeGreaterThanOrEqual(0)
+      expect(quality.relevance).toBeLessThanOrEqual(1)
+      expect(quality.overall).toBeGreaterThanOrEqual(0)
+      expect(quality.overall).toBeLessThanOrEqual(1)
+    })
+  })
 
-      expect(stats).toMatchObject({
-        totalProviders: 2,
-        availableProviders: 2,
-        fallbackOrder: ['openai', 'anthropic'],
-        supportedLanguages: ['zh', 'en'],
-        supportedStyles: ['paragraph', 'bullet', 'key-points'],
-      });
-    });
-  });
+  describe('error handling', () => {
+    it('应该处理OpenAI API错误', async () => {
+      mockOpenaiProvider.generateText.mockRejectedValue(new Error('OpenAI API错误'))
 
-  describe('prompt构建', () => {
-    it('应该为段落风格构建正确的prompt', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        style: 'paragraph',
-        userId: 'user1',
-      };
+      await expect(
+        summaryService.generateSummary('note-1', '标题', '内容', { maxLength: 100 })
+      ).rejects.toThrow('OpenAI摘要生成失败: OpenAI API错误')
+    })
 
-      mockOpenAIProvider.generateSummary.mockResolvedValue('摘要');
+    it('应该处理Claude API错误', async () => {
+      const longContent = 'A'.repeat(1000)
+      mockClaudeProvider.generateText.mockRejectedValue(new Error('Claude API错误'))
 
-      await service.generateSummary(request);
+      await expect(
+        summaryService.generateSummary('note-1', '标题', longContent, { maxLength: 600 })
+      ).rejects.toThrow('Claude摘要生成失败: Claude API错误')
+    })
 
-      const prompt = mockOpenAIProvider.generateSummary.mock.calls[0][0];
-      expect(prompt).toContain('使用段落形式');
-    });
+    it('应该处理JSON解析错误', async () => {
+      mockOpenaiProvider.generateText.mockResolvedValue({
+        text: '这不是有效的JSON格式',
+        usage: { promptTokens: 30, completionTokens: 20, totalTokens: 50 }
+      })
 
-    it('应该为要点风格构建正确的prompt', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        style: 'bullet',
-        userId: 'user1',
-      };
+      const result = await summaryService.generateSummary('note-1', '标题', '内容')
 
-      mockOpenAIProvider.generateSummary.mockResolvedValue('摘要');
-
-      await service.generateSummary(request);
-
-      const prompt = mockOpenAIProvider.generateSummary.mock.calls[0][0];
-      expect(prompt).toContain('使用要点形式（• 项目符号）');
-    });
-
-    it('应该为关键要点风格构建正确的prompt', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        style: 'key-points',
-        userId: 'user1',
-      };
-
-      mockOpenAIProvider.generateSummary.mockResolvedValue('摘要');
-
-      await service.generateSummary(request);
-
-      const prompt = mockOpenAIProvider.generateSummary.mock.calls[0][0];
-      expect(prompt).toContain('提取关键要点，每点一行');
-    });
-
-    it('应该包含重点关注内容', async () => {
-      const request: SummaryRequest = {
-        content: '测试内容',
-        focus: ['技术', '创新', '效率'],
-        userId: 'user1',
-      };
-
-      mockOpenAIProvider.generateSummary.mockResolvedValue('摘要');
-
-      await service.generateSummary(request);
-
-      const prompt = mockOpenAIProvider.generateSummary.mock.calls[0][0];
-      expect(prompt).toContain('特别关注以下方面：技术、创新、效率');
-    });
-
-    it('应该支持英文内容', async () => {
-      const request: SummaryRequest = {
-        content: 'Test content in English',
-        language: 'en',
-        userId: 'user1',
-      };
-
-      mockOpenAIProvider.generateSummary.mockResolvedValue('Summary');
-
-      await service.generateSummary(request);
-
-      const prompt = mockOpenAIProvider.generateSummary.mock.calls[0][0];
-      expect(prompt).toContain('使用英文');
-    });
-  });
-});
+      expect(result.text).toBe('这不是有效的JSON格式')
+      expect(result.keyPoints).toEqual([])
+    })
+  })
+})

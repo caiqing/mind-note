@@ -20,7 +20,7 @@ AI内容分析集成 - 实现文本嵌入、自动分类和标签提取功能
 
 ### User Story 1 - 智能文本分析 (Priority: P1)
 
-用户创建或编辑笔记时，系统能够自动分析文本内容，提取关键信息，包括语义理解、情感分析、关键概念识别，并生成内容摘要。
+当笔记内容变化超过阈值时，系统能够智能触发自动分析，提取关键信息，包括语义理解、情感分析、关键概念识别，并生成内容摘要。
 
 **Why this priority**: 这是MindNote的AI原生核心价值，是实现智能笔记管理和知识关联的基础功能。
 
@@ -126,14 +126,14 @@ priority**: 自动分类帮助用户快速组织大量笔记，提高信息检�
 ### Functional Requirements
 
 - **FR-001**: System MUST 自动分析笔记内容的语义并生成摘要（不超过100字）
-- **FR-002**: System MUST 支持多种AI模型集成（OpenAI GPT、Claude等）
-- **FR-003**: System MUST 自动提取3-5个相关标签，准确率 > 85%
+- **FR-002**: System MUST 支持多种AI模型集成，包括OpenAI GPT、Claude、DeepSeek、Qwen、Kimi、GLM、自定义模型、ollama等
+- **FR-003**: System MUST 自动提取3-5个相关标签，准确率 > 85%（基于标签相关性的语义相似度计算）
 - **FR-004**: System MUST 支持20+种预定义内容分类的自动识别
-- **FR-005**: System MUST 将文本内容转换为向量嵌入用于语义搜索
+- **FR-005**: System MUST 将文本内容转换为向量嵌入用于语义搜索（使用PostgreSQL + pgvector扩展）
 - **FR-006**: System MUST 提供AI分析结果的编辑和确认界面
 - **FR-007**: System MUST 在AI服务不可用时优雅降级
 - **FR-008**: System MUST 支持AI分析结果的重新处理和更新
-- **FR-009**: System MUST 实现AI请求的速率限制和成本控制
+- **FR-009**: System MUST 实现AI请求的速率限制和成本控制（智能控制：根据内容重要性动态分配预算）
 - **FR-010**: System MUST 记录AI分析日志用于质量监控
 
 ### Key Entities
@@ -144,6 +144,16 @@ priority**: 自动分类帮助用户快速组织大量笔记，提高信息检�
 - **Tag**: 用户和AI生成的标签系统，支持层级关系和权重
 - **AnalysisLog**: AI分析操作的详细日志，包含请求时间、成本、结果质量
 - **AIProvider**: AI服务提供商配置，包含API密钥、模型设置、限制规则
+
+## Clarifications
+
+### Session 2025-10-25
+
+- Q: AI模型集成优先级和策略是什么？ → A: 支持OpenAI GPT、Claude、DeepSeek、Qwen、Kimi、GLM、自定义模型、ollama等多种模型
+- Q: 标签准确率测试标准是什么？ → A: 基于标签相关性的语义相似度计算
+- Q: 向量存储方案是什么？ → A: PostgreSQL + pgvector扩展
+- Q: AI分析触发时机是什么？ → A: 智能触发：内容变化超过阈值时自动分析
+- Q: 成本控制策略是什么？ → A: 智能控制：根据内容重要性动态分配预算
 
 ## Success Criteria _(mandatory)_
 
