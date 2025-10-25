@@ -126,7 +126,7 @@ export class PostgreSQLVectorStorage implements VectorStorageProvider {
     }
   }
 
-  // 向量搜索
+  // 向量搜索 - 安全的参数化查询实现
   async searchSimilar(
     queryVector: number[],
     options: VectorSearchOptions = {}
@@ -143,81 +143,37 @@ export class PostgreSQLVectorStorage implements VectorStorageProvider {
 
       const config = this.config.getConfig();
 
-      // 验证向量维度
-      if (queryVector.length !== config.dimensions) {
-        throw new Error(
-          `Query vector dimension mismatch: expected ${config.dimensions}, got ${queryVector.length}`
-        );
-      }
-
-      // 构建查询
-      const vectorString = `[${queryVector.join(',')}]`;
-      let whereClause = 'WHERE n.content_vector IS NOT NULL';
-      const params: any[] = [vectorString, limit];
-
-      // 添加过滤条件
-      if (filterCategories && filterCategories.length > 0) {
-        whereClause += ` AND n.ai_category = ANY($${params.length + 1})`;
-        params.push(filterCategories);
-      }
-
-      if (filterTags && filterTags.length > 0) {
-        whereClause += ` AND n.ai_tags && $${params.length + 1}`;
-        params.push(filterTags);
-      }
-
-      if (dateRange) {
-        whereClause += ` AND n.created_at BETWEEN $${params.length + 1} AND $${params.length + 2}`;
-        params.push(dateRange.start, dateRange.end);
-      }
-
-      // 根据距离度量类型构建查询
-      let distanceCalculation: string;
-      switch (config.distanceMetric) {
-        case 'cosine':
-          distanceCalculation = `1 - (n.content_vector <=> $1::vector)`;
-          break;
-        case 'l2':
-          distanceCalculation = `n.content_vector <-> $1::vector`;
-          break;
-        case 'innerproduct':
-          distanceCalculation = `-(n.content_vector <#> $1::vector)`;
-          break;
-        default:
-          distanceCalculation = `1 - (n.content_vector <=> $1::vector)`;
-      }
+      // 验证输入参数
+      this.validateSearchInputs(queryVector, config, limit, threshold);
 
       // 设置搜索参数（针对HNSW索引）
       if (config.indexType === 'hnsw' && config.efSearch) {
-        await this.prisma.$executeRawUnsafe(`SET hnsw.ef_search = ${config.efSearch}`);
+        await this.prisma.$executeRaw`SET hnsw.ef_search = ${config.efSearch}`;
       }
 
-      const query = `
-        SELECT
-          n.id as note_id,
-          ${distanceCalculation} as similarity,
-          n.title,
-          n.ai_summary,
-          n.ai_category,
-          n.ai_tags,
-          n.created_at,
-          n.updated_at
-        FROM notes n
-        ${whereClause}
-        ORDER BY ${distanceCalculation} DESC
-        LIMIT $${params.length}
-      `;
-
-      const results = await this.prisma.$queryRawUnsafe<Array<{
-        note_id: string;
-        similarity: number;
-        title: string;
-        ai_summary: string | null;
-        ai_category: string;
-        ai_tags: string[];
-        created_at: Date;
-        updated_at: Date;
-      }>>(query, ...params);
+      // 根据距离度量类型构建查询
+      let results;
+      switch (config.distanceMetric) {
+        case 'cosine':
+          results = await this.searchWithCosineSimilarity(
+            queryVector, limit, filterCategories, filterTags, dateRange
+          );
+          break;
+        case 'l2':
+          results = await this.searchWithL2Distance(
+            queryVector, limit, filterCategories, filterTags, dateRange
+          );
+          break;
+        case 'innerproduct':
+          results = await this.searchWithInnerProduct(
+            queryVector, limit, filterCategories, filterTags, dateRange
+          );
+          break;
+        default:
+          results = await this.searchWithCosineSimilarity(
+            queryVector, limit, filterCategories, filterTags, dateRange
+          );
+      }
 
       // 过滤结果并格式化
       return results
@@ -238,6 +194,172 @@ export class PostgreSQLVectorStorage implements VectorStorageProvider {
       console.error('Error searching similar vectors:', error);
       throw new Error(`Failed to search similar vectors: ${error}`);
     }
+  }
+
+  // 输入验证
+  private validateSearchInputs(
+    queryVector: number[],
+    config: any,
+    limit: number,
+    threshold: number
+  ): void {
+    if (queryVector.length !== config.dimensions) {
+      throw new Error(
+        `Query vector dimension mismatch: expected ${config.dimensions}, got ${queryVector.length}`
+      );
+    }
+
+    if (limit < 1 || limit > 1000) {
+      throw new Error('Limit must be between 1 and 1000');
+    }
+
+    if (threshold < 0 || threshold > 1) {
+      throw new Error('Threshold must be between 0 and 1');
+    }
+
+    // 检查向量值是否为有效数字
+    for (const value of queryVector) {
+      if (typeof value !== 'number' || !isFinite(value)) {
+        throw new Error('Vector must contain only finite numbers');
+      }
+    }
+  }
+
+  // 余弦相似度搜索
+  private async searchWithCosineSimilarity(
+    queryVector: number[],
+    limit: number,
+    filterCategories?: string[],
+    filterTags?: string[],
+    dateRange?: { start: Date; end: Date }
+  ) {
+    const vectorString = `[${queryVector.join(',')}]`;
+
+    let query = this.prisma.$queryRaw<Array<{
+      note_id: string;
+      similarity: number;
+      title: string;
+      ai_summary: string | null;
+      ai_category: string;
+      ai_tags: string[];
+      created_at: Date;
+      updated_at: Date;
+    }>>`
+      SELECT
+        n.id as note_id,
+        (1 - (n.content_vector <=> ${vectorString}::vector)) as similarity,
+        n.title,
+        n.ai_summary,
+        n.ai_category,
+        n.ai_tags,
+        n.created_at,
+        n.updated_at
+      FROM notes n
+      WHERE n.content_vector IS NOT NULL
+        ${filterCategories && filterCategories.length > 0
+          ? Prisma.sql`AND n.ai_category = ANY(${filterCategories})`
+          : Prisma.empty}
+        ${filterTags && filterTags.length > 0
+          ? Prisma.sql`AND n.ai_tags && ${filterTags}`
+          : Prisma.empty}
+        ${dateRange
+          ? Prisma.sql`AND n.created_at BETWEEN ${dateRange.start} AND ${dateRange.end}`
+          : Prisma.empty}
+      ORDER BY similarity DESC
+      LIMIT ${limit}
+    `;
+
+    return query;
+  }
+
+  // L2距离搜索
+  private async searchWithL2Distance(
+    queryVector: number[],
+    limit: number,
+    filterCategories?: string[],
+    filterTags?: string[],
+    dateRange?: { start: Date; end: Date }
+  ) {
+    const vectorString = `[${queryVector.join(',')}]`;
+
+    return this.prisma.$queryRaw<Array<{
+      note_id: string;
+      similarity: number;
+      title: string;
+      ai_summary: string | null;
+      ai_category: string;
+      ai_tags: string[];
+      created_at: Date;
+      updated_at: Date;
+    }>>`
+      SELECT
+        n.id as note_id,
+        (n.content_vector <-> ${vectorString}::vector) as similarity,
+        n.title,
+        n.ai_summary,
+        n.ai_category,
+        n.ai_tags,
+        n.created_at,
+        n.updated_at
+      FROM notes n
+      WHERE n.content_vector IS NOT NULL
+        ${filterCategories && filterCategories.length > 0
+          ? Prisma.sql`AND n.ai_category = ANY(${filterCategories})`
+          : Prisma.empty}
+        ${filterTags && filterTags.length > 0
+          ? Prisma.sql`AND n.ai_tags && ${filterTags}`
+          : Prisma.empty}
+        ${dateRange
+          ? Prisma.sql`AND n.created_at BETWEEN ${dateRange.start} AND ${dateRange.end}`
+          : Prisma.empty}
+      ORDER BY similarity ASC
+      LIMIT ${limit}
+    `;
+  }
+
+  // 内积搜索
+  private async searchWithInnerProduct(
+    queryVector: number[],
+    limit: number,
+    filterCategories?: string[],
+    filterTags?: string[],
+    dateRange?: { start: Date; end: Date }
+  ) {
+    const vectorString = `[${queryVector.join(',')}]`;
+
+    return this.prisma.$queryRaw<Array<{
+      note_id: string;
+      similarity: number;
+      title: string;
+      ai_summary: string | null;
+      ai_category: string;
+      ai_tags: string[];
+      created_at: Date;
+      updated_at: Date;
+    }>>`
+      SELECT
+        n.id as note_id,
+        -(n.content_vector <#> ${vectorString}::vector) as similarity,
+        n.title,
+        n.ai_summary,
+        n.ai_category,
+        n.ai_tags,
+        n.created_at,
+        n.updated_at
+      FROM notes n
+      WHERE n.content_vector IS NOT NULL
+        ${filterCategories && filterCategories.length > 0
+          ? Prisma.sql`AND n.ai_category = ANY(${filterCategories})`
+          : Prisma.empty}
+        ${filterTags && filterTags.length > 0
+          ? Prisma.sql`AND n.ai_tags && ${filterTags}`
+          : Prisma.empty}
+        ${dateRange
+          ? Prisma.sql`AND n.created_at BETWEEN ${dateRange.start} AND ${dateRange.end}`
+          : Prisma.empty}
+      ORDER BY similarity DESC
+      LIMIT ${limit}
+    `;
   }
 
   // 批量操作

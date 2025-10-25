@@ -48,6 +48,23 @@ export class PerformanceMonitor {
   private static instance: PerformanceMonitor
   private logger = Logger.getInstance()
   private requestMetrics: RequestMetrics[] = []
+  private systemMetrics = {
+    startTime: Date.now(),
+    lastGC: 0,
+    memorySnapshot: {
+      rss: 0,
+      heapTotal: 0,
+      heapUsed: 0,
+      external: 0
+    }
+  }
+  private alertThresholds = {
+    errorRate: 0.05, // 5%
+    averageResponseTime: 5000, // 5秒
+    p99ResponseTime: 10000, // 10秒
+    memoryUsage: 0.8, // 80%
+    cacheHitRate: 0.3 // 30%
+  }
   private maxMetricsSize = 10000 // 保留最近10000个请求的指标
   private metricsWindow = 3600000 // 1小时窗口（毫秒）
 

@@ -95,7 +95,9 @@
       "Bash(claude:*)",
       "Bash(POSTGRES_PASSWORD=MindNote_Dev_2024_Secure_P@ssw0rd! psql:*)",
       "Bash(DATABASE_URL=\"postgresql://mindnote:MindNote_Dev_2024_Secure_P@ssw0rd!@localhost:5432/mindnote_dev\" npx prisma migrate dev:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

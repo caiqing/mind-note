@@ -7,6 +7,10 @@ export interface AuthResult {
   success: boolean
   userId?: string
   userRole?: string
+  userInfo?: {
+    email: string
+    permissions: string[]
+  }
   error?: {
     code: string
     message: string
@@ -84,48 +88,233 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
   }
 }
 
-async function verifyToken(token: string): Promise<AuthResult> {
-  try {
-    // 这里应该连接到你的认证服务（如NextAuth.js、JWT验证等）
-    // 以下是示例实现
+// JWT Token验证
+import jwt from 'jsonwebtoken'
+import { Logger } from '@/lib/ai/services/logger'
 
-    // 如果使用NextAuth.js
-    if (process.env.NEXTAUTH_SECRET) {
-      // 这里应该使用NextAuth.js的token验证逻辑
-      // 暂时返回模拟数据
-      const mockUserId = 'demo-user-id'
-      const mockUserRole = 'user'
+export interface JWTPayload {
+  sub: string // 用户ID
+  email: string
+  role: string
+  permissions: string[]
+  iat?: number // 签发时间
+  exp?: number // 过期时间
+  jti?: string // JWT ID
+  iss?: string // 签发者
+  aud?: string // 受众
+}
+
+// 被撤销的token黑名单（生产环境应使用Redis）
+const revokedTokens = new Set<string>()
+
+async function verifyToken(token: string): Promise<AuthResult> {
+  const logger = Logger.getInstance()
+
+  try {
+    // 检查token是否被撤销
+    if (await isTokenRevoked(token)) {
+      logger.warn('Token已被撤销', {
+        tokenPrefix: token.substring(0, 10)
+      })
 
       return {
-        success: true,
-        userId: mockUserId,
-        userRole: mockUserRole
+        success: false,
+        error: {
+          code: 'TOKEN_REVOKED',
+          message: 'Token has been revoked'
+        }
       }
     }
 
-    // 如果使用JWT
-    const jwt = require('jsonwebtoken')
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
+    // 验证JWT token
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      logger.error('JWT_SECRET环境变量未设置')
+      return {
+        success: false,
+        error: {
+          code: 'CONFIG_ERROR',
+          message: 'Server configuration error'
+        }
+      }
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload
+
+    // 验证token结构
+    if (!decoded.sub || !decoded.role) {
+      logger.warn('Token结构无效', {
+        hasSub: !!decoded.sub,
+        hasRole: !!decoded.role
+      })
+
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_TOKEN_STRUCTURE',
+          message: 'Invalid token structure'
+        }
+      }
+    }
+
+    // 检查用户权限和状态（这里应该连接到用户数据库）
+    const userStatus = await getUserStatus(decoded.sub)
+    if (!userStatus.active) {
+      logger.warn('用户账户未激活', {
+        userId: decoded.sub
+      })
+
+      return {
+        success: false,
+        error: {
+          code: 'USER_INACTIVE',
+          message: 'User account is not active'
+        }
+      }
+    }
+
+    logger.info('Token验证成功', {
+      userId: decoded.sub,
+      role: decoded.role,
+      email: decoded.email
+    })
 
     return {
       success: true,
-      userId: decoded.sub || decoded.userId,
-      userRole: decoded.role || 'user'
+      userId: decoded.sub,
+      userRole: decoded.role,
+      // 可以返回更多用户信息
+      userInfo: {
+        email: decoded.email,
+        permissions: decoded.permissions || []
+      }
     }
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Token验证失败', {
       error: error.message,
-      token: token.substring(0, 10) + '...'
+      errorName: error.name,
+      tokenPrefix: token.substring(0, 10) + '...'
     })
+
+    // 根据错误类型返回不同的错误码
+    let errorCode = 'INVALID_TOKEN'
+    let errorMessage = 'Invalid or expired token'
+
+    if (error.name === 'TokenExpiredError') {
+      errorCode = 'TOKEN_EXPIRED'
+      errorMessage = 'Token has expired'
+    } else if (error.name === 'JsonWebTokenError') {
+      errorCode = 'MALFORMED_TOKEN'
+      errorMessage = 'Malformed token'
+    } else if (error.name === 'NotBeforeError') {
+      errorCode = 'TOKEN_NOT_ACTIVE'
+      errorMessage = 'Token is not active yet'
+    }
 
     return {
       success: false,
       error: {
-        code: 'INVALID_TOKEN',
-        message: 'Invalid or expired token'
+        code: errorCode,
+        message: errorMessage
       }
     }
+  }
+}
+
+// 检查token是否被撤销
+async function isTokenRevoked(token: string): Promise<boolean> {
+  // 生产环境应该使用Redis或其他持久化存储
+  return revokedTokens.has(token)
+}
+
+// 撤销token
+export async function revokeToken(token: string): Promise<void> {
+  const logger = Logger.getInstance()
+
+  try {
+    const decoded = jwt.decode(token) as any
+    if (decoded && decoded.jti) {
+      revokedTokens.add(token)
+      logger.info('Token已撤销', { jti: decoded.jti })
+    }
+  } catch (error) {
+    logger.error('撤销token失败', { error: error.message })
+  }
+}
+
+// 模拟用户状态检查（生产环境应该连接数据库）
+async function getUserStatus(userId: string): Promise<{ active: boolean; role: string }> {
+  // 这里应该查询数据库获取用户状态
+  // 暂时返回默认值
+  return {
+    active: true,
+    role: 'user'
+  }
+}
+
+// 生成JWT token（用于登录）
+export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+  const jwtSecret = process.env.JWT_SECRET
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET环境变量未设置')
+  }
+
+  const jwtPayload: JWTPayload = {
+    ...payload,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24小时过期
+    jti: generateJTI(),
+    iss: 'mindnote-ai',
+    aud: 'mindnote-users'
+  }
+
+  return jwt.sign(jwtPayload, jwtSecret)
+}
+
+// 生成唯一的JWT ID
+function generateJTI(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36)
+}
+
+// 刷新token
+export async function refreshToken(refreshToken: string): Promise<{ token: string; expiresIn: number }> {
+  const logger = Logger.getInstance()
+
+  try {
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET环境变量未设置')
+    }
+
+    // 验证refresh token
+    const decoded = jwt.verify(refreshToken, jwtSecret) as any
+
+    // 生成新的access token
+    const newPayload: Omit<JWTPayload, 'iat' | 'exp'> = {
+      sub: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+      permissions: decoded.permissions || []
+    }
+
+    const newToken = generateToken(newPayload)
+
+    logger.info('Token刷新成功', {
+      userId: decoded.sub
+    })
+
+    return {
+      token: newToken,
+      expiresIn: 24 * 60 * 60 // 24小时
+    }
+
+  } catch (error: any) {
+    logger.error('Token刷新失败', {
+      error: error.message
+    })
+
+    throw new Error('Invalid refresh token')
   }
 }
 

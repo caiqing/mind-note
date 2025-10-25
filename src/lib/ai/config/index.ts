@@ -1,17 +1,15 @@
 // AI配置管理
 
+export interface AIProviderConfig {
+  get apiKey(): Promise<string>
+  baseUrl: string
+  model: string
+}
+
 export interface AIConfig {
   providers: {
-    openai: {
-      apiKey: string
-      baseUrl: string
-      model: string
-    }
-    anthropic: {
-      apiKey: string
-      baseUrl: string
-      model: string
-    }
+    openai: AIProviderConfig
+    anthropic: AIProviderConfig
   }
   settings: {
     defaultProvider: string
@@ -31,15 +29,38 @@ export interface AIConfig {
   }
 }
 
+import { EncryptionService } from './encryption'
+
+const encryptionService = EncryptionService.getInstance()
+
+/**
+ * 安全获取API密钥
+ */
+async function getSecureApiKey(provider: string): Promise<string> {
+  try {
+    return await encryptionService.loadApiKey(provider)
+  } catch (error) {
+    // 回退到环境变量（向后兼容）
+    const envKey = process.env[`${provider.toUpperCase()}_API_KEY`]
+    if (envKey) {
+      console.warn(`使用未加密的${provider} API密钥，建议迁移到加密存储`)
+      return envKey
+    }
+    throw new Error(`${provider} API密钥未配置且无法解密`)
+  }
+}
+
 export const aiConfig: AIConfig = {
   providers: {
     openai: {
-      apiKey: process.env.OPENAI_API_KEY || '',
+      // 注意：这里实际使用时会通过安全的getter获取
+      get apiKey() { return getSecureApiKey('openai') },
       baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
       model: process.env.OPENAI_MODEL || 'gpt-4o'
     },
     anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY || '',
+      // 注意：这里实际使用时会通过安全的getter获取
+      get apiKey() { return getSecureApiKey('anthropic') },
       baseUrl: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
       model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet'
     }
