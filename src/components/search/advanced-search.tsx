@@ -1,828 +1,676 @@
 /**
- * 高级搜索组件
+ * Advanced Search Component
  *
- * 提供完整的搜索功能，包括关键词搜索、语义搜索和高级筛选
+ * Provides comprehensive search interface with filters and search options
  */
 
-'use client';
+'use client'
 
-import * as React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { useState, useCallback, useRef, useEffect } from 'react'
+import {
+  SearchIcon,
+  FilterIcon,
+  XIcon,
+  SparklesIcon,
+  ClockIcon,
+  HashIcon,
+  CalendarIcon,
+  TagIcon,
+  FolderIcon,
+  StarIcon,
+  ArchiveIcon,
+  TrendingUpIcon,
+  ChevronDownIcon,
+  RefreshCwIcon
+} from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
-import { HighlightText } from '@/components/ui/highlight-text';
+} from '@/components/ui/select'
 import {
-  api,
-  type SearchRequest,
-  type SearchFilters,
-  type SearchOptions,
-  type SearchResult,
-} from '@/lib/api-client';
-import {
-  Search,
-  Filter,
-  X,
-  Clock,
-  TrendingUp,
-  Tag,
-  Calendar,
-  FileText,
-  Brain,
-  Target,
-  Zap,
-  ChevronDown,
-  ChevronUp,
-  SlidersHorizontal,
-} from 'lucide-react';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { useToast } from '@/hooks/use-toast'
+import { useDebounce } from '@/hooks/use-debounce'
+import { SearchAutocomplete } from './search-autocomplete'
+
+interface SearchFilters {
+  categoryId?: string
+  tagIds: string[]
+  isFavorite?: boolean
+  isArchived?: boolean
+  dateRange?: {
+    start: string
+    end: string
+  }
+}
+
+interface SearchOptions {
+  searchType: 'fulltext' | 'vector' | 'hybrid'
+  sortBy: 'relevance' | 'created' | 'updated' | 'title'
+  sortOrder: 'asc' | 'desc'
+  threshold: number
+  limit: number
+  includeContent: boolean
+}
+
+interface SearchResult {
+  id: string
+  title: string
+  content: string
+  contentSnippet: string
+  category?: {
+    id: string
+    name: string
+    color: string
+  }
+  tags: Array<{
+    id: string
+    name: string
+    color: string
+  }>
+  score: number
+  similarity?: number
+  createdAt: string
+  updatedAt: string
+  isFavorite: boolean
+  isArchived: boolean
+  searchType: 'fulltext' | 'vector' | 'hybrid'
+}
+
+interface SearchStats {
+  totalResults: number
+  searchTime: number
+  searchType: string
+  fulltextResults?: number
+  vectorResults?: number
+  embeddingTime?: number
+}
 
 interface AdvancedSearchProps {
-  onSearch?: (results: SearchResult[]) => void;
-  onResultSelect?: (result: SearchResult) => void;
-  className?: string;
+  onResults?: (results: SearchResult[], stats: SearchStats) => void
+  className?: string
 }
 
 export function AdvancedSearch({
-  onSearch,
-  onResultSelect,
-  className,
+  onResults,
+  className = ''
 }: AdvancedSearchProps) {
-  const [query, setQuery] = useState('');
-  const [searchType, setSearchType] = useState<
-    'keyword' | 'semantic' | 'hybrid'
-  >('hybrid');
-  const [filters, setFilters] = useState<SearchFilters>({});
+  const { toast } = useToast()
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Search state
+  const [query, setQuery] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [stats, setStats] = useState<SearchStats | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Filters state
+  const [filters, setFilters] = useState<SearchFilters>({
+    tagIds: []
+  })
+
+  // Options state
   const [options, setOptions] = useState<SearchOptions>({
+    searchType: 'hybrid',
     sortBy: 'relevance',
     sortOrder: 'desc',
+    threshold: 0.3,
     limit: 20,
-    includeContent: true,
-    highlightMatches: true,
-  });
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+    includeContent: true
+  })
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState<{
+    suggestions: string[]
+    categories: Array<{ id: string; name: string; count: number }>
+    tags: Array<{ id: string; name: string; count: number; color: string }>
+  }>({
+    suggestions: [],
+    categories: [],
+    tags: []
+  })
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
 
-  // 加载搜索历史
-  useEffect(() => {
-    setSearchHistory(searchService.getSearchHistory());
-  }, []);
+  // Mock data for categories and tags (will be replaced with real data)
+  const [categories] = useState([
+    { id: '1', name: '工作', color: '#3B82F6' },
+    { id: '2', name: '学习', color: '#10B981' },
+    { id: '3', name: '生活', color: '#F59E0B' },
+    { id: '4', name: '项目', color: '#8B5CF6' },
+  ])
 
-  // 实时搜索建议
-  useEffect(() => {
-    if (query.length >= 2) {
-      const delayDebounce = setTimeout(async () => {
-        try {
-          const liveSuggestions = await api.searchSuggestions(query);
-          setSuggestions(liveSuggestions);
-          setShowSuggestions(true);
-          setSelectedSuggestionIndex(-1);
-        } catch (error) {
-          console.error('Failed to get suggestions:', error);
+  const [tags] = useState([
+    { id: '1', name: '重要', color: '#EF4444' },
+    { id: '2', name: '紧急', color: '#F59E0B' },
+    { id: '3', name: '想法', color: '#8B5CF6' },
+    { id: '4', name: '资料', color: '#10B981' },
+    { id: '5', name: '待办', color: '#6B7280' },
+  ])
+
+  // Debounced search function
+  const debouncedSearch = useDebounce(
+    useCallback(async (searchQuery: string) => {
+      if (!searchQuery.trim()) {
+        setResults([])
+        setStats(null)
+        return
+      }
+
+      setSearching(true)
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: searchQuery,
+            userId: 'demo-user', // Replace with actual user ID from auth
+            searchType: options.searchType,
+            filters,
+            options
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          setResults(data.data.results)
+          setStats(data.data.stats)
+          onResults?.(data.data.results, data.data.stats)
+        } else {
+          throw new Error(data.error || '搜索失败')
         }
-      }, 300);
 
-      return () => clearTimeout(delayDebounce);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  }, [query]);
-
-  // 点击外部关闭建议
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
+      } catch (error) {
+        console.error('Search error:', error)
+        toast({
+          title: '搜索失败',
+          description: error instanceof Error ? error.message : '请重试',
+          variant: 'destructive'
+        })
+      } finally {
+        setSearching(false)
       }
-    };
+    }, [filters, options, onResults, toast]),
+    500 // 500ms debounce
+  )
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Load suggestions
+  const loadSuggestions = useCallback(async () => {
+    if (!query.trim()) return
 
-  // 键盘导航
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!showSuggestions || suggestions.length === 0) {
-        return;
-      }
-
-      switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev =>
-          prev < suggestions.length - 1 ? prev + 1 : 0,
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev =>
-          prev > 0 ? prev - 1 : suggestions.length - 1,
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedSuggestionIndex >= 0) {
-          const selectedSuggestion = suggestions[selectedSuggestionIndex];
-          setQuery(selectedSuggestion.text);
-          setShowSuggestions(false);
-          handleSearch();
-        }
-        break;
-      case 'Escape':
-        setShowSuggestions(false);
-        setSelectedSuggestionIndex(-1);
-        break;
-      }
-    },
-    [showSuggestions, suggestions, selectedSuggestionIndex],
-  );
-
-  // 执行搜索
-  const handleSearch = useCallback(async () => {
-    if (query.trim().length === 0) {
-      return;
-    }
-
-    setIsSearching(true);
+    setLoadingSuggestions(true)
     try {
-      const searchRequest: SearchRequest = {
-        query: query.trim(),
-        searchType,
-        filters: Object.keys(filters).length > 0 ? filters : undefined,
-        options,
-      };
+      const response = await fetch('/api/search/suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: query.trim(),
+          userId: 'demo-user', // Replace with actual user ID from auth
+          limit: 10,
+          type: 'smart'
+        })
+      })
 
-      const response = await api.search(searchRequest);
-      setResults(response.results);
-      onSearch?.(response.results);
-      setShowSuggestions(false);
+      const data = await response.json()
+
+      if (data.success) {
+        setSuggestions(data.data)
+      }
+
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error('Failed to load suggestions:', error)
     } finally {
-      setIsSearching(false);
+      setLoadingSuggestions(false)
     }
-  }, [query, searchType, filters, options, onSearch]);
+  }, [query])
 
-  // 处理筛选条件变化
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+  // Handle search input changes
+  const handleSearchChange = useCallback((newQuery: string) => {
+    setQuery(newQuery)
+    debouncedSearch(newQuery)
+  }, [debouncedSearch])
+
+  // Handle filter changes
+  const handleFilterChange = useCallback((newFilters: Partial<SearchFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+  }, [])
+
+  // Handle option changes
+  const handleOptionChange = useCallback((newOptions: Partial<SearchOptions>) => {
+    setOptions(prev => ({ ...prev, ...newOptions }))
+  }, [])
+
+  // Handle tag selection
+  const handleTagToggle = useCallback((tagId: string) => {
     setFilters(prev => ({
       ...prev,
-      [key]: value,
-    }));
-  };
+      tagIds: prev.tagIds.includes(tagId)
+        ? prev.tagIds.filter(id => id !== tagId)
+        : [...prev.tagIds, tagId]
+    }))
+  }, [])
 
-  // 清除筛选条件
-  const clearFilters = () => {
-    setFilters({});
-  };
+  // Clear all filters
+  const clearFilters = useCallback(() => {
+    setFilters({ tagIds: [] })
+    setQuery('')
+    setResults([])
+    setStats(null)
+  }, [])
 
-  // 应用历史搜索
-  const applyHistorySearch = (historyQuery: string) => {
-    setQuery(historyQuery);
-    handleSearch();
-  };
+  // Format search time
+  const formatSearchTime = (time: number) => {
+    if (time < 1000) return `${time}ms`
+    return `${(time / 1000).toFixed(2)}s`
+  }
 
-  // 应用建议
-  const applySuggestion = (suggestion: SearchSuggestion) => {
-    setQuery(suggestion.text);
-    setShowSuggestions(false);
-    handleSearch();
-  };
+  // Get search type label
+  const getSearchTypeLabel = (type: string) => {
+    const labels = {
+      fulltext: '全文搜索',
+      vector: '语义搜索',
+      hybrid: '混合搜索'
+    }
+    return labels[type as keyof typeof labels] || type
+  }
 
-  // 搜索类型选项
-  const searchTypeOptions = [
-    {
-      value: 'keyword',
-      label: '关键词搜索',
-      icon: Search,
-      description: '基于关键词精确匹配',
-    },
-    {
-      value: 'semantic',
-      label: '语义搜索',
-      icon: Brain,
-      description: '理解查询意图和语义',
-    },
-    {
-      value: 'hybrid',
-      label: '混合搜索',
-      icon: Zap,
-      description: '结合关键词和语义搜索',
-    },
-  ];
-
-  // 排序选项
-  const sortOptions = [
-    { value: 'relevance', label: '相关性' },
-    { value: 'date', label: '创建时间' },
-    { value: 'title', label: '标题' },
-    { value: 'viewCount', label: '浏览次数' },
-  ];
-
-  // 获取活跃筛选条件数量
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.categories?.length) {
-      count++;
+  // Get score color
+  const getScoreColor = (score: number, type: 'score' | 'similarity' = 'score') => {
+    if (type === 'similarity') {
+      if (score >= 0.8) return 'text-green-600'
+      if (score >= 0.6) return 'text-yellow-600'
+      if (score >= 0.4) return 'text-orange-600'
+      return 'text-gray-500'
+    } else {
+      if (score >= 0.8) return 'text-blue-600'
+      if (score >= 0.6) return 'text-indigo-600'
+      if (score >= 0.4) return 'text-purple-600'
+      return 'text-gray-500'
     }
-    if (filters.tags?.length) {
-      count++;
-    }
-    if (filters.status?.length) {
-      count++;
-    }
-    if (filters.dateRange) {
-      count++;
-    }
-    if (filters.sentiment?.length) {
-      count++;
-    }
-    if (filters.isPublic !== undefined) {
-      count++;
-    }
-    if (filters.aiProcessed !== undefined) {
-      count++;
-    }
-    if (filters.wordCountRange) {
-      count++;
-    }
-    return count;
-  };
+  }
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* 主搜索框 */}
+      {/* Search Header */}
       <Card>
         <CardHeader>
-          <CardTitle className='flex items-center text-lg'>
-            <Search className='w-5 h-5 mr-2' />
+          <CardTitle className=\"flex items-center text-xl\">
+            <SearchIcon className=\"h-6 w-6 mr-2 text-blue-600\" />
             智能搜索
           </CardTitle>
         </CardHeader>
-        <CardContent className='space-y-4'>
-          {/* 搜索类型选择 */}
-          <div className='flex items-center space-x-2 p-1 bg-muted rounded-lg'>
-            {searchTypeOptions.map(option => {
-              const Icon = option.icon;
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => setSearchType(option.value as any)}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    searchType === option.value
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon className='w-4 h-4' />
-                  <span>{option.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <CardContent className=\"space-y-4\">
+          {/* Main Search Input */}
+          <SearchAutocomplete
+            onSearch={handleSearchChange}
+            placeholder=\"搜索笔记内容、标题或标签...\"
+          />
 
-          {/* 搜索输入框 */}
-          <div className='relative'>
-            <div className='relative'>
-              <Input
-                ref={searchInputRef}
-                type='text'
-                placeholder={`${
-                  searchType === 'keyword'
-                    ? '输入关键词进行搜索...'
-                    : searchType === 'semantic'
-                      ? '描述您要查找的内容...'
-                      : '输入关键词或描述内容...'
-                }`}
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className='pr-20 text-base'
-              />
-              <div className='absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1'>
-                {query && (
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => setQuery('')}
-                    className='h-8 w-8 p-0'
-                  >
-                    <X className='w-4 h-4' />
-                  </Button>
-                )}
-                <Button
-                  onClick={handleSearch}
-                  disabled={isSearching || query.trim().length === 0}
-                  size='sm'
-                  className='h-8'
-                >
-                  {isSearching ? (
-                    <div className='w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
-                  ) : (
-                    <Search className='w-4 h-4' />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* 搜索建议 */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div
-                ref={suggestionsRef}
-                className='absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto'
+          {/* Search Options Bar */}
+          <div className=\"flex items-center justify-between flex-wrap gap-2\">
+            <div className=\"flex items-center space-x-2\">
+              <Select
+                value={options.searchType}
+                onValueChange={(value: any) => handleOptionChange({ searchType: value })}
               >
-                {suggestions.map((suggestion, index) => {
-                  const Icon =
-                    suggestion.type === 'query'
-                      ? TrendingUp
-                      : suggestion.type === 'recent'
-                        ? Clock
-                        : suggestion.type === 'tag'
-                          ? Tag
-                          : Search;
+                <SelectTrigger className=\"w-32\">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=\"hybrid\">混合搜索</SelectItem>
+                  <SelectItem value=\"fulltext\">全文搜索</SelectItem>
+                  <SelectItem value=\"vector\">语义搜索</SelectItem>
+                </SelectContent>
+              </Select>
 
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => applySuggestion(suggestion)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-muted transition-colors ${
-                        index === selectedSuggestionIndex ? 'bg-muted' : ''
-                      }`}
-                    >
-                      <Icon className='w-4 h-4 text-muted-foreground' />
-                      <span className='flex-1'>{suggestion.text}</span>
-                      {suggestion.count && (
-                        <Badge variant='secondary' className='text-xs'>
-                          {suggestion.count}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* 快速操作 */}
-          <div className='flex items-center justify-between'>
-            <Button
-              variant='outline'
-              onClick={() => setShowFilters(!showFilters)}
-              className='flex items-center space-x-2'
-            >
-              <SlidersHorizontal className='w-4 h-4' />
-              <span>高级筛选</span>
-              {getActiveFiltersCount() > 0 && (
-                <Badge variant='secondary' className='ml-1'>
-                  {getActiveFiltersCount()}
-                </Badge>
-              )}
-              {showFilters ? (
-                <ChevronUp className='w-4 h-4' />
-              ) : (
-                <ChevronDown className='w-4 h-4' />
-              )}
-            </Button>
-
-            <div className='flex items-center space-x-2'>
               <Select
                 value={options.sortBy}
-                onValueChange={value =>
-                  setOptions(prev => ({ ...prev, sortBy: value as any }))
-                }
+                onValueChange={(value: any) => handleOptionChange({ sortBy: value })}
               >
-                <SelectTrigger className='w-32'>
+                <SelectTrigger className=\"w-28\">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {sortOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value=\"relevance\">相关性</SelectItem>
+                  <SelectItem value=\"updated\">更新时间</SelectItem>
+                  <SelectItem value=\"created\">创建时间</SelectItem>
+                  <SelectItem value=\"title\">标题</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Select
-                value={options.sortOrder}
-                onValueChange={value =>
-                  setOptions(prev => ({ ...prev, sortOrder: value as any }))
-                }
+              <Button
+                variant=\"outline\"
+                size=\"sm\"
+                onClick={() => setShowFilters(!showFilters)}
+                className=\"flex items-center\"
               >
-                <SelectTrigger className='w-20'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='desc'>降序</SelectItem>
-                  <SelectItem value='asc'>升序</SelectItem>
-                </SelectContent>
-              </Select>
+                <FilterIcon className=\"h-4 w-4 mr-2\" />
+                筛选
+                {Object.values(filters).some(v =>
+                  Array.isArray(v) ? v.length > 0 : v !== undefined
+                ) && (
+                  <Badge variant=\"secondary\" className=\"ml-2 h-5 px-1 text-xs\">
+                    已筛选
+                  </Badge>
+                )}
+              </Button>
+            </div>
+
+            <div className=\"flex items-center space-x-2 text-sm text-gray-500\">
+              {searching && (
+                <div className=\"flex items-center\">
+                  <RefreshCwIcon className=\"h-4 w-4 animate-spin mr-1\" />
+                  搜索中...
+                </div>
+              )}
+              {stats && !searching && (
+                <div className=\"flex items-center space-x-4\">
+                  <span>找到 {stats.totalResults} 个结果</span>
+                  <span>{formatSearchTime(stats.searchTime)}</span>
+                  <Badge variant=\"outline\">
+                    {getSearchTypeLabel(stats.searchType)}
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <Card className=\"bg-gray-50\">
+              <CardContent className=\"pt-6 space-y-4\">
+                {/* Category Filter */}
+                <div className=\"space-y-2\">
+                  <label className=\"text-sm font-medium flex items-center\">
+                    <FolderIcon className=\"h-4 w-4 mr-2\" />
+                    分类
+                  </label>
+                  <div className=\"flex flex-wrap gap-2\">
+                    {categories.map(category => (
+                      <Badge
+                        key={category.id}
+                        variant={filters.categoryId === category.id ? \"default\" : \"outline\"}
+                        className=\"cursor-pointer\"
+                        style={{
+                          ...(filters.categoryId === category.id ? {
+                            backgroundColor: category.color,
+                            borderColor: category.color
+                          } : { borderColor: category.color })
+                        }}
+                        onClick={() => handleFilterChange({
+                          categoryId: filters.categoryId === category.id ? undefined : category.id
+                        })}
+                      >
+                        {category.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tag Filter */}
+                <div className=\"space-y-2\">
+                  <label className=\"text-sm font-medium flex items-center\">
+                    <TagIcon className=\"h-4 w-4 mr-2\" />
+                    标签
+                  </label>
+                  <div className=\"flex flex-wrap gap-2\">
+                    {tags.map(tag => (
+                      <Badge
+                        key={tag.id}
+                        variant={filters.tagIds.includes(tag.id) ? \"default\" : \"outline\"}
+                        className=\"cursor-pointer\"
+                        style={{
+                          ...(filters.tagIds.includes(tag.id) ? {
+                            backgroundColor: tag.color,
+                            borderColor: tag.color
+                          } : { borderColor: tag.color })
+                        }}
+                        onClick={() => handleTagToggle(tag.id)}
+                      >
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Filters */}
+                <div className=\"space-y-2\">
+                  <label className=\"text-sm font-medium\">状态</label>
+                  <div className=\"flex items-center space-x-4\">
+                    <div className=\"flex items-center space-x-2\">
+                      <Checkbox
+                        id=\"favorite\"
+                        checked={filters.isFavorite === true}
+                        onCheckedChange={(checked) =>
+                          handleFilterChange({ isFavorite: checked ? true : undefined })
+                        }
+                      />
+                      <label htmlFor=\"favorite\" className=\"text-sm flex items-center cursor-pointer\">
+                        <StarIcon className=\"h-4 w-4 mr-1 text-yellow-500\" />
+                        已收藏
+                      </label>
+                    </div>
+                    <div className=\"flex items-center space-x-2\">
+                      <Checkbox
+                        id=\"archived\"
+                        checked={filters.isArchived === false}
+                        onCheckedChange={(checked) =>
+                          handleFilterChange({ isArchived: checked ? false : undefined })
+                        }
+                      />
+                      <label htmlFor=\"archived\" className=\"text-sm flex items-center cursor-pointer\">
+                        <ArchiveIcon className=\"h-4 w-4 mr-1 text-gray-500\" />
+                        未归档
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Range Filter */}
+                <div className=\"space-y-2\">
+                  <label className=\"text-sm font-medium flex items-center\">
+                    <CalendarIcon className=\"h-4 w-4 mr-2\" />
+                    日期范围
+                  </label>
+                  <div className=\"flex items-center space-x-2\">
+                    <Input
+                      type=\"date\"
+                      value={filters.dateRange?.start || ''}
+                      onChange={(e) => handleFilterChange({
+                        dateRange: {
+                          ...filters.dateRange,
+                          start: e.target.value,
+                          end: filters.dateRange?.end || new Date().toISOString().split('T')[0]
+                        }
+                      })}
+                      className=\"w-40\"
+                    />
+                    <span>至</span>
+                    <Input
+                      type=\"date\"
+                      value={filters.dateRange?.end || ''}
+                      onChange={(e) => handleFilterChange({
+                        dateRange: {
+                          ...filters.dateRange,
+                          end: e.target.value,
+                          start: filters.dateRange?.start || new Date().toISOString().split('T')[0]
+                        }
+                      })}
+                      className=\"w-40\"
+                    />
+                  </div>
+                </div>
+
+                {/* Clear Filters */}
+                <div className=\"flex justify-end\">
+                  <Button
+                    variant=\"outline\"
+                    size=\"sm\"
+                    onClick={clearFilters}
+                  >
+                    清除所有筛选
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
 
-      {/* 高级筛选面板 */}
-      {showFilters && (
+      {/* Search Results */}
+      {(results.length > 0 || searching) && (
         <Card>
           <CardHeader>
-            <div className='flex items-center justify-between'>
-              <CardTitle className='flex items-center text-lg'>
-                <Filter className='w-5 h-5 mr-2' />
-                高级筛选
-              </CardTitle>
-              <div className='flex items-center space-x-2'>
-                <Button variant='outline' size='sm' onClick={clearFilters}>
-                  清除全部
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => setShowFilters(false)}
-                >
-                  <X className='w-4 h-4' />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue='basic' className='space-y-4'>
-              <TabsList className='grid w-full grid-cols-3'>
-                <TabsTrigger value='basic'>基础筛选</TabsTrigger>
-                <TabsTrigger value='content'>内容筛选</TabsTrigger>
-                <TabsTrigger value='advanced'>高级筛选</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value='basic' className='space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                  {/* 分类筛选 */}
-                  <div>
-                    <Label className='text-sm font-medium'>分类</Label>
-                    <div className='mt-2 space-y-2'>
-                      {['工作', '学习', '生活', '创意'].map(category => (
-                        <div
-                          key={category}
-                          className='flex items-center space-x-2'
-                        >
-                          <Checkbox
-                            id={`category-${category}`}
-                            checked={
-                              filters.categories?.includes(category) || false
-                            }
-                            onCheckedChange={checked => {
-                              const current = filters.categories || [];
-                              if (checked) {
-                                handleFilterChange('categories', [
-                                  ...current,
-                                  category,
-                                ]);
-                              } else {
-                                handleFilterChange(
-                                  'categories',
-                                  current.filter(c => c !== category),
-                                );
-                              }
-                            }}
-                          />
-                          <Label
-                            htmlFor={`category-${category}`}
-                            className='text-sm'
-                          >
-                            {category}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 状态筛选 */}
-                  <div>
-                    <Label className='text-sm font-medium'>状态</Label>
-                    <div className='mt-2 space-y-2'>
-                      {['PUBLISHED', 'DRAFT', 'ARCHIVED'].map(status => (
-                        <div
-                          key={status}
-                          className='flex items-center space-x-2'
-                        >
-                          <Checkbox
-                            id={`status-${status}`}
-                            checked={
-                              filters.status?.includes(status as any) || false
-                            }
-                            onCheckedChange={checked => {
-                              const current = filters.status || [];
-                              if (checked) {
-                                handleFilterChange('status', [
-                                  ...current,
-                                  status as any,
-                                ]);
-                              } else {
-                                handleFilterChange(
-                                  'status',
-                                  current.filter(s => s !== status),
-                                );
-                              }
-                            }}
-                          />
-                          <Label
-                            htmlFor={`status-${status}`}
-                            className='text-sm'
-                          >
-                            {status === 'PUBLISHED'
-                              ? '已发布'
-                              : status === 'DRAFT'
-                                ? '草稿'
-                                : '已归档'}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            <CardTitle className=\"flex items-center justify-between\">
+              <span className=\"flex items-center\">
+                {searching ? (
+                  <RefreshCwIcon className=\"h-5 w-5 mr-2 animate-spin\" />
+                ) : (
+                  <TrendingUpIcon className=\"h-5 w-5 mr-2 text-green-600\" />
+                )}
+                搜索结果
+              </span>
+              {stats && (
+                <div className=\"flex items-center space-x-4 text-sm text-gray-500\">
+                  <span>{stats.totalResults} 个结果</span>
+                  <span>{formatSearchTime(stats.searchTime)}</span>
+                  {stats.embeddingTime && (
+                    <span>AI分析: {formatSearchTime(stats.embeddingTime)}</span>
+                  )}
                 </div>
-              </TabsContent>
-
-              <TabsContent value='content' className='space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                  {/* 情感筛选 */}
-                  <div>
-                    <Label className='text-sm font-medium'>情感倾向</Label>
-                    <div className='mt-2 space-y-2'>
-                      {['positive', 'neutral', 'negative'].map(sentiment => (
-                        <div
-                          key={sentiment}
-                          className='flex items-center space-x-2'
-                        >
-                          <Checkbox
-                            id={`sentiment-${sentiment}`}
-                            checked={
-                              filters.sentiment?.includes(sentiment as any) ||
-                              false
-                            }
-                            onCheckedChange={checked => {
-                              const current = filters.sentiment || [];
-                              if (checked) {
-                                handleFilterChange('sentiment', [
-                                  ...current,
-                                  sentiment as any,
-                                ]);
-                              } else {
-                                handleFilterChange(
-                                  'sentiment',
-                                  current.filter(s => s !== sentiment),
-                                );
-                              }
-                            }}
-                          />
-                          <Label
-                            htmlFor={`sentiment-${sentiment}`}
-                            className='text-sm'
-                          >
-                            {sentiment === 'positive'
-                              ? '积极'
-                              : sentiment === 'negative'
-                                ? '消极'
-                                : '中性'}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 其他筛选 */}
-                  <div className='space-y-3'>
-                    <div className='flex items-center justify-between'>
-                      <Label htmlFor='isPublic'>公开笔记</Label>
-                      <Switch
-                        id='isPublic'
-                        checked={filters.isPublic || false}
-                        onCheckedChange={checked =>
-                          handleFilterChange('isPublic', checked)
-                        }
-                      />
-                    </div>
-                    <div className='flex items-center justify-between'>
-                      <Label htmlFor='aiProcessed'>AI已处理</Label>
-                      <Switch
-                        id='aiProcessed'
-                        checked={filters.aiProcessed || false}
-                        onCheckedChange={checked =>
-                          handleFilterChange('aiProcessed', checked)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value='advanced' className='space-y-4'>
-                {/* 日期范围 */}
-                <div>
-                  <Label className='text-sm font-medium'>创建日期</Label>
-                  <div className='mt-2 grid grid-cols-2 gap-2'>
-                    <Input
-                      type='date'
-                      placeholder='开始日期'
-                      value={filters.dateRange?.from || ''}
-                      onChange={e =>
-                        handleFilterChange('dateRange', {
-                          ...filters.dateRange,
-                          from: e.target.value,
-                        })
-                      }
-                    />
-                    <Input
-                      type='date'
-                      placeholder='结束日期'
-                      value={filters.dateRange?.to || ''}
-                      onChange={e =>
-                        handleFilterChange('dateRange', {
-                          ...filters.dateRange,
-                          to: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* 字数范围 */}
-                <div>
-                  <Label className='text-sm font-medium'>字数范围</Label>
-                  <div className='mt-2 grid grid-cols-2 gap-2'>
-                    <Input
-                      type='number'
-                      placeholder='最小字数'
-                      value={filters.wordCountRange?.min || ''}
-                      onChange={e =>
-                        handleFilterChange('wordCountRange', {
-                          ...filters.wordCountRange,
-                          min: e.target.value
-                            ? parseInt(e.target.value)
-                            : undefined,
-                        })
-                      }
-                    />
-                    <Input
-                      type='number'
-                      placeholder='最大字数'
-                      value={filters.wordCountRange?.max || ''}
-                      onChange={e =>
-                        handleFilterChange('wordCountRange', {
-                          ...filters.wordCountRange,
-                          max: e.target.value
-                            ? parseInt(e.target.value)
-                            : undefined,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 搜索历史 */}
-      {searchHistory.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center text-lg'>
-              <Clock className='w-5 h-5 mr-2' />
-              搜索历史
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='flex flex-wrap gap-2'>
-              {searchHistory.slice(0, 10).map((historyQuery, index) => (
-                <Badge
-                  key={index}
-                  variant='outline'
-                  className='cursor-pointer hover:bg-muted'
-                  onClick={() => applyHistorySearch(historyQuery)}
-                >
-                  {historyQuery}
-                </Badge>
-              ))}
-              {searchHistory.length > 10 && (
-                <Badge variant='outline' className='text-muted-foreground'>
-                  +{searchHistory.length - 10} 更多
-                </Badge>
               )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 搜索结果 */}
-      {results.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center text-lg'>
-              <Target className='w-5 h-5 mr-2' />
-              搜索结果 ({results.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='space-y-4'>
-              {results.map(result => (
-                <div
-                  key={result.id}
-                  className='p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors'
-                  onClick={() => onResultSelect?.(result)}
-                >
-                  <div className='flex items-start justify-between'>
-                    <div className='flex-1'>
-                      <h3 className='font-semibold text-base mb-1'>
-                        <HighlightText text={result.title} highlight={query} />
+            {searching ? (
+              <div className=\"space-y-4\">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className=\"space-y-2\">
+                    <Skeleton className=\"h-6 w-3/4\" />
+                    <Skeleton className=\"h-4 w-full\" />
+                    <Skeleton className=\"h-4 w-5/6\" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className=\"space-y-4\">
+                {results.map((result, index) => (
+                  <div
+                    key={result.id}
+                    className=\"p-4 border rounded-lg hover:bg-gray-50 transition-colors\"
+                  >
+                    <div className=\"flex items-start justify-between mb-2\">
+                      <h3 className=\"font-semibold text-lg flex-1 mr-4\">
+                        {result.title}
                       </h3>
-                      {result.snippet && (
-                        <p className='text-sm text-muted-foreground mb-2'>
-                          <HighlightText
-                            text={result.snippet}
-                            highlight={query}
-                          />
-                        </p>
-                      )}
-                      <div className='flex items-center space-x-4 text-xs text-muted-foreground'>
-                        <span>分类: {result.metadata.category}</span>
-                        <span>
-                          创建:{' '}
-                          {new Date(
-                            result.metadata.createdAt,
-                          ).toLocaleDateString()}
-                        </span>
-                        <span>浏览: {result.metadata.viewCount}</span>
-                        <span>相关度: {Math.round(result.score * 100)}%</span>
+                      <div className=\"flex items-center space-x-2 text-sm text-gray-500\">
+                        {result.similarity && (
+                          <span className={getScoreColor(result.similarity, 'similarity')}>
+                            {Math.round(result.similarity * 100)}% 匹配
+                          </span>
+                        )}
+                        <Badge variant=\"outline\" className=\"text-xs\">
+                          {getSearchTypeLabel(result.searchType)}
+                        </Badge>
                       </div>
-                      {result.metadata.tags.length > 0 && (
-                        <div className='flex flex-wrap gap-1 mt-2'>
-                          {result.metadata.tags.map((tag, tagIndex) => (
-                            <Badge
-                              key={tagIndex}
-                              variant='secondary'
-                              className='text-xs'
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                    </div>
+
+                    <p className=\"text-gray-600 mb-3 line-clamp-2\">
+                      {result.contentSnippet}
+                    </p>
+
+                    <div className=\"flex items-center justify-between\">
+                      <div className=\"flex items-center space-x-2\">
+                        {result.category && (
+                          <Badge
+                            variant=\"secondary\"
+                            style={{
+                              backgroundColor: result.category.color + '20',
+                              borderColor: result.category.color,
+                              color: result.category.color
+                            }}
+                          >
+                            {result.category.name}
+                          </Badge>
+                        )}
+                        {result.tags.map(tag => (
+                          <Badge
+                            key={tag.id}
+                            variant=\"outline\"
+                            style={{ borderColor: tag.color }}
+                            className=\"text-xs\"
+                          >
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className=\"flex items-center space-x-2 text-xs text-gray-500\">
+                        {result.isFavorite && <StarIcon className=\"h-3 w-3 text-yellow-500\" />}
+                        {result.isArchived && <ArchiveIcon className=\"h-3 w-3 text-gray-500\" />}
+                        <span>{new Date(result.updatedAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+
+                {results.length === 0 && !searching && (
+                  <div className=\"text-center py-8 text-gray-500\">
+                    <SearchIcon className=\"h-12 w-12 mx-auto mb-4 text-gray-300\" />
+                    <p className=\"text-lg font-medium mb-2\">未找到相关结果</p>
+                    <p className=\"text-sm\">
+                      尝试调整搜索关键词或筛选条件
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* 空状态 */}
-      {!isSearching && query.trim().length > 0 && results.length === 0 && (
-        <Card>
-          <CardContent className='pt-6 pb-6 text-center'>
-            <Search className='w-12 h-12 mx-auto text-muted-foreground mb-4' />
-            <h3 className='text-lg font-semibold mb-2'>未找到相关结果</h3>
-            <p className='text-muted-foreground mb-4'>
-              尝试使用不同的关键词或调整筛选条件
-            </p>
-            <div className='space-y-2'>
-              <Button variant='outline' onClick={clearFilters}>
-                清除筛选条件
-              </Button>
-              <Button variant='outline' onClick={() => setQuery('')}>
-                清空搜索内容
-              </Button>
+      {/* Search Tips */}
+      {results.length === 0 && !searching && !query && (
+        <Card className=\"bg-blue-50 border-blue-200\">
+          <CardContent className=\"pt-6\">
+            <div className=\"flex items-start space-x-3\">
+              <SparklesIcon className=\"h-6 w-6 text-blue-600 mt-1\" />
+              <div className=\"space-y-2\">
+                <h4 className=\"font-medium text-blue-900\">搜索技巧</h4>
+                <ul className=\"text-sm text-blue-700 space-y-1\">
+                  <li>• 使用关键词搜索，支持中文和英文</li>
+                  <li>• 混合搜索结合了全文搜索和AI语义搜索</li>
+                  <li>• 使用筛选器可以精确找到特定分类或标签的笔记</li>
+                  <li>• 语义搜索能理解概念关系，即使关键词不完全匹配</li>
+                  <li>• 可以按相关性、时间或标题排序结果</li>
+                </ul>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
     </div>
-  );
+  )
 }
+
+export default AdvancedSearch

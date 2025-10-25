@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  username          String    @unique
+  passwordHash      String    @map("password_hash")
+  fullName          String?   @map("full_name")
+  avatarUrl         String?   @map("avatar_url")
+  emailVerified     Boolean   @default(false) @map("email_verified")
+  aiPreferences     Json      @default("{}") @map("ai_preferences")
+  settings          Json      @default("{}")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastLoginAt       DateTime? @map("last_login_at")
+
+  // Relations
+  notes             Note[]
+  categories        Category[]
+  tags              Tag[]
+  aiProcessingLogs  AiProcessingLog[]
+  userFeedback      UserFeedback[]
+  systemConfig      SystemConfig[]
+
+  @@map("users")
+}
+
+// 笔记表
+model Note {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  title           String
+  content         String
+  contentHash     String    @map("content_hash")
+  contentVector   Float?[]  @map("content_vector") // pgvector
+  categoryId      Int?      @map("category_id")
+  tags            String[]  @default("{}")
+  metadata        Json      @default("{}")
+  aiProcessed     Boolean   @default(false) @map("ai_processed")
+  aiSummary       String?   @map("ai_summary") @db.Text
+  aiKeywords      String[]  @default("{}") @map("ai_keywords")
+  version         Int       @default(1)
+  status          NoteStatus @default(DRAFT)
+  isPublic        Boolean   @default(false) @map("is_public")
+  viewCount       Int       @default(0) @map("view_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  aiProcessedAt   DateTime? @map("ai_processed_at")
+
+  // Relations
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         Category?    @relation(fields: [categoryId], references: [id])
+  noteTags         NoteTag[]
+  sourceRelations  NoteRelationship[] @relation("SourceNote")
+  targetRelations  NoteRelationship[] @relation("TargetNote")
+  aiProcessingLogs AiProcessingLog[]
+  userFeedback     UserFeedback[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([categoryId])
+  @@index([contentHash])
+  @@index([aiProcessed, aiProcessedAt])
+  @@index([isPublic, status])
+  @@index([viewCount(sort: Desc)])
+  @@index([aiProcessedAt])
+  @@map("notes")
+
+  // Vector search index for pgvector (for AI functionality)
+  @@index([contentVector], map: "idx_content_vector_hnsw", using: HNSW)
+  @@index([contentVector], map: "idx_content_vector_l2", using: IVFFlat, options: { listCount: 100 })
+}
+
+// 标签表
+model Tag {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  color       String   @default("#6B7280")
+  category    String   @default("general")
+  description String?
+  createdBy   String?  @map("created_by")
+  usageCount  Int      @default(0) @map("usage_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User      @relation(fields: [createdBy], references: [id])
+  noteTags NoteTag[]
+
+  @@index([usageCount(sort: Desc)])
+  @@index([category])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("tags")
+}
+
+// 分类表
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  description String?
+  icon      String?
+  color     String   @default("#6B7280")
+  parentId  Int?     @map("parent_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  user     User      @relation(fields: [createdBy], references: [id])
+  notes    Note[]
+
+  @@index([parentId, sortOrder])
+  @@index([createdBy])
+  @@index([name])
+  @@index([createdAt])
+  @@map("categories")
+}
+
+// 笔记标签关联表
+model NoteTag {
+  noteId String @map("note_id")
+  tagId  Int    @map("tag_id")
+
+  // Relations
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+  @@index([noteId])
+  @@index([tagId])
+  @@index([noteId, tagId])
+  @@map("note_tags")
+}
+
+// 用户笔记关系表
+model NoteRelationship {
+  id             String           @id @default(cuid())
+  sourceNoteId   String           @map("source_note_id")
+  targetNoteId   String           @map("target_note_id")
+  relationshipType RelationshipType @map("relationship_type")
+  strengthScore  Decimal          @default(0.5) @map("strength_score") @db.Decimal(3, 2)
+  aiGenerated    Boolean          @default(false) @map("ai_generated")
+  metadata       Json             @default("{}")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  sourceNote Note @relation("SourceNote", fields: [sourceNoteId], references: [id], onDelete: Cascade)
+  targetNote Note @relation("TargetNote", fields: [targetNoteId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceNoteId, targetNoteId, relationshipType])
+  @@index([sourceNoteId])
+  @@index([targetNoteId])
+  @@index([relationshipType, strengthScore(sort: Desc)])
+  @@index([aiGenerated, relationshipType])
+  @@index([createdAt(sort: Desc)])
+  @@map("note_relationships")
+}
+
+// AI处理记录表
+model AiProcessingLog {
+  id             String          @id @default(cuid())
+  noteId         String          @map("note_id")
+  userId         String          @map("user_id")
+  processingType ProcessingType  @map("processing_type")
+  provider       String
+  model          String
+  inputTokens    Int?            @map("input_tokens")
+  outputTokens   Int?            @map("output_tokens")
+  processingTime Int?            @map("processing_time_ms")
+  cost           Decimal?        @db.Decimal(10, 6)
+  status         ProcessingStatus @default(PROCESSING)
+  errorMessage   String?         @map("error_message")
+  result         Json?
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([userId])
+  @@index([processingType])
+  @@index([provider, status])
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("ai_processing_logs")
+}
+
+// 用户反馈表
+model UserFeedback {
+  id          String       @id @default(cuid())
+  userId      String       @map("user_id")
+  noteId      String       @map("note_id")
+  feedbackType FeedbackType @map("feedback_type")
+  rating      Int
+  comment     String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, feedbackType])
+  @@index([userId])
+  @@index([feedbackType, rating(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("user_feedback")
+}
+
+// 系统配置表
+model SystemConfig {
+  key         String   @id
+  value       Json
+  description String?
+  updatedBy   String?  @map("updated_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User? @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_config")
+}
+
+// 枚举类型
+enum NoteStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RelationshipType {
+  SEMANTIC
+  REFERENCE
+  SIMILAR
+  RELATED
+}
+
+enum ProcessingType {
+  SUMMARIZATION
+  CLASSIFICATION
+  EMBEDDING
+  RELATIONSHIP
+}
+
+enum ProcessingStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum FeedbackType {
+  SUMMARY_QUALITY
+  CLASSIFICATION
+  RELATIONSHIP
+}

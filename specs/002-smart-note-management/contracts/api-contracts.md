@@ -1,894 +1,856 @@
-# API Contracts: Smart Note Management
+# API Contracts: 智能笔记管理
 
-**Version**: 1.0.0 **Date**: 2025-10-23 **Base URL**: `http://localhost:3000/api/v1`
-**Authentication**: Bearer Token (NextAuth.js)
+**Branch**: `002-smart-note-management` | **Date**: 2025-10-25
+**Focus**: API specifications and contracts for smart note management system
 
-## Overview
+## API Overview
 
-智能笔记管理功能的RESTful
-API设计，支持笔记的完整生命周期管理、AI分析处理和高级搜索功能。API遵循REST设计原则，提供统一的错误处理和响应格式。
+This document defines the complete API contracts for the smart note management system, including request/response schemas, error handling, authentication requirements, and rate limiting.
 
-## API Architecture
+## Authentication
 
-```mermaid
-graph TD
-    A[Client] --> B[API Gateway / Middleware]
-    B --> C[Authentication Layer]
-    C --> D[Rate Limiting]
-    D --> E[Request Validation]
-    E --> F[Business Logic]
-    F --> G[AI Service Integration]
-    F --> H[Database Layer]
-    F --> I[Cache Layer]
+All API endpoints require authentication using NextAuth.js session management.
 
-    G --> J[AI Providers]
-    H --> K[PostgreSQL]
-    I --> L[Redis]
-
-    subgraph "Response Processing"
-        M[Response Formatting]
-        N[Error Handling]
-        O[Logging & Monitoring]
-    end
-
-    F --> M
-    M --> N
-    N --> O
-    O --> A
-```
-
-## Authentication & Authorization
-
-### Authentication Header
+### Authentication Headers
 
 ```http
-Authorization: Bearer <JWT_TOKEN>
+Authorization: Bearer <session_token>
+Content-Type: application/json
 ```
 
 ### User Context
 
-所有API请求都需要有效的用户会话，系统会自动从JWT token中提取用户信息。
+All authenticated requests include user context extracted from the session:
+```typescript
+interface UserContext {
+  id: string;
+  email: string;
+  name: string;
+  subscriptionPlan: 'free' | 'pro' | 'enterprise';
+  monthlyAITokensUsed: number;
+  monthlyAITokensLimit: number;
+}
+```
 
-## Common Response Format
+## Base URL Structure
+
+```
+https://api.mindnote.com/v1
+```
+
+## Response Format
 
 ### Success Response
 
-```json
-{
-  "success": true,
-  "data": {
-    // Response data
-  },
-  "meta": {
-    "timestamp": "2025-10-23T10:30:00Z",
-    "requestId": "req_123456789",
-    "version": "1.0.0"
-  }
+```typescript
+interface ApiResponse<T> {
+  success: true;
+  data: T;
+  message?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 ```
 
 ### Error Response
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Request validation failed",
-    "details": {
-      "field": "title",
-      "reason": "Title is required"
-    }
-  },
-  "meta": {
-    "timestamp": "2025-10-23T10:30:00Z",
-    "requestId": "req_123456789",
-    "version": "1.0.0"
-  }
+```typescript
+interface ApiError {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+  };
 }
 ```
 
-### Paginated Response
+### Standard Error Codes
 
-```json
-{
-  "success": true,
-  "data": {
-    "items": [...],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 150,
-      "totalPages": 8,
-      "hasNext": true,
-      "hasPrev": false
-    }
-  },
-  "meta": {
-    "timestamp": "2025-10-23T10:30:00Z",
-    "requestId": "req_123456789",
-    "version": "1.0.0"
-  }
-}
-```
+| Code | Description | HTTP Status |
+|------|-------------|-------------|
+| `UNAUTHORIZED` | Authentication required | 401 |
+| `FORBIDDEN` | Access denied | 403 |
+| `NOT_FOUND` | Resource not found | 404 |
+| `VALIDATION_ERROR` | Invalid input data | 400 |
+| `RATE_LIMIT_EXCEEDED` | Too many requests | 429 |
+| `AI_SERVICE_ERROR` | AI processing failed | 502 |
+| `INTERNAL_ERROR` | Server error | 500 |
 
-## Error Codes
-
-| Code               | HTTP Status | Description               |
-| ------------------ | ----------- | ------------------------- |
-| `VALIDATION_ERROR` | 400         | Request validation failed |
-| `UNAUTHORIZED`     | 401         | Authentication required   |
-| `FORBIDDEN`        | 403         | Access denied             |
-| `NOT_FOUND`        | 404         | Resource not found        |
-| `CONFLICT`         | 409         | Resource conflict         |
-| `RATE_LIMITED`     | 429         | Rate limit exceeded       |
-| `AI_SERVICE_ERROR` | 502         | AI service unavailable    |
-| `INTERNAL_ERROR`   | 500         | Internal server error     |
-| `DATABASE_ERROR`   | 500         | Database operation failed |
-
-## Core API Endpoints
+## API Endpoints
 
 ### 1. Notes Management
 
-#### Create Note
+#### GET /api/notes
 
-```http
-POST /api/v1/notes
-Content-Type: application/json
-
-{
-  "title": "My First Smart Note",
-  "content": "This is the content of my note...",
-  "categoryId": 1,
-  "tags": ["important", "work"],
-  "metadata": {
-    "source": "web",
-    "priority": "high"
-  }
-}
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "note_123456789",
-    "title": "My First Smart Note",
-    "content": "This is the content of my note...",
-    "contentHash": "abc123def456",
-    "categoryId": 1,
-    "tags": ["important", "work"],
-    "metadata": {
-      "source": "web",
-      "priority": "high"
-    },
-    "aiProcessed": false,
-    "status": "DRAFT",
-    "isPublic": false,
-    "viewCount": 0,
-    "createdAt": "2025-10-23T10:30:00Z",
-    "updatedAt": "2025-10-23T10:30:00Z"
-  }
-}
-```
-
-#### Get Note by ID
-
-```http
-GET /api/v1/notes/{noteId}
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "note_123456789",
-    "title": "My First Smart Note",
-    "content": "This is the content of my note...",
-    "contentHash": "abc123def456",
-    "categoryId": 1,
-    "category": {
-      "id": 1,
-      "name": "Work",
-      "color": "#3B82F6"
-    },
-    "tags": [
-      {
-        "id": 1,
-        "name": "important",
-        "color": "#EF4444"
-      }
-    ],
-    "metadata": {
-      "source": "web",
-      "priority": "high"
-    },
-    "aiProcessed": true,
-    "aiSummary": "A smart note about important work topics...",
-    "aiKeywords": ["work", "important", "productivity"],
-    "status": "PUBLISHED",
-    "isPublic": false,
-    "viewCount": 15,
-    "createdAt": "2025-10-23T10:30:00Z",
-    "updatedAt": "2025-10-23T11:15:00Z",
-    "aiProcessedAt": "2025-10-23T10:35:00Z"
-  }
-}
-```
-
-#### Update Note
-
-```http
-PUT /api/v1/notes/{noteId}
-Content-Type: application/json
-
-{
-  "title": "Updated Note Title",
-  "content": "Updated content...",
-  "categoryId": 2,
-  "tags": ["updated", "important"],
-  "metadata": {
-    "priority": "medium"
-  }
-}
-```
-
-#### Delete Note
-
-```http
-DELETE /api/v1/notes/{noteId}
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "note_123456789",
-    "deleted": true
-  }
-}
-```
-
-#### List Notes
-
-```http
-GET /api/v1/notes?page=1&limit=20&status=PUBLISHED&categoryId=1&tags=important,work&search=productivity&sortBy=createdAt&sortOrder=desc
-```
+Retrieve paginated list of notes for the authenticated user.
 
 **Query Parameters**:
-
-- `page`: Page number (default: 1)
-- `limit`: Items per page (default: 20, max: 100)
-- `status`: Filter by status (DRAFT, PUBLISHED, ARCHIVED)
-- `categoryId`: Filter by category
-- `tags`: Filter by tags (comma-separated)
-- `search`: Search in title and content
-- `sortBy`: Sort field (createdAt, updatedAt, title, viewCount)
-- `sortOrder`: Sort order (asc, desc)
-
-#### Auto-save Note
-
-```http
-POST /api/v1/notes/{noteId}/autosave
-Content-Type: application/json
-
-{
-  "title": "Auto-saved title",
-  "content": "Auto-saved content...",
-  "tags": ["draft"]
+```typescript
+interface GetNotesQuery {
+  page?: number;        // Default: 1
+  limit?: number;       // Default: 20, Max: 100
+  category?: string;    // Filter by category ID
+  tags?: string[];      // Filter by tag IDs
+  search?: string;      // Search query
+  favorite?: boolean;   // Filter favorites only
+  archived?: boolean;   // Include archived notes
+  sortBy?: 'created_at' | 'updated_at' | 'title';
+  sortOrder?: 'asc' | 'desc';
 }
 ```
 
 **Response**:
+```typescript
+interface GetNotesResponse {
+  notes: Note[];
+  pagination: PaginationInfo;
+}
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": "note_123456789",
-    "autoSaved": true,
-    "savedAt": "2025-10-23T10:30:00Z"
-  }
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  contentPlain: string;
+  categoryId?: string;
+  isFavorite: boolean;
+  isArchived: boolean;
+  tags: Tag[];
+  wordCount: number;
+  readingTimeMinutes: number;
+  createdAt: string;
+  updatedAt: string;
+  aiProcessed: boolean;
+  aiProcessingStatus: 'pending' | 'processing' | 'completed' | 'failed';
+}
+```
+
+#### POST /api/notes
+
+Create a new note.
+
+**Request Body**:
+```typescript
+interface CreateNoteRequest {
+  title: string;
+  content: string;
+  categoryId?: string;
+  tagIds?: string[];
+  isFavorite?: boolean;
+}
+```
+
+**Response**:
+```typescript
+interface CreateNoteResponse {
+  note: Note;
+}
+```
+
+#### GET /api/notes/[id]
+
+Retrieve a specific note by ID.
+
+**Response**:
+```typescript
+interface GetNoteResponse {
+  note: Note;
+  versions: NoteVersion[];
+}
+```
+
+#### PUT /api/notes/[id]
+
+Update an existing note.
+
+**Request Body**:
+```typescript
+interface UpdateNoteRequest {
+  title?: string;
+  content?: string;
+  categoryId?: string;
+  tagIds?: string[];
+  isFavorite?: boolean;
+  isArchived?: boolean;
+}
+```
+
+**Response**:
+```typescript
+interface UpdateNoteResponse {
+  note: Note;
+}
+```
+
+#### DELETE /api/notes/[id]
+
+Delete a note (soft delete).
+
+**Response**:
+```typescript
+interface DeleteNoteResponse {
+  success: true;
+  message: string;
+}
+```
+
+#### POST /api/notes/[id]/ai-process
+
+Trigger AI processing for a note.
+
+**Request Body**:
+```typescript
+interface AIProcessRequest {
+  processingTypes: ('categorization' | 'tagging' | 'summary' | 'embedding')[];
+  options?: {
+    force?: boolean;  // Force reprocessing even if already processed
+    priority?: 'low' | 'normal' | 'high';
+  };
+}
+```
+
+**Response**:
+```typescript
+interface AIProcessResponse {
+  processingId: string;
+  status: 'queued' | 'processing' | 'completed';
+  estimatedTimeMs?: number;
+}
+```
+
+#### GET /api/notes/[id]/versions
+
+Get version history for a note.
+
+**Query Parameters**:
+```typescript
+interface GetVersionsQuery {
+  page?: number;
+  limit?: number;
+}
+```
+
+**Response**:
+```typescript
+interface GetVersionsResponse {
+  versions: NoteVersion[];
+  pagination: PaginationInfo;
+}
+
+interface NoteVersion {
+  id: string;
+  versionNumber: number;
+  title: string;
+  content: string;
+  changeSummary: string;
+  changeType: 'create' | 'edit' | 'ai_process' | 'restore';
+  changedFields: string[];
+  createdAt: string;
+}
+```
+
+#### POST /api/notes/[id]/restore/[versionId]
+
+Restore a note to a previous version.
+
+**Response**:
+```typescript
+interface RestoreVersionResponse {
+  note: Note;
+  restoredVersion: NoteVersion;
 }
 ```
 
 ### 2. Categories Management
 
-#### Create Category
+#### GET /api/categories
 
-```http
-POST /api/v1/categories
-Content-Type: application/json
+Retrieve all categories for the authenticated user, including hierarchy.
 
-{
-  "name": "Work Projects",
-  "description": "All work-related projects",
-  "parentId": 1,
-  "color": "#3B82F6",
-  "icon": "briefcase"
+**Response**:
+```typescript
+interface GetCategoriesResponse {
+  categories: Category[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  icon?: string;
+  parentId?: string;
+  level: number;
+  sortOrder: number;
+  noteCount: number;
+  isSystem: boolean;
+  children?: Category[];
+  createdAt: string;
 }
 ```
 
-#### Get Categories
+#### POST /api/categories
 
-```http
-GET /api/v1/categories?includeEmpty=false
+Create a new category.
+
+**Request Body**:
+```typescript
+interface CreateCategoryRequest {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentId?: string;
+}
 ```
 
 **Response**:
+```typescript
+interface CreateCategoryResponse {
+  category: Category;
+}
+```
 
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Work",
-      "description": "Work-related notes",
-      "parentId": null,
-      "color": "#3B82F6",
-      "icon": "briefcase",
-      "noteCount": 25,
-      "children": [
-        {
-          "id": 2,
-          "name": "Projects",
-          "parentId": 1,
-          "noteCount": 15
-        }
-      ]
-    }
-  ]
+#### PUT /api/categories/[id]
+
+Update an existing category.
+
+**Request Body**:
+```typescript
+interface UpdateCategoryRequest {
+  name?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentId?: string;
+  sortOrder?: number;
+}
+```
+
+**Response**:
+```typescript
+interface UpdateCategoryResponse {
+  category: Category;
+}
+```
+
+#### DELETE /api/categories/[id]
+
+Delete a category (moves notes to "Uncategorized").
+
+**Response**:
+```typescript
+interface DeleteCategoryResponse {
+  success: true;
+  message: string;
+  affectedNotesCount: number;
 }
 ```
 
 ### 3. Tags Management
 
-#### Get Popular Tags
+#### GET /api/tags
 
-```http
-GET /api/v1/tags/popular?limit=20
-```
+Retrieve all tags, with usage statistics.
 
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "important",
-      "color": "#EF4444",
-      "category": "priority",
-      "usageCount": 45,
-      "createdAt": "2025-10-15T08:00:00Z"
-    }
-  ]
-}
-```
-
-#### Suggest Tags
-
-```http
-GET /api/v1/tags/suggest?q=productivity&limit=10
-```
-
-### 4. Search & Discovery
-
-#### Full-text Search
-
-```http
-POST /api/v1/search
-Content-Type: application/json
-
-{
-  "query": "productivity tools",
-  "filters": {
-    "categories": [1, 2],
-    "tags": ["important"],
-    "dateRange": {
-      "from": "2025-10-01",
-      "to": "2025-10-31"
-    },
-    "status": ["PUBLISHED"]
-  },
-  "sort": {
-    "field": "relevance",
-    "order": "desc"
-  },
-  "pagination": {
-    "page": 1,
-    "limit": 20
-  }
+**Query Parameters**:
+```typescript
+interface GetTagsQuery {
+  search?: string;
+  sortBy?: 'name' | 'usage_count' | 'created_at';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
 }
 ```
 
 **Response**:
+```typescript
+interface GetTagsResponse {
+  tags: Tag[];
+}
 
-```json
-{
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "note_123456789",
-        "title": "Productivity Tools Review",
-        "content": "Review of latest productivity tools...",
-        "relevanceScore": 0.95,
-        "highlights": ["Latest <mark>productivity</mark> <mark>tools</mark> for remote work"],
-        "createdAt": "2025-10-20T14:30:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 15,
-      "totalPages": 1
-    },
-    "searchMeta": {
-      "queryTime": 45,
-      "totalResults": 15
-    }
-  }
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  description?: string;
+  usageCount: number;
+  isSystem: boolean;
+  createdAt: string;
 }
 ```
 
-#### Similar Notes
+#### POST /api/tags
 
-```http
-GET /api/v1/notes/{noteId}/similar?limit=5&excludeProcessed=false
+Create a new tag.
+
+**Request Body**:
+```typescript
+interface CreateTagRequest {
+  name: string;
+  color?: string;
+  description?: string;
+}
 ```
 
 **Response**:
+```typescript
+interface CreateTagResponse {
+  tag: Tag;
+}
+```
 
-```json
-{
-  "success": true,
-  "data": {
-    "similarNotes": [
-      {
-        "id": "note_234567890",
-        "title": "Related productivity article",
-        "similarityScore": 0.87,
-        "sharedTags": ["productivity", "tools"],
-        "preview": "This note discusses similar productivity concepts..."
-      }
-    ]
-  }
+#### PUT /api/tags/[id]
+
+Update an existing tag.
+
+**Request Body**:
+```typescript
+interface UpdateTagRequest {
+  name?: string;
+  color?: string;
+  description?: string;
+}
+```
+
+**Response**:
+```typescript
+interface UpdateTagResponse {
+  tag: Tag;
+}
+```
+
+#### DELETE /api/tags/[id]
+
+Delete a tag (removes from all notes).
+
+**Response**:
+```typescript
+interface DeleteTagResponse {
+  success: true;
+  message: string;
+  affectedNotesCount: number;
+}
+```
+
+### 4. Search
+
+#### GET /api/search
+
+Perform full-text and vector search.
+
+**Query Parameters**:
+```typescript
+interface SearchQuery {
+  q: string;           // Search query
+  type?: 'fulltext' | 'vector' | 'hybrid'; // Default: hybrid
+  category?: string;   // Filter by category
+  tags?: string[];     // Filter by tags
+  dateFrom?: string;   // ISO date string
+  dateTo?: string;     // ISO date string
+  page?: number;
+  limit?: number;
+}
+```
+
+**Response**:
+```typescript
+interface SearchResponse {
+  results: SearchResult[];
+  pagination: PaginationInfo;
+  suggestions?: string[];
+  searchTimeMs: number;
+}
+
+interface SearchResult {
+  note: Note;
+  relevanceScore: number; // 0.0-1.0
+  highlights: {
+    title?: string[];
+    content?: string[];
+  };
+}
+```
+
+#### GET /api/search/suggestions
+
+Get search suggestions based on partial query.
+
+**Query Parameters**:
+```typescript
+interface SuggestionsQuery {
+  q: string;           // Partial search query
+  limit?: number;      // Default: 5
+}
+```
+
+**Response**:
+```typescript
+interface SuggestionsResponse {
+  suggestions: string[];
 }
 ```
 
 ### 5. AI Processing
 
-#### Trigger AI Analysis
+#### GET /api/ai/status
 
-```http
-POST /api/v1/notes/{noteId}/ai-analyze
-Content-Type: application/json
-
-{
-  "operations": ["categorize", "tag", "summarize"],
-  "provider": "auto", // or "openai", "zhipu", etc.
-  "options": {
-    "language": "zh-CN",
-    "summaryLength": 200,
-    "maxTags": 5
-  }
-}
-```
+Get AI processing status and statistics.
 
 **Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "taskId": "ai_task_123456789",
-    "status": "QUEUED",
-    "estimatedTime": 3000
-  }
-}
-```
-
-#### Get AI Analysis Status
-
-```http
-GET /api/v1/ai/tasks/{taskId}
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "ai_task_123456789",
-    "status": "COMPLETED",
-    "progress": 100,
-    "result": {
-      "category": "Work",
-      "tags": ["productivity", "tools", "review"],
-      "summary": "A comprehensive review of productivity tools...",
-      "confidence": 0.92,
-      "provider": "zhipu",
-      "model": "glm-4",
-      "processingTime": 2450,
-      "cost": 0.025
-    },
-    "createdAt": "2025-10-23T10:30:00Z",
-    "completedAt": "2025-10-23T10:30:02Z"
-  }
-}
-```
-
-#### Batch AI Analysis
-
-```http
-POST /api/v1/ai/batch-analyze
-Content-Type: application/json
-
-{
-  "noteIds": ["note_1", "note_2", "note_3"],
-  "operations": ["categorize", "tag"],
-  "provider": "auto",
-  "options": {
-    "batchSize": 5,
-    "delayBetweenBatches": 1000
-  }
-}
-```
-
-#### AI Provider Status
-
-```http
-GET /api/v1/ai/providers/status
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "providers": [
-      {
-        "name": "openai",
-        "status": "AVAILABLE",
-        "responseTime": 1250,
-        "models": ["gpt-4-turbo-preview"],
-        "costPerToken": {
-          "input": 0.01,
-          "output": 0.03
-        }
-      },
-      {
-        "name": "zhipu",
-        "status": "AVAILABLE",
-        "responseTime": 850,
-        "models": ["glm-4"],
-        "costPerToken": {
-          "input": 0.005,
-          "output": 0.025
-        }
-      }
-    ],
-    "primaryProvider": "zhipu",
-    "fallbackProviders": ["openai", "ollama"]
-  }
-}
-```
-
-### 6. Import/Export
-
-#### Import Notes
-
-```http
-POST /api/v1/import
-Content-Type: multipart/form-data
-
-file: notes.json
-format: json // or markdown, csv
-options: {
-  "skipDuplicates": true,
-  "preserveIds": false,
-  "autoAnalyze": true
-}
-```
-
-#### Export Notes
-
-```http
-POST /api/v1/export
-Content-Type: application/json
-
-{
-  "format": "json", // or markdown, csv
-  "filters": {
-    "categories": [1, 2],
-    "dateRange": {
-      "from": "2025-10-01",
-      "to": "2025-10-31"
-    }
-  },
-  "options": {
-    "includeAIResults": true,
-    "includeMetadata": true
-  }
-}
-```
-
-### 7. Analytics & Insights
-
-#### Get Note Statistics
-
-```http
-GET /api/v1/analytics/notes?period=30d&groupBy=day
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "summary": {
-      "totalNotes": 150,
-      "notesCreated": 25,
-      "notesUpdated": 18,
-      "aiProcessedNotes": 142,
-      "averageNoteLength": 850,
-      "topCategories": [
-        { "name": "Work", "count": 45 },
-        { "name": "Personal", "count": 38 }
-      ],
-      "topTags": [
-        { "name": "important", "count": 62 },
-        { "name": "todo", "count": 48 }
-      ]
-    },
-    "timeline": [
-      {
-        "date": "2025-10-23",
-        "notesCreated": 3,
-        "notesUpdated": 2,
-        "aiProcessed": 3
-      }
-    ]
-  }
-}
-```
-
-#### Get AI Usage Statistics
-
-```http
-GET /api/v1/analytics/ai-usage?period=30d
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "summary": {
-      "totalRequests": 1250,
-      "totalCost": 12.45,
-      "totalTokens": 250000,
-      "averageResponseTime": 1850,
-      "successRate": 98.4
-    },
-    "byProvider": [
-      {
-        "provider": "zhipu",
-        "requests": 800,
-        "cost": 6.4,
-        "tokens": 160000,
-        "avgResponseTime": 1200
-      }
-    ],
-    "byOperation": [
-      {
-        "operation": "categorize",
-        "requests": 500,
-        "successRate": 99.2
-      }
-    ]
-  }
-}
-```
-
-## Request/Response Validation
-
-### Note Creation/Update Schema
-
 ```typescript
-interface NoteRequest {
-  title: string; // Required, max 200 chars
-  content: string; // Required, max 100000 chars
-  categoryId?: number; // Optional
-  tags?: string[]; // Optional, max 10 tags
-  metadata?: Record<string, any>; // Optional
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; // Optional
-  isPublic?: boolean; // Optional, default false
-}
-
-interface NoteResponse {
-  id: string;
-  title: string;
-  content: string;
-  contentHash: string;
-  categoryId?: number;
-  category?: Category;
-  tags: Tag[];
-  metadata: Record<string, any>;
-  aiProcessed: boolean;
-  aiSummary?: string;
-  aiKeywords?: string[];
-  status: NoteStatus;
-  isPublic: boolean;
-  viewCount: number;
-  createdAt: string;
-  updatedAt: string;
-  aiProcessedAt?: string;
+interface AIStatusResponse {
+  userLimits: {
+    monthlyTokensUsed: number;
+    monthlyTokensLimit: number;
+    costUsed: number;
+    costLimit: number;
+  };
+  queueStatus: {
+    pendingJobs: number;
+    processingJobs: number;
+    averageWaitTimeMs: number;
+  };
+  recentProcessing: AIProcessingLog[];
 }
 ```
 
-### AI Analysis Request Schema
+#### POST /api/ai/batch-process
 
+Batch process multiple notes.
+
+**Request Body**:
 ```typescript
-interface AIAnalysisRequest {
-  operations: ('categorize' | 'tag' | 'summarize')[];
-  provider?: string; // Optional, default "auto"
+interface BatchProcessRequest {
+  noteIds: string[];
+  processingTypes: ('categorization' | 'tagging' | 'summary' | 'embedding')[];
   options?: {
-    language?: string; // Optional, default "zh-CN"
-    summaryLength?: number; // Optional, default 200
-    maxTags?: number; // Optional, default 5
-    temperature?: number; // Optional, default 0.3
+    priority?: 'low' | 'normal' | 'high';
+    batchSize?: number; // Default: 10
+  };
+}
+```
+
+**Response**:
+```typescript
+interface BatchProcessResponse {
+  batchId: string;
+  status: 'queued' | 'processing' | 'completed';
+  totalNotes: number;
+  processedNotes: number;
+  failedNotes: number;
+  estimatedTimeMs?: number;
+}
+```
+
+#### GET /api/ai/batch/[batchId]
+
+Get batch processing status.
+
+**Response**:
+```typescript
+interface BatchStatusResponse {
+  batchId: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress: {
+    total: number;
+    completed: number;
+    failed: number;
+    percentage: number;
+  };
+  results: BatchProcessResult[];
+  errors: BatchProcessError[];
+}
+```
+
+#### GET /api/ai/models
+
+Get available AI models and their capabilities.
+
+**Response**:
+```typescript
+interface AIModelsResponse {
+  models: AIModel[];
+}
+
+interface AIModel {
+  name: string;
+  displayName: string;
+  capabilities: ModelCapabilities;
+  pricing: ModelPricing;
+  limits: ModelLimits;
+}
+```
+
+### 6. Analytics
+
+#### GET /api/analytics/overview
+
+Get user analytics overview.
+
+**Query Parameters**:
+```typescript
+interface AnalyticsQuery {
+  period?: '7d' | '30d' | '90d' | '1y'; // Default: 30d
+}
+```
+
+**Response**:
+```typescript
+interface AnalyticsOverviewResponse {
+  summary: {
+    totalNotes: number;
+    totalWords: number;
+    totalReadingTime: number;
+    averageNotesPerDay: number;
+    favoriteNotesCount: number;
+    archivedNotesCount: number;
+  };
+  trends: {
+    dates: string[];
+    notesCreated: number[];
+    wordsWritten: number[];
+    aiProcessingCount: number[];
+  };
+  topCategories: CategoryStats[];
+  topTags: TagStats[];
+}
+```
+
+#### GET /api/analytics/ai-usage
+
+Get AI usage analytics.
+
+**Response**:
+```typescript
+interface AIUsageResponse {
+  usage: {
+    totalRequests: number;
+    totalTokens: number;
+    totalCost: number;
+    averageProcessingTime: number;
+  };
+  breakdown: {
+    byType: ProcessingTypeStats[];
+    byModel: ModelUsageStats[];
+    byDay: DailyUsageStats[];
+  };
+  costs: {
+    currentMonth: number;
+    previousMonth: number;
+    projectedMonth: number;
   };
 }
 ```
 
 ## Rate Limiting
 
-| Endpoint      | Limit         | Window     |
-| ------------- | ------------- | ---------- |
-| Notes CRUD    | 1000 requests | 15 minutes |
-| AI Analysis   | 100 requests  | 15 minutes |
-| Search        | 500 requests  | 15 minutes |
-| Import/Export | 10 requests   | 1 hour     |
+### Rate Limit Rules
 
-## Webhook Events
+| Endpoint | Rate Limit | Burst Limit |
+|----------|-------------|-------------|
+| Notes CRUD | 100 requests/minute | 200 requests/minute |
+| Search | 60 requests/minute | 120 requests/minute |
+| AI Processing | 20 requests/minute | 50 requests/minute |
+| Analytics | 30 requests/minute | 60 requests/minute |
+
+### Rate Limit Headers
+
+```http
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640995200
+```
+
+## Error Handling
+
+### Standard Error Format
+
+```typescript
+interface ApiError {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: {
+      field?: string;
+      value?: any;
+      constraint?: string;
+    };
+    timestamp: string;
+    requestId: string;
+  };
+}
+```
+
+### Validation Errors
+
+```typescript
+interface ValidationError {
+  code: 'VALIDATION_ERROR';
+  message: 'Invalid input data';
+  details: {
+    field: 'title';
+    value: '';
+    constraint: 'Title is required and must be between 1 and 200 characters';
+  };
+}
+```
+
+### AI Service Errors
+
+```typescript
+interface AIServiceError {
+  code: 'AI_SERVICE_ERROR';
+  message: 'AI processing failed';
+  details: {
+    service: 'openai';
+    errorType: 'rate_limit_exceeded';
+    retryAfter?: number;
+    suggestions: string[];
+  };
+}
+```
+
+## Webhooks
 
 ### Note Events
 
-```json
-{
-  "event": "note.created",
-  "data": {
-    "noteId": "note_123456789",
-    "userId": "user_123456789",
-    "title": "New Note"
-  },
-  "timestamp": "2025-10-23T10:30:00Z"
-}
-```
+Webhooks allow external services to receive notifications about note events.
 
-### AI Processing Events
+#### Webhook Events
 
-```json
-{
-  "event": "ai.processing.completed",
-  "data": {
-    "taskId": "ai_task_123456789",
-    "noteId": "note_123456789",
-    "provider": "zhipu",
-    "operations": ["categorize", "tag"],
-    "result": { ... }
-  },
-  "timestamp": "2025-10-23T10:30:00Z"
-}
-```
+| Event | Description | Payload |
+|-------|-------------|---------|
+| `note.created` | New note created | Note object |
+| `note.updated` | Note content updated | Note object with changes |
+| `note.deleted` | Note deleted | Note ID and deletion metadata |
+| `note.ai_processed` | AI processing completed | Processing result |
 
-## SDK Examples
-
-### JavaScript/TypeScript
+#### Webhook Configuration
 
 ```typescript
-import { MindNoteAPI } from '@mindnote/sdk';
+interface WebhookConfig {
+  url: string;
+  events: string[];
+  secret: string;
+  active: boolean;
+}
+```
 
-const api = new MindNoteAPI({
-  baseURL: 'http://localhost:3000/api/v1',
-  token: 'your-jwt-token',
+## SDK Types
+
+### TypeScript SDK
+
+```typescript
+// Client initialization
+const client = new MindNoteClient({
+  apiKey: process.env.MINDNOTE_API_KEY,
+  baseUrl: 'https://api.mindnote.com/v1'
 });
 
-// Create note
-const note = await api.notes.create({
-  title: 'My Note',
-  content: 'Note content',
-  tags: ['important'],
+// Example usage
+const notes = await client.notes.list({
+  search: 'machine learning',
+  limit: 10
 });
 
-// AI analysis
-const analysis = await api.ai.analyze(note.id, {
-  operations: ['categorize', 'tag', 'summarize'],
+const note = await client.notes.create({
+  title: 'ML Notes',
+  content: 'Important concepts...',
+  tagIds: ['ml', 'notes']
 });
 ```
 
-### Python
+### JavaScript/Node.js SDK
 
-```python
-from mindnote_sdk import MindNoteClient
+```javascript
+const { MindNoteClient } = require('@mindnote/sdk');
 
-client = MindNoteClient(
-    base_url='http://localhost:3000/api/v1',
-    token='your-jwt-token'
-)
+const client = new MindNoteClient({
+  apiKey: process.env.MINDNOTE_API_KEY
+});
 
-# Search notes
-results = client.search.notes(
-    query='productivity',
-    filters={'tags': ['important']}
-)
+// Promise-based API
+client.notes.list()
+  .then(notes => console.log(notes))
+  .catch(error => console.error(error));
+```
+
+## Testing
+
+### Mock Data
+
+```typescript
+// Mock note for testing
+const mockNote: Note = {
+  id: '123e4567-e89b-12d3-a456-426614174000',
+  title: 'Test Note',
+  content: 'This is a test note content.',
+  contentPlain: 'This is a test note content.',
+  categoryId: null,
+  isFavorite: false,
+  isArchived: false,
+  tags: [],
+  wordCount: 8,
+  readingTimeMinutes: 1,
+  createdAt: '2023-10-25T10:00:00Z',
+  updatedAt: '2023-10-25T10:00:00Z',
+  aiProcessed: true,
+  aiProcessingStatus: 'completed'
+};
+```
+
+### Contract Tests
+
+```typescript
+describe('Notes API', () => {
+  test('should create a note', async () => {
+    const response = await client.notes.create({
+      title: 'Test Note',
+      content: 'Test content'
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data.note.title).toBe('Test Note');
+  });
+
+  test('should validate required fields', async () => {
+    const response = await client.notes.create({
+      title: '', // Invalid: empty title
+      content: 'Test content'
+    });
+
+    expect(response.success).toBe(false);
+    expect(response.error.code).toBe('VALIDATION_ERROR');
+  });
+});
 ```
 
 ## Versioning
 
-- Current version: `v1.0.0`
-- Version format: `v{major}.{minor}.{patch}`
-- Backward compatibility: Minor versions are backward compatible
-- Deprecation notice: Major changes will be announced 30 days in advance
+### API Versioning Strategy
 
-## Testing
+- URL versioning: `/api/v1/notes`
+- Backward compatibility: Maintain support for previous versions
+- Depreciation notices: 6-month deprecation period for breaking changes
+- Migration guides: Provided for major version updates
 
-### API Testing Examples
+### Version Headers
 
-```bash
-# Health check
-curl -X GET http://localhost:3000/api/v1/health
-
-# Create note
-curl -X POST http://localhost:3000/api/v1/notes \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Test Note","content":"Test content"}'
-
-# Search notes
-curl -X POST http://localhost:3000/api/v1/search \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"test","filters":{"status":["PUBLISHED"]}}'
+```http
+API-Version: v1
+Supported-Versions: v1
+Deprecated-Versions:
 ```
-
-## Security Considerations
-
-1. **Authentication**: All endpoints require valid JWT tokens
-2. **Authorization**: Users can only access their own data
-3. **Input Validation**: All inputs are validated and sanitized
-4. **Rate Limiting**: API calls are rate limited per user
-5. **HTTPS**: Production deployments must use HTTPS
-6. **CORS**: Cross-origin requests are properly configured
-
-## Monitoring & Logging
-
-- All API requests are logged with request IDs
-- Performance metrics are collected for all endpoints
-- Error rates and response times are monitored
-- AI service usage and costs are tracked
 
 ---
 
-**Next Steps**:
-
-1. Implement API routes in Next.js
-2. Create request/response validation schemas
-3. Set up authentication middleware
-4. Implement rate limiting
-5. Add comprehensive error handling
-6. Create API documentation with Swagger/OpenAPI
+**API Contracts Status**: ✅ Complete
+**Date**: 2025-10-25
+**Version**: 1.0.0
+**Ready for Implementation**: ✅ Yes
