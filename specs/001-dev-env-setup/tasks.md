@@ -203,18 +203,50 @@
 - [ ] T071 [P] Add AI service cost tracking and reporting in `src/lib/ai/cost-tracker.ts`
 - [ ] T072 [P] Configure AI quality metrics and user feedback collection in `src/lib/ai/quality.ts`
 - [ ] T073 [P] Setup AI service health checks and fallback mechanisms in `src/lib/ai/health.ts`
+- [ ] T074 [P] Create performance validation tests for API response <100ms target in `tests/performance/api-response.ts`
+- [ ] T075 [P] Add automated timing validation for 30-minute setup goal in `tests/performance/setup-time.ts`
 
 **AI Testing & Validation (Constitution Principle III)**:
-- [ ] T074 [P] Create mock AI services for unit testing in `tests/mocks/ai-services.ts`
-- [ ] T075 [P] Implement integration tests for AI service endpoints in `tests/integration/ai/`
-- [ ] T076 [P] Setup AI output quality validation tests in `tests/validation/ai-quality.ts`
-- [ ] T077 [P] Configure user acceptance testing for AI features in `tests/acceptance/`
+- [ ] T076 [P] Create mock AI services for unit testing in `tests/mocks/ai-services.ts`
+- [ ] T077 [P] Implement integration tests for AI service endpoints in `tests/integration/ai/`
+- [ ] T078 [P] Setup AI output quality validation tests in `tests/validation/ai-quality.ts`
+- [ ] T079 [P] Configure user acceptance testing for AI features in `tests/acceptance/`
 
 **Data Intelligence (Constitution Principle IV)**:
-- [ ] T078 [P] Implement vector embedding storage and retrieval in `src/lib/vector/embeddings.ts`
-- [ ] T079 [P] Setup graph relationship mapping for note connections in `src/lib/graph/relationships.ts`
-- [ ] T080 [P] Configure AI metadata tracking and audit trails in `src/lib/ai/metadata.ts`
-- [ ] T081 [P] Implement privacy controls for AI-processed content in `src/lib/privacy/controls.ts`
+- [ ] T080 [P] Implement vector embedding storage and retrieval in `src/lib/vector/embeddings.ts`
+- [ ] T081 [P] Setup graph relationship mapping for note connections in `src/lib/graph/relationships.ts`
+- [ ] T082 [P] Configure AI metadata tracking and audit trails in `src/lib/ai/metadata.ts`
+- [ ] T083 [P] Implement privacy controls for AI-processed content in `src/lib/privacy/controls.ts`
+
+---
+
+## Phase 8: Advanced Environment Features (Priority: P2)
+
+**Goal**: 提供高级环境功能，包括版本兼容性检查和云开发环境支持
+
+**Independent Test**: 验证版本兼容性检查功能正常工作，云开发环境可以无缝启动
+
+### Tests for Advanced Environment Features (REQUIRED) ⚠️
+
+- [ ] T084 [P] Contract test for version compatibility API in `tests/integration/test-version-compatibility.ts`
+- [ ] T085 [P] Integration test for cloud environment templates in `tests/integration/test-cloud-env.ts`
+- [ ] T086 [P] Unit test for version checking logic in `tests/unit/test-version-checker.ts`
+
+### Implementation for Advanced Environment Features
+
+**Version Compatibility Management (FR-021)**:
+- [ ] T087 [US6] Implement version compatibility checking service in `src/lib/version/compatibility.ts`
+- [ ] T088 [P] [US6] Create automated dependency update service in `src/lib/version/auto-updater.ts`
+- [ ] T089 [P] [US6] Setup version conflict detection and reporting in `src/lib/version/conflict-detector.ts`
+- [ ] T090 [US6] Add version compatibility API endpoints in `src/app/api/dev/version/`
+
+**Cloud Development Environment Support (FR-022)**:
+- [ ] T091 [US7] Configure GitHub Codespaces development template in `.devcontainer/devcontainer.json`
+- [ ] T092 [P] [US7] Setup Gitpod development environment configuration in `.gitpod/`
+- [ ] T093 [P] [US7] Create cloud-local synchronization scripts in `scripts/sync/`
+- [ ] T094 [US7] Implement cloud environment health checks in `src/lib/cloud/health.ts`
+
+**Checkpoint**: Advanced environment features should be fully operational
 
 ---
 
@@ -227,7 +259,8 @@
 - **User Stories (Phase 3-7)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2)
-- **Polish (Phase 8)**: Depends on all desired user stories being complete
+- **Advanced Features (Phase 8)**: Depends on Foundational phase completion - can run in parallel with user stories
+- **Polish (Phase 9)**: Depends on all desired user stories being complete
 
 ### User Story Dependencies
 
@@ -236,6 +269,8 @@
 - **User Story 3 (P1)**: Can start after Foundational - Required for AI data storage
 - **User Story 4 (P2)**: Can start after Foundational - Requires some code for testing
 - **User Story 5 (P2)**: Can start after Foundational + US3 (database) - Requires database for AI metadata
+- **User Story 6 (P2)**: Version Compatibility Management - Can start after Foundational - No additional dependencies
+- **User Story 7 (P2)**: Cloud Development Environment Support - Can start after Foundational - No additional dependencies
 
 ### Within Each User Story
 
@@ -287,7 +322,8 @@ Task: "Setup hot reload development configuration in next.config.js"
 2. Add User Story 1-3 → Test independently → Deploy/Demo (MVP!)
 3. Add User Story 4 (CI/CD) → Test independently → Deploy/Demo
 4. Add User Story 5 (AI Integration) → Test independently → Deploy/Demo
-5. Complete Polish phase → Production ready
+5. Add Advanced Environment Features → Test independently → Deploy/Demo
+6. Complete Polish phase → Production ready
 
 ### Parallel Team Strategy
 
@@ -300,6 +336,7 @@ With multiple developers (1-5 team members):
    - Developer C: User Story 3 (Database)
    - Developer D: User Story 4 (CI/CD)
    - Developer E: User Story 5 (AI Integration)
+   - Advanced Features (User Story 6-7) can be handled by any developer as they have no story dependencies
 3. Stories complete and integrate independently
 
 ---
