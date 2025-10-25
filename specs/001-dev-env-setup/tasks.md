@@ -87,19 +87,19 @@
 
 ### Tests for User Story 2 (REQUIRED) ⚠️
 
-- [ ] T022 [P] [US2] Contract test for code quality API endpoints in `tests/integration/test-code-quality.ts`
-- [ ] T023 [P] [US2] Integration test for Git hooks execution in `tests/integration/test-git-hooks.ts`
-- [ ] T024 [P] [US2] Unit test for code formatting in `tests/unit/test-code-formatting.ts`
+- [X] T022 [P] [US2] Contract test for code quality API endpoints in `tests/integration/test-code-quality.ts`
+- [X] T023 [P] [US2] Integration test for Git hooks execution in `tests/integration/test-git-hooks.ts`
+- [X] T024 [P] [US2] Unit test for code formatting in `tests/unit/test-code-formatting.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T025 [P] [US2] Configure comprehensive ESLint rules in `.eslintrc.js`
-- [ ] T026 [P] [US2] Setup Prettier formatting rules in `.prettierrc`
-- [ ] T027 [P] [US2] Configure TypeScript strict mode and type checking in `tsconfig.json`
-- [ ] T028 [US2] Implement pre-commit Git hooks with Husky in `.husky/pre-commit`
-- [ ] T029 [US2] Setup lint-staged for staged file checking in `package.json`
-- [ ] T030 [US2] Create code quality API endpoints in `src/app/api/dev/quality/`
-- [ ] T031 [US2] Add automated code formatting on save in VS Code settings `.vscode/settings.json`
+- [X] T025 [P] [US2] Configure comprehensive ESLint rules in `.eslintrc.js`
+- [X] T026 [P] [US2] Setup Prettier formatting rules in `.prettierrc`
+- [X] T027 [P] [US2] Configure TypeScript strict mode and type checking in `tsconfig.json`
+- [X] T028 [US2] Implement pre-commit Git hooks with Husky in `.husky/pre-commit`
+- [X] T029 [US2] Setup lint-staged for staged file checking in `package.json`
+- [X] T030 [US2] Create code quality API endpoints in `src/app/api/dev/quality/`
+- [X] T031 [US2] Add automated code formatting on save in VS Code settings `.vscode/settings.json`
 
 **Checkpoint**: All code quality tools should be working automatically
 
