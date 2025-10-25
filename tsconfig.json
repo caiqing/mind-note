@@ -25,7 +25,9 @@
       "@/app/*": ["./src/app/*"],
       "@/hooks/*": ["./src/hooks/*"],
       "@/types/*": ["./src/types/*"],
-      "@/utils/*": ["./src/lib/utils/*"]
+      "@/utils/*": ["./src/lib/utils/*"],
+      "@/ai/*": ["./src/lib/ai/*"],
+      "@/vector/*": ["./src/lib/vector/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": true,

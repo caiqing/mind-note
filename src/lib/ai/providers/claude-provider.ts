@@ -1,6 +1,6 @@
-// OpenAI AI服务提供商实现
+// Claude AI服务提供商实现
 
-export interface OpenAIResponse {
+export interface ClaudeResponse {
   text: string
   usage: {
     promptTokens: number
@@ -9,17 +9,17 @@ export interface OpenAIResponse {
   }
 }
 
-export class OpenAIProvider {
-  name = 'openai'
+export class ClaudeProvider {
+  name = 'anthropic'
 
   async generateText(params: {
     prompt: string
     model?: string
     maxTokens?: number
     temperature?: number
-  }): Promise<OpenAIResponse> {
-    // 模拟OpenAI API调用
-    const mockResponse = `OpenAI模拟响应：基于提示"${params.prompt.substring(0, 50)}..."生成的内容。`
+  }): Promise<ClaudeResponse> {
+    // 模拟Claude API调用
+    const mockResponse = `Claude模拟响应：基于提示"${params.prompt.substring(0, 50)}..."生成的内容。`
 
     return {
       text: mockResponse,
@@ -32,4 +32,4 @@ export class OpenAIProvider {
   }
 }
 
-export const openaiProvider = new OpenAIProvider()
+export const claudeProvider = new ClaudeProvider()
