@@ -13,11 +13,25 @@ this feature
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing
 of each story
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P?] [Story] [FR-XXX] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (US1, US2, US3, US4, US5)
+- **[FR-XXX]**: Which functional requirement this task implements
 - Include exact file paths in descriptions
+
+## Task to Functional Requirements Mapping
+
+| Phase       | Task      | FR(s)                  | Description                   |
+| ----------- | --------- | ---------------------- | ----------------------------- |
+| **Phase 1** | T001-T005 | FR-001                 | 基础项目结构和shadcn/ui组件库 |
+| **Phase 2** | T006-T011 | FR-001, FR-002         | 设计系统、主题和状态管理      |
+| **US1**     | T012-T036 | FR-001, FR-004, FR-008 | 笔记编辑器和基础UI组件        |
+| **US2**     | T037-T050 | FR-005, FR-006         | 搜索功能和可视化              |
+| **US3**     | T051-T060 | FR-006, FR-007         | AI分析和洞察界面              |
+| **US4**     | T061-T070 | FR-007, FR-008         | 设置界面和快捷键              |
+| **US5**     | T071-T080 | FR-003, FR-009         | 响应式和无障碍支持            |
+| **US6**     | T081-T085 | FR-010                 | 多语言支持                    |
 
 ## Path Conventions
 
@@ -34,13 +48,14 @@ of each story
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create UI/UX project structure per implementation plan in `src/components/`,
+- [ ] T001 [FR-001] Create UI/UX project structure per implementation plan in `src/components/`,
       `src/lib/styles/`, `src/lib/hooks/`, `src/types/`
-- [ ] T002 Initialize Next.js 15 + React 19 + TypeScript project with shadcn/ui dependencies
-- [ ] T003 [P] Configure Tailwind CSS and CSS variables in `src/app/globals.css` and
+- [ ] T002 [FR-001] Initialize Next.js 15 + React 19 + TypeScript project with shadcn/ui
+      dependencies
+- [ ] T003 [P] [FR-001] Configure Tailwind CSS and CSS variables in `src/app/globals.css` and
       `tailwind.config.js`
-- [ ] T004 [P] Configure TypeScript paths and strict mode in `tsconfig.json`
-- [ ] T005 [P] Setup Vitest + React Testing Library configuration in `jest.config.js` and
+- [ ] T004 [P] [FR-001] Configure TypeScript paths and strict mode in `tsconfig.json`
+- [ ] T005 [P] [FR-001] Setup Vitest + React Testing Library configuration in `jest.config.js` and
       `jest.setup.js`
 
 ---
@@ -51,12 +66,13 @@ of each story
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Setup design tokens and CSS variables system in `src/lib/styles/tokens.css`
-- [ ] T007 [P] Configure theme provider system in `src/components/providers/theme-provider.tsx`
-- [ ] T008 [P] Setup state management with Zustand in `src/lib/stores/`
-- [ ] T009 Create utility functions in `src/lib/utils.ts` for theme and UI utilities
-- [ ] T010 Setup Next.js 15 app router structure in `src/app/`
-- [ ] T011 Configure error boundaries and loading states
+- [ ] T006 [FR-001] Setup design tokens and CSS variables system in `src/lib/styles/tokens.css`
+- [ ] T007 [P] [FR-002] Configure theme provider system in
+      `src/components/providers/theme-provider.tsx`
+- [ ] T008 [P] [FR-001] Setup state management with Zustand in `src/lib/stores/`
+- [ ] T009 [FR-001] Create utility functions in `src/lib/utils.ts` for theme and UI utilities
+- [ ] T010 [FR-001] Setup Next.js 15 app router structure in `src/app/`
+- [ ] T011 [FR-001] Configure error boundaries and loading states
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -72,59 +88,65 @@ of each story
 
 > **NOTE**: Write these tests FIRST, ensure they FAIL before implementation
 
-- [ ] T012 [P] [US1] Button component accessibility test in `tests/components/ui/button.test.tsx`
-- [ ] T013 [P] [US1] Input component contract test in `tests/components/ui/input.test.tsx`
-- [ ] T014 [P] [US1] Card component responsive test in `tests/components/ui/card.test.tsx`
-- [ ] T015 [P] [US1] Note editor integration test in `tests/integration/note-editor.test.tsx`
-- [ ] T016 [P] [US1] Note editor accessibility test in `tests/accessibility/note-editor.test.tsx`
+- [ ] T012 [P] [US1] [FR-001, FR-009] Button component accessibility test in
+      `tests/components/ui/button.test.tsx`
+- [ ] T013 [P] [US1] [FR-001] Input component contract test in `tests/components/ui/input.test.tsx`
+- [ ] T014 [P] [US1] [FR-001, FR-003] Card component responsive test in
+      `tests/components/ui/card.test.tsx`
+- [ ] T015 [P] [US1] [FR-004] Note editor integration test in
+      `tests/integration/note-editor.test.tsx`
+- [ ] T016 [P] [US1] [FR-004, FR-009] Note editor accessibility test in
+      `tests/accessibility/note-editor.test.tsx`
 
 ### Implementation for User Story 1
 
 #### Base UI Components
 
-- [ ] T017 [P] [US1] Create Button component in `src/components/ui/button.tsx` (supports variants,
-      sizes, loading state)
-- [ ] T018 [P] [US1] Create Input component in `src/components/ui/input.tsx` (supports validation,
-      error states)
-- [ ] T019 [P] [US1] Create Card component in `src/components/ui/card.tsx` (with header, content,
-      footer)
-- [ ] T020 [P] [US1] Create Textarea component in `src/components/ui/textarea.tsx`
-- [ ] T021 [P] [US1] Create Badge component in `src/components/ui/badge.tsx` (for tags and
+- [ ] T017 [P] [US1] [FR-001, FR-009] Create Button component in `src/components/ui/button.tsx`
+      (supports variants, sizes, loading state)
+- [ ] T018 [P] [US1] [FR-001] Create Input component in `src/components/ui/input.tsx` (supports
+      validation, error states)
+- [ ] T019 [P] [US1] [FR-001, FR-003] Create Card component in `src/components/ui/card.tsx` (with
+      header, content, footer)
+- [ ] T020 [P] [US1] [FR-001] Create Textarea component in `src/components/ui/textarea.tsx`
+- [ ] T021 [P] [US1] [FR-001] Create Badge component in `src/components/ui/badge.tsx` (for tags and
       categories)
 
 #### Layout Components
 
-- [ ] T022 [P] [US1] Create Header component in `src/components/layout/header.tsx` (with search,
-      theme switcher)
-- [ ] T023 [US1] Create Sidebar component in `src/components/layout/sidebar.tsx` (navigation,
-      collapsible)
-- [ ] T024 [US1] Create MainLayout component in `src/components/layout/main-layout.tsx` (responsive
-      layout)
+- [ ] T022 [P] [US1] [FR-001, FR-002] Create Header component in `src/components/layout/header.tsx`
+      (with search, theme switcher)
+- [ ] T023 [US1] [FR-001, FR-003] Create Sidebar component in `src/components/layout/sidebar.tsx`
+      (navigation, collapsible)
+- [ ] T024 [US1] [FR-001, FR-003] Create MainLayout component in
+      `src/components/layout/main-layout.tsx` (responsive layout)
 
 #### Feature Components
 
-- [ ] T025 [US1] Create NoteEditor component in `src/components/features/note/note-editor.tsx` (rich
-      text editing)
-- [ ] T026 [US1] Create NoteCard component in `src/components/features/note/note-card.tsx` (note
-      preview)
-- [ ] T027 [US1] Create NoteList component in `src/components/features/note/note-list.tsx`
-      (virtualized list)
-- [ ] T028 [US1] Create Toolbar component in `src/components/features/note/toolbar.tsx` (formatting
-      tools)
+- [ ] T025 [US1] [FR-004] Create NoteEditor component in
+      `src/components/features/note/note-editor.tsx` (rich text editing)
+- [ ] T026 [US1] [FR-001, FR-003] Create NoteCard component in
+      `src/components/features/note/note-card.tsx` (note preview)
+- [ ] T027 [US1] [FR-001, FR-003] Create NoteList component in
+      `src/components/features/note/note-list.tsx` (virtualized list)
+- [ ] T028 [US1] [FR-004, FR-008] Create Toolbar component in
+      `src/components/features/note/toolbar.tsx` (formatting tools)
 
 #### Pages and Integration
 
-- [ ] T029 [US1] Implement notes page in `src/app/(dashboard)/notes/page.tsx`
-- [ ] T030 [US1] Implement new note page in `src/app/(dashboard)/notes/new/page.tsx`
-- [ ] T031 [US1] Implement note detail/edit page in `src/app/(dashboard)/notes/[id]/page.tsx`
-- [ ] T032 [US1] Create auto-save functionality in `src/lib/hooks/use-auto-save.ts`
-- [ ] T033 [US1] Add validation and error handling for note operations
+- [ ] T029 [US1] [FR-001, FR-003] Implement notes page in `src/app/(dashboard)/notes/page.tsx`
+- [ ] T030 [US1] [FR-001, FR-004] Implement new note page in
+      `src/app/(dashboard)/notes/new/page.tsx`
+- [ ] T031 [US1] [FR-001, FR-004] Implement note detail/edit page in
+      `src/app/(dashboard)/notes/[id]/page.tsx`
+- [ ] T032 [US1] [FR-004] Create auto-save functionality in `src/lib/hooks/use-auto-save.ts`
+- [ ] T033 [US1] [FR-001] Add validation and error handling for note operations
 
 #### State Management
 
-- [ ] T034 [US1] Create note store in `src/lib/stores/note-store.ts`
-- [ ] T035 [US1] Create UI store in `src/lib/stores/ui-store.ts`
-- [ ] T036 [US1] Integrate AI suggestions in note editor
+- [ ] T034 [US1] [FR-001] Create note store in `src/lib/stores/note-store.ts`
+- [ ] T035 [US1] [FR-001] Create UI store in `src/lib/stores/ui-store.ts`
+- [ ] T036 [US1] [FR-004] Integrate AI suggestions in note editor
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
