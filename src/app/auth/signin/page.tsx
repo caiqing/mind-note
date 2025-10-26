@@ -128,6 +128,9 @@ export default function SignInPage() {
                   border: '1px solid #d1d5db',
                   borderRadius: '0.5rem',
                   fontSize: '0.875rem',
+                  color: '#374151',
+                  backgroundColor: 'white',
+                  outline: 'none',
                   transition:
                     'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
                 }}
@@ -174,6 +177,9 @@ export default function SignInPage() {
                     border: '1px solid #d1d5db',
                     borderRadius: '0.5rem',
                     fontSize: '0.875rem',
+                    color: '#374151',
+                    backgroundColor: 'white',
+                    outline: 'none',
                     transition:
                       'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
                   }}
