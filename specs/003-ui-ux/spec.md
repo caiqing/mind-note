@@ -113,15 +113,74 @@ priority**: 移动端使用场景日益增多，响应式设计确保用户在�
 ### Functional Requirements
 
 - **FR-001**: 系统必须提供基于shadcn/ui组件库的现代化、直观的用户界面，遵循一致的设计语言和交互模式
+  - **技术实现**: 基于React 19 + Next.js 15 + shadcn/ui + Radix UI构建
+  - **组件架构**: 使用原子设计原则(Atoms、Molecules、Organisms)
+  - **状态管理**: Zustand + React Context for global UI state
+  - **样式系统**: Tailwind CSS + CSS Variables for theming
+  - **文件结构**: `src/components/ui/` (基础组件), `src/components/features/` (功能组件)
+
 - **FR-002**: 系统必须支持深色/浅色主题切换，并记住用户偏好
+  - **技术实现**: next-themes库 + CSS Variables + localStorage持久化
+  - **主题配置**: `src/components/providers/theme-provider.tsx`
+  - **CSS变量**: `src/app/globals.css` 中定义色彩系统
+  - **用户偏好**: 同步到数据库用户配置表
+  - **系统检测**: 自动检测系统主题偏好
+
 - **FR-003**: 系统必须提供响应式设计，适配桌面、平板、手机等不同设备
+  - **技术实现**: Tailwind CSS响应式断点 + 移动优先设计
+  - **断点系统**: sm(640px), md(768px), lg(1024px), xl(1280px), 2xl(1536px)
+  - **布局组件**: `src/components/layout/` 目录下响应式布局
+  - **网格系统**: 基于8px网格的一致性间距
+  - **触摸优化**: 触摸目标最小44px，手势支持
+
 - **FR-004**: 系统必须支持富文本编辑，包括格式化、插入链接、图片等功能
+  - **技术实现**: Tiptap编辑器 + React集成 + 自定义工具栏
+  - **编辑器组件**: `src/components/editor/rich-text-editor.tsx`
+  - **工具栏**: `src/components/editor/toolbar.tsx`
+  - **内容处理**: `src/lib/editor/content-processor.ts`
+  - **实时保存**: 防抖机制 + 自动保存功能
+
 - **FR-005**: 系统必须提供实时搜索功能，支持关键词和语义搜索
+  - **技术实现**: React Hook + Debounce + API集成
+  - **搜索组件**: `src/components/search/search-bar.tsx`
+  - **结果展示**: `src/components/search/search-results.tsx`
+  - **语义搜索**: 集成OpenAI Embeddings API
+  - **搜索优化**: 本地缓存 + 搜索历史
+
 - **FR-006**: 系统必须可视化展示AI分析结果，包括图表、标签云、关联图谱
+  - **技术实现**: D3.js + Recharts + 自定义可视化组件
+  - **图表组件**: `src/components/charts/` 目录
+  - **标签云**: `src/components/visualization/tag-cloud.tsx`
+  - **关联图谱**: `src/components/visualization/relationship-graph.tsx`
+  - **数据格式**: 标准化AI分析数据结构
+
 - **FR-007**: 系统必须提供直观的设置界面，支持个性化配置
+  - **技术实现**: React Hook Form + Zod验证 + shadcn/ui表单组件
+  - **设置页面**: `src/app/settings/` 路由
+  - **表单组件**: `src/components/settings/` 目录
+  - **配置同步**: 实时同步到用户数据库
+  - **验证机制**: 客户端和服务端双重验证
+
 - **FR-008**: 系统必须支持键盘快捷键，提高高级用户效率
+  - **技术实现**: React Hotkeys Hook + 快捷键管理系统
+  - **快捷键管理**: `src/lib/shortcuts/manager.ts`
+  - **帮助界面**: `src/components/help/keyboard-shortcuts.tsx`
+  - **冲突检测**: 自动检测和解决快捷键冲突
+  - **自定义支持**: 用户自定义快捷键
+
 - **FR-009**: 系统必须提供无障碍访问支持，符合WCAG 2.1 AA标准
+  - **技术实现**: Radix UI a11y features + 自定义a11y hooks
+  - **屏幕阅读器**: aria-labels和语义化HTML
+  - **键盘导航**: 完整的Tab导航支持
+  - **色彩对比**: 自动对比度检查工具
+  - **测试工具**: axe-core集成进行自动a11y测试
+
 - **FR-010**: 系统必须支持多语言界面，至少包含中文和英文
+  - **技术实现**: next-intl + 动态语言切换
+  - **语言文件**: `src/messages/` 目录下JSON文件
+  - **语言切换**: `src/components/language-switcher.tsx`
+  - **日期格式化**: 基于语言的格式化规则
+  - **RTL支持**: 为未来阿拉伯语等RTL语言做准备
 
 ### Key Entities
 

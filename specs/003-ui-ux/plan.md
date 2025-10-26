@@ -21,6 +21,33 @@ Goals**: 页面加载<2秒，交互响应<100ms，动画60fps，Lighthouse评分
 AA无障碍标准，支持IE11+浏览器，离线功能支持
 **Scale/Scope**: 支持10万+用户，50+个UI组件，20+个页面/视图
 
+## Functional Requirements Technical Mapping
+
+| FR ID      | 功能描述            | 技术栈                                       | 核心组件                      | 实现文件                                                 |
+| ---------- | ------------------- | -------------------------------------------- | ----------------------------- | -------------------------------------------------------- |
+| **FR-001** | 现代化shadcn/ui界面 | React 19 + Next.js 15 + shadcn/ui + Radix UI | Button, Input, Card, Layout   | `src/components/ui/*`, `src/components/layout/*`         |
+| **FR-002** | 深色/浅色主题切换   | next-themes + CSS Variables                  | ThemeProvider, ThemeSwitcher  | `src/components/providers/theme-provider.tsx`            |
+| **FR-003** | 响应式设计          | Tailwind CSS + 8px网格                       | ResponsiveLayout, Breakpoints | `tailwind.config.js`, `src/components/layout/*`          |
+| **FR-004** | 富文本编辑          | Tiptap + React                               | NoteEditor, Toolbar           | `src/components/features/note/note-editor.tsx`           |
+| **FR-005** | 实时搜索            | React Hook + Debounce                        | SearchBar, SearchResults      | `src/components/features/search/*`                       |
+| **FR-006** | AI分析可视化        | D3.js + Recharts                             | TagCloud, RelationshipGraph   | `src/components/visualization/*`                         |
+| **FR-007** | 设置界面            | React Hook Form + Zod                        | PreferencePanel, Settings     | `src/components/settings/*`                              |
+| **FR-008** | 键盘快捷键          | React Hotkeys Hook                           | ShortcutManager, Help         | `src/lib/shortcuts/*`, `src/components/help/*`           |
+| **FR-009** | 无障碍支持          | Radix UI a11y + axe-core                     | A11yComponents, Testing       | 所有组件添加a11y属性                                     |
+| **FR-010** | 多语言支持          | next-intl + i18n                             | LanguageSwitcher, i18n        | `src/messages/*`, `src/components/language-switcher.tsx` |
+
+### 技术架构决策理由
+
+1. **组件库选择**: shadcn/ui + Radix UI提供现代化的无障碍组件，符合FR-001和FR-009要求
+2. **主题系统**: next-themes + CSS Variables实现动态主题切换，满足FR-002需求
+3. **响应式方案**: Tailwind CSS的移动优先断点系统，完美支持FR-003
+4. **编辑器选择**: Tiptap基于ProseMirror，提供强大的扩展能力，满足FR-004
+5. **搜索实现**: Debounce + Hook模式确保性能，符合FR-005的实时要求
+6. **可视化方案**: D3.js提供最大灵活性，支持FR-006的复杂图表需求
+7. **表单处理**: React Hook Form + Zod提供类型安全的表单验证，满足FR-007
+8. **快捷键系统**: React Hotkeys Hook提供跨浏览器兼容性，支持FR-008
+9. **国际化**: next-intl与Next.js深度集成，完美支持FR-010
+
 ## Constitution Check
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
