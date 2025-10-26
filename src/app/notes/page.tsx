@@ -1,603 +1,520 @@
 /**
- * T028 [US1] Create notes list page in src/app/notes/page.tsx
+ * 简化版笔记列表页面
  *
- * Main notes listing page with search, filtering, pagination,
- * and bulk operations functionality.
+ * 使用纯CSS实现，无UI组件库依赖
  */
 
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { useRouter } from 'next/navigation'
-import { PlusIcon, SearchIcon, FilterIcon, SortAscIcon, SortDescIcon } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-
-import NoteCard from '@/components/notes/note-card'
-import { NoteService } from '@/lib/services/note-service'
-import { useAuth } from '@/hooks/use-auth'
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import NoteCard from '@/components/notes/note-card';
 
 interface Note {
-  id: string
-  title: string
-  content: string
-  createdAt: string
-  updatedAt: string
-  isFavorite: boolean
-  isArchived: boolean
-  category?: {
-    id: number
-    name: string
-    color: string
-  } | null
-  tags?: Array<{
-    id: number
-    name: string
-    color: string
-  }>
-  viewCount?: number
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  isFavorite: boolean;
+  isArchived: boolean;
+  tags: string[];
+  wordCount?: number;
+  readingTimeMinutes?: number;
+  viewCount?: number;
 }
 
 interface PaginationInfo {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
-interface FilterOptions {
-  search: string
-  categoryId: number | null
-  tagIds: number[]
-  isFavorite: boolean | null
-  sortBy: 'createdAt' | 'updatedAt' | 'title'
-  sortOrder: 'asc' | 'desc'
-  category: string | null
-}
+const DEFAULT_LIMIT = 12;
 
-const DEFAULT_LIMIT = 12
-const LIMIT_OPTIONS = [12, 24, 48, 96]
-
-export default function NotesPage() {
-  const { user, isAuthenticated } = useAuth()
-  const router = useRouter()
-  const searchParams = useSearchParams()
+export default function SimpleNotesPage() {
+  const router = useRouter();
 
   // State
-  const [notes, setNotes] = useState<Note[]>([])
-  const [categories, setCategories] = useState<Array<{ id: number; name: string; color: string }>>([])
-  const [tags, setTags] = useState<Array<{ id: number; name: string; color: string }>>([])
+  const [notes, setNotes] = useState<Note[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: DEFAULT_LIMIT,
     total: 0,
     totalPages: 0,
-  })
-  const [loading, setLoading] = useState(false)
-  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set())
-  const [showArchived, setShowArchived] = useState(false)
-  const [filters, setFilters] = useState<FilterOptions>({
-    search: searchParams.get('search') || '',
-    categoryId: searchParams.get('categoryId') ? parseInt(searchParams.get('categoryId')!) : null,
-    tagIds: searchParams.get('tagIds') ? searchParams.get('tagIds')!.split(',').map(Number).filter(Boolean) : [],
-    isFavorite: searchParams.get('isFavorite') ? searchParams.get('isFavorite') === 'true' : null,
-    sortBy: (searchParams.get('sortBy') as FilterOptions['sortBy']) || 'updatedAt',
-    sortOrder: (searchParams.get('sortOrder') as FilterOptions['sortOrder']) || 'desc',
-    category: searchParams.get('category') || null,
-  })
-
-  // Update URL with current filters
-  const updateURL = useCallback(() => {
-    const params = new URLSearchParams()
-
-    if (filters.search) params.set('search', filters.search)
-    if (filters.categoryId) params.set('categoryId', filters.categoryId.toString())
-    if (filters.tagIds.length > 0) params.set('tagIds', filters.tagIds.join(','))
-    if (filters.isFavorite !== null) params.set('isFavorite', filters.isFavorite.toString())
-    if (filters.sortBy !== 'updatedAt') params.set('sortBy', filters.sortBy)
-    if (filters.sortOrder !== 'desc') params.set('sortOrder', filters.sortOrder)
-    if (pagination.page > 1) params.set('page', pagination.page.toString())
-    if (pagination.limit !== DEFAULT_LIMIT) params.set('limit', pagination.limit.toString())
-    if (showArchived) params.set('archived', 'true')
-
-    const newURL = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`
-    window.history.replaceState({}, '', newURL)
-  }, [filters, pagination, showArchived])
+  });
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch notes
   const fetchNotes = useCallback(async () => {
-    if (!isAuthenticated) return
-
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await NoteService.getNotes(user.id, {
-        page: pagination.page,
-        limit: pagination.limit,
-        search: filters.search || undefined,
-        categoryId: filters.categoryId || undefined,
-        tagIds: filters.tagIds.length > 0 ? filters.tagIds : undefined,
-        isFavorite: filters.isFavorite || undefined,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-      })
+      const response = await fetch(
+        `/api/notes?page=${pagination.page}&limit=${pagination.limit}&search=${encodeURIComponent(searchTerm)}&sortBy=updatedAt&sortOrder=desc`,
+      );
 
-      // Filter archived notes if not showing archived
-      const filteredNotes = showArchived
-        ? result.notes
-        : result.notes.filter(note => !note.isArchived)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      setNotes(filteredNotes)
+      const data = await response.json();
+
+      setNotes(data.notes || []);
       setPagination({
         ...pagination,
-        total: result.pagination.total,
-        totalPages: result.pagination.totalPages,
-      })
+        total: data.pagination?.total || 0,
+        totalPages: data.pagination?.totalPages || 0,
+      });
     } catch (error) {
-      console.error('Failed to fetch notes:', error)
+      console.error('Failed to fetch notes:', error);
+      alert('获取笔记失败，请重试');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [isAuthenticated, user, pagination, filters, showArchived])
-
-  // Fetch categories and tags
-  const fetchMetadata = useCallback(async () => {
-    if (!isAuthenticated) return
-
-    try {
-      // Fetch categories (mock data for now)
-      const mockCategories = [
-        { id: 1, name: '工作', color: '#3B82F6' },
-        { id: 2, name: '学习', color: '#10B981' },
-        { id: 3, name: '生活', color: '#F59E0B' },
-        { id: 4, name: '项目', color: '#8B5CF6' },
-      ]
-      setCategories(mockCategories)
-
-      // Fetch tags (mock data for now)
-      const mockTags = [
-        { id: 1, name: '重要', color: '#EF4444' },
-        { id: 2, name: '紧急', color: '#F59E0B' },
-        { id: 3, name: '想法', color: '#8B5CF6' },
-        { id: 4, name: '资料', color: '#10B981' },
-        { id: 5, name: '待办', color: '#6B7280' },
-      ]
-      setTags(mockTags)
-    } catch (error) {
-      console.error('Failed to fetch metadata:', error)
-    }
-  }, [isAuthenticated])
+  }, [pagination.page, pagination.limit, searchTerm]);
 
   // Initial data fetch
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotes()
-      fetchMetadata()
-    }
-  }, [isAuthenticated, fetchNotes, fetchMetadata])
-
-  // Fetch notes when filters or pagination change
-  useEffect(() => {
-    fetchNotes()
-    updateURL()
-  }, [fetchNotes, updateURL])
+    fetchNotes();
+  }, [fetchNotes]);
 
   // Handle search
   const handleSearch = useCallback((value: string) => {
-    setFilters(prev => ({ ...prev, search: value }))
-    setPagination(prev => ({ ...prev, page: 1 }))
-  }, [])
-
-  // Handle filter change
-  const handleFilterChange = useCallback((key: keyof FilterOptions, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
-    setPagination(prev => ({ ...prev, page: 1 }))
-  }, [])
+    setSearchTerm(value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
 
   // Handle pagination
   const handlePageChange = useCallback((newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }))
-  }, [])
+    setPagination(prev => ({ ...prev, page: newPage }));
+  }, []);
 
-  const handleLimitChange = useCallback((newLimit: number) => {
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }))
-  }, [])
+  // Handle new note
+  const handleNewNote = useCallback(() => {
+    router.push('/notes/new');
+  }, [router]);
 
-  // Handle note selection
-  const handleNoteSelect = useCallback((noteId: string, selected: boolean) => {
-    setSelectedNotes(prev => {
-      const newSet = new Set(prev)
-      if (selected) {
-        newSet.add(noteId)
-      } else {
-        newSet.delete(noteId)
-      }
-      return newSet
-    })
-  }, [])
+  // Handle note actions
+  const handleNoteEdit = useCallback(
+    (noteId: string) => {
+      router.push(`/notes/${noteId}/edit`);
+    },
+    [router],
+  );
 
-  // Handle select all
-  const handleSelectAll = useCallback(() => {
-    if (selectedNotes.size === notes.length) {
-      setSelectedNotes(new Set())
-    } else {
-      setSelectedNotes(new Set(notes.map(note => note.id)))
+  const handleNoteDelete = useCallback((noteId: string) => {
+    if (confirm('确定要删除这篇笔记吗？')) {
+      // 模拟删除操作
+      setNotes(prev => prev.filter(note => note.id !== noteId));
+      console.log(`Delete note ${noteId}`);
     }
-  }, [notes, selectedNotes])
+  }, []);
 
-  // Handle bulk actions
-  const handleBulkArchive = useCallback(async () => {
-    if (selectedNotes.size === 0) return
+  const handleToggleFavorite = useCallback((noteId: string) => {
+    setNotes(prev =>
+      prev.map(note =>
+        note.id === noteId ? { ...note, isFavorite: !note.isFavorite } : note,
+      ),
+    );
+    console.log(`Toggle favorite for note ${noteId}`);
+  }, []);
 
-    const shouldArchive = !showArchived
-    const action = shouldArchive ? '归档' : '恢复'
-
-    if (!window.confirm(`确定要${action}选中的 ${selectedNotes.size} 个笔记吗？`)) {
-      return
-    }
-
-    setLoading(true)
-    try {
-      // Mock bulk action - in real implementation, this would call the API
-      console.log(`Bulk ${action} ${Array.from(selectedNotes).join(', ')}`)
-
-      // Update UI state
-      setNotes(prev =>
-        prev.map(note =>
-          selectedNotes.has(note.id)
-            ? { ...note, isArchived: shouldArchive }
-            : note
-        )
-      )
-      setSelectedNotes(new Set())
-    } catch (error) {
-      console.error('Failed to perform bulk action:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [selectedNotes, showArchived])
-
-  const handleBulkDelete = useCallback(async () => {
-    if (selectedNotes.size === 0) return
-
-    if (!window.confirm(`确定要删除选中的 ${selectedNotes.size} 个笔记吗？此操作无法撤销。`)) {
-      return
-    }
-
-    setLoading(true)
-    try {
-      // Mock bulk delete - in real implementation, this would call the API
-      console.log(`Bulk delete ${Array.from(selectedNotes).join(', ')}`)
-
-      // Update UI state
-      setNotes(prev => prev.filter(note => !selectedNotes.has(note.id)))
-      setSelectedNotes(new Set())
-    } catch (error) {
-      console.error('Failed to perform bulk delete:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [selectedNotes])
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
-          <CardContent className="text-center p-6">
-            <h2 className="text-2xl font-bold mb-4">请先登录</h2>
-            <p className="text-gray-600 mb-4">登录后才能查看和管理笔记</p>
-            <Button onClick={() => router.push('/auth/signin')}>
-              登录
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const handleToggleArchive = useCallback((noteId: string) => {
+    setNotes(prev =>
+      prev.map(note =>
+        note.id === noteId ? { ...note, isArchived: !note.isArchived } : note,
+      ),
+    );
+    console.log(`Toggle archive for note ${noteId}`);
+  }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#f9fafb',
+        padding: '2rem 1rem',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            marginBottom: '2rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {showArchived ? '已归档的笔记' : '我的笔记'}
+            <h1
+              style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                margin: 0,
+                marginBottom: '0.5rem',
+              }}
+            >
+              我的笔记
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p
+              style={{
+                color: '#6b7280',
+                margin: 0,
+                fontSize: '0.875rem',
+              }}
+            >
               共 {pagination.total} 篇笔记
-              {showArchived && (
-                <Badge variant="secondary" className="ml-2">
-                  已归档
-                </Badge>
-              )}
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => router.push('/notes/new')}
-              className="flex items-center gap-2"
-            >
-              <PlusIcon className="h-4 w-4" />
-              新建笔记
-            </Button>
+          <button
+            onClick={handleNewNote}
+            style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+            onMouseOver={e => {
+              e.target.style.backgroundColor = '#2563eb';
+            }}
+            onMouseOut={e => {
+              e.target.style.backgroundColor = '#3b82f6';
+            }}
+          >
+            <span style={{ fontSize: '1rem' }}>+</span>
+            新建笔记
+          </button>
+        </div>
 
-            <Button
-              variant="outline"
-              onClick={() => setShowArchived(!showArchived)}
+        {/* Search Bar */}
+        <div
+          style={{
+            backgroundColor: 'white',
+            padding: '1.5rem',
+            borderRadius: '0.75rem',
+            boxShadow:
+              '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+            marginBottom: '2rem',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '400px',
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                left: '0.75rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#9ca3af',
+                fontSize: '1rem',
+              }}
             >
-              {showArchived ? '显示活跃笔记' : '显示归档笔记'}
-            </Button>
+              🔍
+            </span>
+            <input
+              type='text'
+              placeholder='搜索笔记...'
+              value={searchTerm}
+              onChange={e => handleSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem 0.75rem 2.5rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                color: '#374151',
+                backgroundColor: 'white',
+                outline: 'none',
+                transition:
+                  'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
+              }}
+              onFocus={e => {
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="搜索笔记..."
-                  value={filters.search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
-                />
+        {/* Notes Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '1.5rem',
+            marginBottom: '2rem',
+          }}
+        >
+          {loading ? (
+            // Loading skeleton
+            Array.from({ length: DEFAULT_LIMIT }).map((_, index) => (
+              <div
+                key={index}
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.75rem',
+                  padding: '1.5rem',
+                  boxShadow:
+                    '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                }}
+              >
+                <div
+                  style={{
+                    height: '1.5rem',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '0.375rem',
+                    marginBottom: '1rem',
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: '1rem',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '0.375rem',
+                    marginBottom: '0.5rem',
+                  }}
+                ></div>
+                <div
+                  style={{
+                    height: '1rem',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '0.375rem',
+                    width: '80%',
+                  }}
+                ></div>
               </div>
-            </div>
-
-            {/* Category Filter */}
-            <Select
-              value={filters.categoryId?.toString() || ''}
-              onValueChange={(value) =>
-                handleFilterChange('categoryId', value ? parseInt(value) : null)
-              }
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="分类" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">所有分类</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Tag Filter */}
-            <Select
-              value={filters.tagIds.join(',')}
-              onValueChange={(value) =>
-                handleFilterChange('tagIds', value ? value.split(',').map(Number).filter(Boolean) : [])
-              }
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="标签" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">所有标签</SelectItem>
-                {tags.map(tag => (
-                  <SelectItem key={tag.id} value={tag.id.toString()}>
-                    {tag.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter */}
-            <Select
-              value={filters.isFavorite?.toString() || ''}
-              onValueChange={(value) =>
-                handleFilterChange('isFavorite', value === 'true' ? true : value === 'false' ? false : null)
-              }
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">所有状态</SelectItem>
-                <SelectItem value="true">收藏</SelectItem>
-                <SelectItem value="false">未收藏</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <Select
-                value={filters.sortBy}
-                onValueChange={(value) => handleFilterChange('sortBy', value as FilterOptions['sortBy'])}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="updatedAt">最近更新</SelectItem>
-                  <SelectItem value="createdAt">创建时间</SelectItem>
-                  <SelectItem value="title">标题</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  handleFilterChange('sortOrder', filters.sortOrder === 'desc' ? 'asc' : 'desc')
-                }
-              >
-                {filters.sortOrder === 'desc' ? (
-                  <SortDescIcon className="h-4 w-4" />
-                ) : (
-                  <SortAscIcon className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Bulk Actions */}
-          {selectedNotes.size > 0 && (
-            <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-              <Checkbox
-                checked={selectedNotes.size === notes.length}
-                onCheckedChange={handleSelectAll}
-                disabled={loading}
+            ))
+          ) : notes.length > 0 ? (
+            notes.map(note => (
+              <NoteCard
+                key={note.id}
+                note={{
+                  ...note,
+                  tags: note.tags || [],
+                  wordCount: note.wordCount || note.content.length,
+                  readingTimeMinutes:
+                    note.readingTimeMinutes ||
+                    Math.ceil(note.content.length / 200),
+                  viewCount: note.viewCount || 0,
+                }}
+                onEdit={handleNoteEdit}
+                onDelete={handleNoteDelete}
+                onToggleFavorite={handleToggleFavorite}
+                onToggleArchive={handleToggleArchive}
               />
-              <span className="text-sm text-gray-600">
-                已选择 {selectedNotes.size} 个
-              </span>
-              <div className="flex items-center gap-2 ml-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBulkArchive}
-                  disabled={loading}
-                >
-                  {showArchived ? '恢复' : '归档'}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  disabled={loading}
-                >
-                  删除
-                </Button>
+            ))
+          ) : (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: '3rem 1rem',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '3rem',
+                  marginBottom: '1rem',
+                  opacity: '0.5',
+                }}
+              >
+                📝
               </div>
+              <h3
+                style={{
+                  fontSize: '1.125rem',
+                  fontWeight: '500',
+                  color: '#111827',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                {searchTerm ? '没有找到匹配的笔记' : '还没有笔记'}
+              </h3>
+              <p
+                style={{
+                  color: '#6b7280',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                {searchTerm ? '尝试调整搜索条件' : '创建你的第一个笔记吧'}
+              </p>
+              {!searchTerm && (
+                <button
+                  onClick={handleNewNote}
+                  style={{
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseOver={e => {
+                    e.target.style.backgroundColor = '#2563eb';
+                  }}
+                  onMouseOut={e => {
+                    e.target.style.backgroundColor = '#3b82f6';
+                  }}
+                >
+                  新建笔记
+                </button>
+              )}
             </div>
           )}
         </div>
-      </div>
 
-      {/* Notes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {loading ? (
-          // Loading skeleton
-          Array.from({ length: pagination.limit }).map((_, index) => (
-            <Card key={index} className="animate-pulse">
-              <CardHeader className="pb-4">
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded"></div>
-                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : notes.length > 0 ? (
-          notes.map((note) => (
-            <div
-              key={note.id}
-              className={selectedNotes.has(note.id) ? 'ring-2 ring-blue-500 rounded-lg' : ''}
-            >
-              <Checkbox
-                checked={selectedNotes.has(note.id)}
-                onCheckedChange={(checked) => handleNoteSelect(note.id, checked)}
-                className="absolute top-2 left-2 z-10"
-              />
-              <NoteCard
-                note={note}
-                onEdit={(noteId) => router.push(`/notes/${noteId}/edit`)}
-                onDelete={(noteId, permanent) => {
-                  // Mock delete - in real implementation, this would call the API
-                  console.log(`Delete note ${noteId}, permanent: ${permanent}`)
-                }}
-                onArchive={(noteId) => {
-                  // Mock archive - in real implementation, this would call the API
-                  console.log(`Archive note ${noteId}`)
-                }}
-                onToggleFavorite={(noteId) => {
-                  // Mock toggle favorite - in real implementation, this would call the API
-                  console.log(`Toggle favorite for note ${noteId}`)
-                }}
-                onDuplicate={(noteId) => {
-                  // Mock duplicate - in real implementation, this would call the API
-                  console.log(`Duplicate note ${noteId}`)
-                }}
-              />
-            </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <FilterIcon className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {filters.search || filters.categoryId || filters.tagIds.length > 0
-                ? '没有找到匹配的笔记'
-                : showArchived
-                  ? '没有归档的笔记'
-                  : '还没有笔记'}
-            </h3>
-            <p className="text-gray-500 mb-4">
-              {filters.search || filters.categoryId || filters.tagIds.length > 0
-                ? '尝试调整搜索条件'
-                : '创建你的第一个笔记吧'
-              }
-            </p>
-            {!filters.search && !filters.categoryId && filters.tagIds.length === 0 && (
-              <Button onClick={() => router.push('/notes/new')}>
-                <PlusIcon className="h-4 w-4 mr-2" />
-                新建笔记
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {notes.length > 0 && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page <= 1}
+        {/* Pagination */}
+        {notes.length > 0 && pagination.totalPages > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
           >
-            上一页
-          </Button>
+            <button
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+              style={{
+                padding: '0.5rem 1rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '0.5rem',
+                backgroundColor: pagination.page <= 1 ? '#f9fafb' : 'white',
+                color: pagination.page <= 1 ? '#9ca3af' : '#374151',
+                cursor: pagination.page <= 1 ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => {
+                if (pagination.page > 1) {
+                  e.target.style.backgroundColor = '#f3f4f6';
+                }
+              }}
+              onMouseOut={e => {
+                e.target.style.backgroundColor =
+                  pagination.page <= 1 ? '#f9fafb' : 'white';
+              }}
+            >
+              上一页
+            </button>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
+            <span
+              style={{
+                fontSize: '0.875rem',
+                color: '#6b7280',
+              }}
+            >
               第 {pagination.page} 页，共 {pagination.totalPages} 页
             </span>
-            <Select
-              value={pagination.limit.toString()}
-              onValueChange={(value) => handleLimitChange(parseInt(value))}
-            >
-              {LIMIT_OPTIONS.map(limit => (
-                <SelectItem key={limit} value={limit.toString()}>
-                  每页 {limit} 条
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page >= pagination.totalPages}
-          >
-            下一页
-          </Button>
+            <button
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+              style={{
+                padding: '0.5rem 1rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '0.5rem',
+                backgroundColor:
+                  pagination.page >= pagination.totalPages
+                    ? '#f9fafb'
+                    : 'white',
+                color:
+                  pagination.page >= pagination.totalPages
+                    ? '#9ca3af'
+                    : '#374151',
+                cursor:
+                  pagination.page >= pagination.totalPages
+                    ? 'not-allowed'
+                    : 'pointer',
+                fontSize: '0.875rem',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => {
+                if (pagination.page < pagination.totalPages) {
+                  e.target.style.backgroundColor = '#f3f4f6';
+                }
+              }}
+              onMouseOut={e => {
+                e.target.style.backgroundColor =
+                  pagination.page >= pagination.totalPages
+                    ? '#f9fafb'
+                    : 'white';
+              }}
+            >
+              下一页
+            </button>
+          </div>
+        )}
+
+        {/* Debug Info */}
+        <div
+          style={{
+            marginTop: '2rem',
+            padding: '1rem',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '0.5rem',
+            fontSize: '0.75rem',
+            color: '#6b7280',
+          }}
+        >
+          <p>
+            <strong>调试信息:</strong>
+          </p>
+          <p>当前页码: {pagination.page}</p>
+          <p>每页条数: {pagination.limit}</p>
+          <p>总条数: {pagination.total}</p>
+          <p>总页数: {pagination.totalPages}</p>
+          <p>搜索词: "{searchTerm}"</p>
+          <p>加载状态: {loading ? '加载中...' : '已完成'}</p>
+          <p>笔记数量: {notes.length}</p>
         </div>
-      )}
+      </div>
+
+      <style jsx>{`
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </div>
-  )
+  );
 }

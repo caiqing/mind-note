@@ -1,300 +1,342 @@
 /**
  * T026 [US1] Create NoteCard component for note display in src/components/notes/note-card.tsx
  *
- * Card component for displaying note previews with metadata,
- * including title preview, excerpt, tags, categories, and actions.
+ * Simplified Card component for displaying note previews with metadata,
+ * using pure CSS instead of UI component library.
  */
 
-'use client'
+'use client';
 
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
-import { useState } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Star,
-  Archive,
-  ArchiveBox,
-  MoreHorizontal,
-  Edit,
-  Trash,
-  Eye,
-  CopyIcon,
-  ExternalLinkIcon,
-} from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { useState } from 'react';
+import Link from 'next/link';
 
 interface NoteCardProps {
   note: {
-    id: string
-    title: string
-    content: string
-    createdAt: string
-    updatedAt: string
-    isFavorite: boolean
-    isArchived: boolean
-    category?: {
-      id: number
-      name: string
-      color: string
-    } | null
-    tags?: Array<{
-      id: number
-      name: string
-      color: string
-    }>
-    viewCount?: number
-  }
-  onEdit?: (noteId: string) => void
-  onDelete?: (noteId: string, permanent?: boolean) => void
-  onArchive?: (noteId: string) => void
-  onToggleFavorite?: (noteId: string) => void
-  onDuplicate?: (noteId: string) => void
-  className?: string
-  showActions?: boolean
+    id: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+    isFavorite: boolean;
+    isArchived: boolean;
+    tags: string[];
+    wordCount?: number;
+    readingTimeMinutes?: number;
+    viewCount?: number;
+  };
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onToggleFavorite?: (id: string) => void;
+  onToggleArchive?: (id: string) => void;
 }
 
-export function NoteCard({
+export default function NoteCard({
   note,
   onEdit,
   onDelete,
-  onArchive,
   onToggleFavorite,
-  onDuplicate,
-  className = '',
-  showActions = true,
+  onToggleArchive,
 }: NoteCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Generate excerpt from content
-  const getExcerpt = (content: string, maxLength: number = 150) => {
-    // Remove HTML tags
-    const plainText = content.replace(/<[^>]*>/g, '')
-    if (plainText.length <= maxLength) return plainText
-    return plainText.substring(0, maxLength).trim() + '...'
-  }
+  const handleEdit = () => {
+    if (onEdit) onEdit(note.id);
+  };
 
-  // Format date
+  const handleDelete = () => {
+    if (onDelete && confirm('确定要删除这篇笔记吗？')) {
+      onDelete(note.id);
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (onToggleFavorite) onToggleFavorite(note.id);
+  };
+
+  const handleToggleArchive = () => {
+    if (onToggleArchive) onToggleArchive(note.id);
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString)
-      return formatDistanceToNow(date, { addSuffix: true, locale: zhCN })
-    } catch {
-      return dateString
-    }
-  }
-
-  const handleDelete = async (permanent: boolean = false) => {
-    if (isDeleting) return
-
-    const confirmMessage = permanent
-      ? '确定要永久删除这个笔记吗？此操作无法撤销。'
-      : '确定要归档这个笔记吗？'
-
-    if (!window.confirm(confirmMessage)) return
-
-    setIsDeleting(true)
-    try {
-      await onDelete?.(note.id, permanent)
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleArchive = async () => {
-    if (isDeleting) return
-
-    const action = note.isArchived ? '恢复' : '归档'
-    const confirmMessage = `确定要${action}这个笔记吗？`
-
-    if (!window.confirm(confirmMessage)) return
-
-    setIsDeleting(true)
-    try {
-      await onArchive?.(note.id)
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleToggleFavorite = async () => {
-    try {
-      await onToggleFavorite?.(note.id)
+      return formatDistanceToNow(new Date(dateString), {
+        addSuffix: true,
+        locale: zhCN,
+      });
     } catch (error) {
-      console.error('Failed to toggle favorite:', error)
+      return new Date(dateString).toLocaleDateString('zh-CN');
     }
-  }
-
-  const handleDuplicate = async () => {
-    try {
-      await onDuplicate?.(note.id)
-    } catch (error) {
-      console.error('Failed to duplicate note:', error)
-    }
-  }
+  };
 
   return (
-    <Card className={`hover:shadow-md transition-shadow duration-200 ${className}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <Link href={`/notes/${note.id}`}>
-              <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 cursor-pointer">
-                {note.title || '无标题'}
-              </h3>
-            </Link>
-
-            {/* Category */}
-            {note.category && (
-              <Badge
-                variant="secondary"
-                className="mt-2 inline-flex items-center"
-                style={{ backgroundColor: note.category.color + '20', color: note.category.color }}
-              >
-                {note.category.name}
-              </Badge>
-            )}
-          </div>
-
-          {/* Favorite Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleToggleFavorite}
-            className="ml-2 flex-shrink-0"
-            disabled={isDeleting}
+    <div
+      style={{
+        backgroundColor: 'white',
+        borderRadius: '0.75rem',
+        boxShadow:
+          '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        marginBottom: '1rem',
+        transition: 'box-shadow 0.2s ease-in-out',
+        border: note.isArchived ? '1px solid #fca5a5' : '1px solid #e5e7eb',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.boxShadow =
+          '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow =
+          '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+      }}
+    >
+      {/* Card Header */}
+      <div
+        style={{
+          padding: '1.5rem 1.5rem 0',
+          borderBottom: '1px solid #f3f4f6',
+          backgroundColor: note.isArchived ? '#fef2f2' : 'white',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: '0.5rem',
+          }}
+        >
+          <Link
+            href={`/notes/${note.id}`}
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              flex: 1,
+              marginRight: '1rem',
+            }}
           >
-            {note.isFavorite ? (
-              <Star className="h-5 w-5 text-yellow-500 fill-current" />
-            ) : (
-              <Star className="h-5 w-5 text-gray-400 hover:text-yellow-500" />
-            )}
-          </Button>
+            <h3
+              style={{
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                color: note.isArchived ? '#6b7280' : '#111827',
+                margin: 0,
+                lineHeight: '1.5rem',
+                textDecoration: 'none',
+              }}
+            >
+              {note.title}
+            </h3>
+          </Link>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={handleToggleFavorite}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                color: note.isFavorite ? '#ef4444' : '#9ca3af',
+                transition: 'color 0.2s',
+                fontSize: '1.25rem',
+              }}
+              title={note.isFavorite ? '取消收藏' : '收藏'}
+            >
+              {note.isFavorite ? '❤️' : '🤍'}
+            </button>
+            <button
+              onClick={handleToggleArchive}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                color: note.isArchived ? '#f59e0b' : '#9ca3af',
+                transition: 'color 0.2s',
+                fontSize: '1.25rem',
+              }}
+              title={note.isArchived ? '取消归档' : '归档'}
+            >
+              {note.isArchived ? '📁' : '📄'}
+            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  color: '#6b7280',
+                  fontSize: '1.25rem',
+                }}
+                title='更多操作'
+              >
+                ⋮
+              </button>
+              {isMenuOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '100%',
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    boxShadow:
+                      '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    zIndex: 50,
+                    minWidth: '8rem',
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      handleEdit();
+                      setIsMenuOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem 1rem',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#374151',
+                    }}
+                  >
+                    ✏️ 编辑
+                  </button>
+                  <button
+                    onClick={() => {
+                      window.open(`/notes/${note.id}`, '_blank');
+                      setIsMenuOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem 1rem',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#374151',
+                    }}
+                  >
+                    👁️ 查看
+                  </button>
+                  <hr
+                    style={{
+                      margin: '0.25rem 0',
+                      border: 'none',
+                      borderTop: '1px solid #e5e7eb',
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      handleDelete();
+                      setIsMenuOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem 1rem',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#dc2626',
+                    }}
+                  >
+                    🗑️ 删除
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Card Content */}
+      <div style={{ padding: '1.5rem' }}>
+        <p
+          style={{
+            color: '#6b7280',
+            lineHeight: '1.5',
+            marginBottom: '1rem',
+            fontSize: '0.875rem',
+          }}
+        >
+          {truncateText(note.content, 150)}
+        </p>
 
         {/* Tags */}
         {note.tags && note.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {note.tags.map((tag) => (
-              <Badge
-                key={tag.id}
-                variant="outline"
-                className="text-xs"
-                style={{ borderColor: tag.color, color: tag.color }}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+              marginBottom: '1rem',
+            }}
+          >
+            {note.tags.slice(0, 3).map((tag, index) => (
+              <span
+                key={index}
+                style={{
+                  backgroundColor: '#dbeafe',
+                  color: '#1e40af',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                }}
               >
-                {tag.name}
-              </Badge>
+                {tag}
+              </span>
             ))}
+            {note.tags.length > 3 && (
+              <span
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  color: '#6b7280',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.75rem',
+                }}
+              >
+                +{note.tags.length - 3}
+              </span>
+            )}
           </div>
         )}
-      </CardHeader>
-
-      <CardContent className="pt-0">
-        {/* Content Excerpt */}
-        <p className="text-gray-600 text-sm line-clamp-3 mb-3">
-          {getExcerpt(note.content)}
-        </p>
 
         {/* Metadata */}
-        <div className="flex items-center text-xs text-gray-500 space-x-4">
-          <span>
-            {note.isArchived ? (
-              <ArchiveBox className="h-4 w-4 inline mr-1" />
-            ) : (
-              <>
-                更新于 {formatDate(note.updatedAt)}
-                {note.viewCount && (
-                  <>
-                    <span className="mx-1">•</span>
-                    <Eye className="h-3 w-3 inline mr-1" />
-                    {note.viewCount}
-                  </>
-                )}
-              </>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.75rem',
+            color: '#9ca3af',
+          }}
+        >
+          <span>{formatDate(note.updatedAt)}</span>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            {note.wordCount && <span>{note.wordCount} 字</span>}
+            {note.readingTimeMinutes && (
+              <span>{note.readingTimeMinutes} 分钟</span>
             )}
-          </span>
-        </div>
-      </CardContent>
-
-      {showActions && (
-        <CardFooter className="pt-3">
-          <div className="flex items-center justify-between">
-            {/* View Button */}
-            <Link href={`/notes/${note.id}`}>
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-1" />
-                查看
-              </Button>
-            </Link>
-
-            {/* Action Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" disabled={isDeleting}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit?.(note.id)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  编辑
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={handleDuplicate}>
-                  <CopyIcon className="h-4 w-4 mr-2" />
-                  复制
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => window.open(`/notes/${note.id}`, '_blank')}
-                >
-                  <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                  在新标签页打开
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={handleArchive}>
-                  <Archive className="h-4 w-4 mr-2" />
-                  {note.isArchived ? '恢复' : '归档'}
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => handleDelete(false)}
-                  className="text-orange-600"
-                >
-                  <ArchiveBox className="h-4 w-4 mr-2" />
-                  删除
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => handleDelete(true)}
-                  className="text-red-600"
-                >
-                  <Trash className="h-4 w-4 mr-2" />
-                  永久删除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {note.viewCount && <span>{note.viewCount} 次查看</span>}
           </div>
-        </CardFooter>
-      )}
-    </Card>
-  )
+        </div>
+      </div>
+    </div>
+  );
 }
-
-export default NoteCard

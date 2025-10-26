@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { RichTextEditor } from '@/components/editor/rich-text-editor';
+import { useAuth } from '@/hooks/use-auth';
 
 // 类型定义
 interface Note {
-  id: number;
+  id: string;
+  userId: string;
   title: string;
   content: string;
   contentPlain: string;
@@ -34,10 +35,10 @@ export default function NoteDetailPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, isAuthenticated } = useAuth();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [useRichEditor, setUseRichEditor] = useState(true);
   const [editForm, setEditForm] = useState({
     title: '',
     content: '',
@@ -168,10 +169,25 @@ export default function NoteDetailPage() {
   };
 
   useEffect(() => {
-    if (noteId) {
+    if (noteId && isAuthenticated) {
       fetchNote();
     }
-  }, [noteId]);
+  }, [noteId, isAuthenticated]);
+
+  // 认证检查
+  if (!isAuthenticated) {
+    return (
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <Card className='w-96'>
+          <CardContent className='text-center p-6'>
+            <h2 className='text-2xl font-bold mb-4'>请先登录</h2>
+            <p className='text-gray-600 mb-4'>登录后才能查看和编辑笔记</p>
+            <Button onClick={() => router.push('/auth/signin')}>登录</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -325,50 +341,21 @@ export default function NoteDetailPage() {
 
                   {/* 内容编辑 */}
                   <div>
-                    <div className='flex items-center justify-between mb-2'>
-                      <label className='block text-sm font-medium text-gray-700'>
-                        内容
-                      </label>
-                      <div className='flex items-center space-x-2'>
-                        <Button
-                          variant={useRichEditor ? 'default' : 'outline'}
-                          size='sm'
-                          onClick={() => setUseRichEditor(true)}
-                        >
-                          富文本
-                        </Button>
-                        <Button
-                          variant={!useRichEditor ? 'default' : 'outline'}
-                          size='sm'
-                          onClick={() => setUseRichEditor(false)}
-                        >
-                          纯文本
-                        </Button>
-                      </div>
-                    </div>
-                    {useRichEditor ? (
-                      <RichTextEditor
-                        content={editForm.content}
-                        onChange={content =>
-                          setEditForm(prev => ({ ...prev, content }))
-                        }
-                        placeholder='开始记录你的想法...'
-                        className='min-h-[400px]'
-                      />
-                    ) : (
-                      <Textarea
-                        value={editForm.content}
-                        onChange={e =>
-                          setEditForm(prev => ({
-                            ...prev,
-                            content: e.target.value,
-                          }))
-                        }
-                        placeholder='开始记录你的想法...'
-                        rows={20}
-                        className='min-h-[400px]'
-                      />
-                    )}
+                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                      内容
+                    </label>
+                    <Textarea
+                      value={editForm.content}
+                      onChange={e =>
+                        setEditForm(prev => ({
+                          ...prev,
+                          content: e.target.value,
+                        }))
+                      }
+                      placeholder='开始记录你的想法...'
+                      rows={20}
+                      className='min-h-[400px]'
+                    />
                   </div>
 
                   {/* 标签编辑 */}

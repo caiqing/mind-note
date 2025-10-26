@@ -1,3 +1,13 @@
+// 检查是否在服务端环境
+const isServer = typeof window === 'undefined';
+
+// 如果在客户端，抛出错误
+if (!isServer) {
+  throw new Error(
+    'Server logger cannot be used in client environment. Use client-logger instead.',
+  );
+}
+
 import winston from 'winston';
 import path from 'path';
 

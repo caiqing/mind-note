@@ -21,10 +21,10 @@ const nextConfig = {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
-      }
+      };
 
       // Improve source map generation for debugging (use proper devtool)
-      config.devtool = 'eval-source-map'
+      config.devtool = 'eval-source-map';
     }
 
     // Add custom aliases for cleaner imports
@@ -38,7 +38,7 @@ const nextConfig = {
       '@utils': './src/lib/utils',
       '@styles': './src/styles',
       '@tests': './tests',
-    }
+    };
 
     // Handle file-loader for static assets
     config.module.rules.push({
@@ -47,7 +47,7 @@ const nextConfig = {
       generator: {
         filename: 'static/images/[name].[hash][ext]',
       },
-    })
+    });
 
     // Handle font files
     config.module.rules.push({
@@ -56,9 +56,9 @@ const nextConfig = {
       generator: {
         filename: 'static/fonts/[name].[hash][ext]',
       },
-    })
+    });
 
-    return config
+    return config;
   },
 
   // Environment variables
@@ -75,7 +75,7 @@ const nextConfig = {
           source: '/api/health/:path*',
           destination: '/api/internal/health/:path*',
         },
-      ]
+      ];
     },
   }),
 
@@ -97,10 +97,11 @@ const nextConfig = {
   poweredByHeader: false,
 
   // Internationalization (if needed)
-  i18n: {
-    locales: ['en', 'zh'],
-    defaultLocale: 'en',
-  },
+  // Note: Disabled until proper i18n structure is implemented
+  // i18n: {
+  //   locales: ['en', 'zh'],
+  //   defaultLocale: 'en',
+  // },
 
   // Logging configuration
   logging: {
@@ -116,8 +117,14 @@ const nextConfig = {
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
         ],
       },
@@ -138,7 +145,7 @@ const nextConfig = {
           },
         ],
       },
-    ]
+    ];
   },
 
   // Redirects for common routes
@@ -159,16 +166,16 @@ const nextConfig = {
         destination: '/auth/signup',
         permanent: false,
       },
-    ]
+    ];
   },
-}
+};
 
 // Environment-specific overrides
 if (process.env.NODE_ENV === 'development') {
   // Development-only configurations
   nextConfig.compiler = {
     removeConsole: false, // Keep console logs in development
-  }
+  };
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;

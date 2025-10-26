@@ -204,9 +204,6 @@ export default function SimpleEditPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                color: '#374151',
-                fontSize: '0.875rem',
-                fontWeight: '500',
               }}
             >
               ← 返回
@@ -232,9 +229,6 @@ export default function SimpleEditPage() {
                 borderRadius: '0.5rem',
                 padding: '0.75rem 1.5rem',
                 cursor: 'pointer',
-                color: '#374151',
-                fontSize: '0.875rem',
-                fontWeight: '500',
               }}
             >
               👁️ 查看

@@ -4,140 +4,139 @@
  * Sidebar panel for managing note metadata like categories, tags, and status
  */
 
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   TagIcon,
   FolderIcon,
   StarIcon,
-  ArchiveBoxIcon,
+  Archive,
   PlusIcon,
-  XIcon
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
+  XIcon,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
 interface Category {
-  id: number
-  name: string
-  color: string
+  id: number;
+  name: string;
+  color: string;
 }
 
 interface Tag {
-  id: number
-  name: string
-  color: string
+  id: number;
+  name: string;
+  color: string;
 }
 
 interface Note {
-  id: string
-  title: string
-  isFavorite: boolean
-  isArchived: boolean
-  categoryId?: number
+  id: string;
+  title: string;
+  isFavorite: boolean;
+  isArchived: boolean;
+  categoryId?: number;
   tags?: Array<{
-    id: number
-    name: string
-    color: string
-  }>
+    id: number;
+    name: string;
+    color: string;
+  }>;
 }
 
 interface NoteMetadataPanelProps {
-  note: Note
-  categories: Category[]
-  tags: Tag[]
-  onUpdate: (updates: Partial<Note>) => void
+  note: Note;
+  categories: Category[];
+  tags: Tag[];
+  onUpdate: (updates: Partial<Note>) => void;
 }
 
 export function NoteMetadataPanel({
   note,
   categories,
   tags,
-  onUpdate
+  onUpdate,
 }: NoteMetadataPanelProps) {
-  const [isAddingTag, setIsAddingTag] = useState(false)
-  const [newTagName, setNewTagName] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(note.categoryId || null)
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(
+    note.categoryId || null,
+  );
   const [selectedTags, setSelectedTags] = useState<Set<number>>(
-    new Set(note.tags?.map(tag => tag.id) || [])
-  )
+    new Set(note.tags?.map(tag => tag.id) || []),
+  );
 
   const handleCategoryChange = (categoryId: number | null) => {
-    setSelectedCategory(categoryId)
-    onUpdate({ categoryId: categoryId })
-  }
+    setSelectedCategory(categoryId);
+    onUpdate({ categoryId: categoryId });
+  };
 
   const handleTagToggle = (tagId: number) => {
-    const newSelectedTags = new Set(selectedTags)
+    const newSelectedTags = new Set(selectedTags);
     if (newSelectedTags.has(tagId)) {
-      newSelectedTags.delete(tagId)
+      newSelectedTags.delete(tagId);
     } else {
-      newSelectedTags.add(tagId)
+      newSelectedTags.add(tagId);
     }
-    setSelectedTags(newSelectedTags)
+    setSelectedTags(newSelectedTags);
 
-    const updatedTags = Array.from(newSelectedTags).map(id =>
-      tags.find(tag => tag.id === id)
-    ).filter(Boolean)
+    const updatedTags = Array.from(newSelectedTags)
+      .map(id => tags.find(tag => tag.id === id))
+      .filter(Boolean);
 
-    onUpdate({ tags: updatedTags })
-  }
+    onUpdate({ tags: updatedTags });
+  };
 
   const handleAddTag = () => {
-    if (!newTagName.trim()) return
+    if (!newTagName.trim()) return;
 
     // In real implementation, this would call an API to create a new tag
     const newTag: Tag = {
       id: Math.max(...tags.map(t => t.id), 0) + 1,
       name: newTagName.trim(),
-      color: '#' + Math.floor(Math.random()*16777215).toString(16)
-    }
+      color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+    };
 
     // Add to tags list (in real app, this would update the global state)
-    const updatedTags = [
-      ...tags,
-      newTag
-    ]
+    const updatedTags = [...tags, newTag];
 
     // Select the new tag
-    setSelectedTags(prev => new Set([...prev, newTag.id]))
-    setNewTagName('')
-    setIsAddingTag(false)
+    setSelectedTags(prev => new Set([...prev, newTag.id]));
+    setNewTagName('');
+    setIsAddingTag(false);
 
     // Update note with new tag
-    const noteTags = Array.from(selectedTags).map(id =>
-      updatedTags.find(tag => tag.id === id)
-    ).filter(Boolean)
-    noteTags.push(newTag)
+    const noteTags = Array.from(selectedTags)
+      .map(id => updatedTags.find(tag => tag.id === id))
+      .filter(Boolean);
+    noteTags.push(newTag);
 
-    onUpdate({ tags: noteTags })
-  }
+    onUpdate({ tags: noteTags });
+  };
 
   const handleFavoriteToggle = () => {
-    onUpdate({ isFavorite: !note.isFavorite })
-  }
+    onUpdate({ isFavorite: !note.isFavorite });
+  };
 
   const handleArchiveToggle = () => {
-    onUpdate({ isArchived: !note.isArchived })
-  }
+    onUpdate({ isArchived: !note.isArchived });
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">笔记设置</CardTitle>
+        <CardTitle className='text-lg'>笔记设置</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className='space-y-6'>
         {/* Status Toggles */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <StarIcon className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm font-medium">收藏</span>
+        <div className='space-y-4'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2'>
+              <StarIcon className='h-4 w-4 text-yellow-500' />
+              <span className='text-sm font-medium'>收藏</span>
             </div>
             <Switch
               checked={note.isFavorite}
@@ -145,10 +144,10 @@ export function NoteMetadataPanel({
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <ArchiveBoxIcon className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">归档</span>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2'>
+              <Archive className='h-4 w-4 text-gray-500' />
+              <span className='text-sm font-medium'>归档</span>
             </div>
             <Switch
               checked={note.isArchived}
@@ -160,14 +159,14 @@ export function NoteMetadataPanel({
         <Separator />
 
         {/* Category Selection */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <FolderIcon className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium">分类</span>
+        <div className='space-y-3'>
+          <div className='flex items-center space-x-2'>
+            <FolderIcon className='h-4 w-4 text-blue-600' />
+            <span className='text-sm font-medium'>分类</span>
           </div>
 
-          <div className="space-y-2">
-            {categories.map((category) => (
+          <div className='space-y-2'>
+            {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => handleCategoryChange(category.id)}
@@ -177,12 +176,12 @@ export function NoteMetadataPanel({
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <div className="flex items-center space-x-2">
+                <div className='flex items-center space-x-2'>
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className='w-3 h-3 rounded-full'
                     style={{ backgroundColor: category.color }}
                   />
-                  <span className="text-sm">{category.name}</span>
+                  <span className='text-sm'>{category.name}</span>
                 </div>
               </button>
             ))}
@@ -195,7 +194,7 @@ export function NoteMetadataPanel({
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
             >
-              <span className="text-sm text-gray-500">无分类</span>
+              <span className='text-sm text-gray-500'>无分类</span>
             </button>
           </div>
         </div>
@@ -203,67 +202,65 @@ export function NoteMetadataPanel({
         <Separator />
 
         {/* Tags */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <TagIcon className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium">标签</span>
+        <div className='space-y-3'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-2'>
+              <TagIcon className='h-4 w-4 text-purple-600' />
+              <span className='text-sm font-medium'>标签</span>
             </div>
             {!isAddingTag ? (
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={() => setIsAddingTag(true)}
               >
-                <PlusIcon className="h-4 w-4" />
+                <PlusIcon className='h-4 w-4' />
               </Button>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className='flex items-center space-x-2'>
                 <Input
                   value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="新标签"
-                  className="h-8"
+                  onChange={e => setNewTagName(e.target.value)}
+                  placeholder='新标签'
+                  className='h-8'
                   autoFocus
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter') {
-                      handleAddTag()
+                      handleAddTag();
                     } else if (e.key === 'Escape') {
-                      setIsAddingTag(false)
-                      setNewTagName('')
+                      setIsAddingTag(false);
+                      setNewTagName('');
                     }
                   }}
                 />
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant='outline'
+                  size='sm'
                   onClick={() => {
-                    setIsAddingTag(false)
-                    setNewTagName('')
+                    setIsAddingTag(false);
+                    setNewTagName('');
                   }}
                 >
-                  <XIcon className="h-4 w-4" />
+                  <XIcon className='h-4 w-4' />
                 </Button>
               </div>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
+          <div className='flex flex-wrap gap-2'>
+            {tags.map(tag => (
               <Badge
                 key={tag.id}
-                variant={selectedTags.has(tag.id) ? "default" : "outline"}
+                variant={selectedTags.has(tag.id) ? 'default' : 'outline'}
                 className={`cursor-pointer transition-colors ${
-                  selectedTags.has(tag.id)
-                    ? ''
-                    : 'hover:bg-gray-100'
+                  selectedTags.has(tag.id) ? '' : 'hover:bg-gray-100'
                 }`}
                 style={{
                   borderColor: tag.color,
                   ...(selectedTags.has(tag.id) && {
                     backgroundColor: tag.color,
-                    color: 'white'
-                  })
+                    color: 'white',
+                  }),
                 }}
                 onClick={() => handleTagToggle(tag.id)}
               >
@@ -275,12 +272,12 @@ export function NoteMetadataPanel({
 
         {/* Note Info */}
         <Separator />
-        <div className="text-xs text-gray-500 space-y-1">
+        <div className='text-xs text-gray-500 space-y-1'>
           <div>创建时间: {new Date(note.createdAt).toLocaleString()}</div>
           <div>更新时间: {new Date(note.updatedAt).toLocaleString()}</div>
           <div>版本: v{note.version}</div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
