@@ -1,10 +1,23 @@
 # Development Tasks: AI内容分析集成
 
-**Branch**: 004-ai | **Date**: 2025-10-25 | **Spec**: [link](./spec.md) | **Plan**: [link](./plan.md)
+**Branch**: 004-ai | **Date**: 2025-10-25 | **Spec**: [link](./spec.md) | **Plan**:
+[link](./plan.md)
 
-**Task Generation Method**: Based on design documents and user stories
-**Phase**: Complete implementation planning
-**Priority**: High - Core AI functionality for MVP
+**Task Generation Method**: Based on design documents and user stories **Phase**: Complete
+implementation planning **Priority**: High - Core AI functionality for MVP
+
+## Task to Functional Requirements Mapping
+
+| Phase       | Task      | FR(s)                  | Description               |
+| ----------- | --------- | ---------------------- | ------------------------- |
+| **Phase 1** | T001-T003 | FR-002                 | 项目结构和AI提供商配置    |
+| **Phase 2** | T004-T007 | FR-002, FR-005, FR-009 | 数据库、向量存储、API架构 |
+| **US1**     | T008-T012 | FR-001, FR-008         | 智能文本分析和摘要        |
+| **US2**     | T013-T015 | FR-004                 | 自动内容分类              |
+| **US3**     | T016-T018 | FR-003                 | 智能标签生成              |
+| **US4**     | T019-T021 | FR-006                 | AI分析结果编辑界面        |
+| **US5**     | T022-T024 | FR-007                 | 优雅降级机制              |
+| **US6**     | T025-T027 | FR-010                 | 质量监控和日志            |
 
 ## 依赖关系图
 
@@ -48,18 +61,18 @@ gantt
 
 **Purpose**: 项目初始化和基础架构搭建
 
-- [ ] **T001** 创建AI功能项目结构
+- [ ] **T001** [FR-002] 创建AI功能项目结构
   - 创建 `src/lib/ai/` 目录结构
   - 设置 `src/components/ai/` 组件目录
   - 配置 `src/app/api/v1/ai/` API路由目录
 
-- [ ] **T002** 安装和配置AI相关依赖
+- [ ] **T002** [FR-002] 安装和配置AI相关依赖
   - 安装 `@ai-sdk/openai`, `@ai-sdk/anthropic`
   - 安装 `pgvector`, `@prisma/client`
   - 安装 `Vitest`, `@testing-library/react`, `Playwright`
   - 配置 TypeScript 和 ESLint 规则
 
-- [ ] **T003** [P] 配置AI提供商环境变量和密钥管理
+- [ ] **T003** [P] [FR-002] 配置AI提供商环境变量和密钥管理
   - 设置 `.env.local` 中的API密钥配置
   - 创建 `src/lib/ai/config/` 配置文件
   - 实现密钥加密存储机制
@@ -72,22 +85,22 @@ gantt
 
 ⚠️ **CRITICAL**: 任何用户故事工作都需在此阶段完成后才能开始
 
-- [ ] **T004** 数据库Schema设计和迁移
+- [ ] **T004** [FR-002] 数据库Schema设计和迁移
   - 创建AI分析相关表结构（ai_analysis, embedding_vectors等）
   - 配置pgvector扩展和向量索引
   - 实现Prisma schema定义
 
-- [ ] **T005** [P] AI服务基础架构
+- [ ] **T005** [P] [FR-002] AI服务基础架构
   - 创建 `src/lib/ai/services/` 服务基类
   - 实现错误处理和重试机制
   - 配置日志和监控系统
 
-- [ ] **T006** [P] 向量存储基础设施
+- [ ] **T006** [P] [FR-005] 向量存储基础设施
   - 实现 `src/lib/vector/` 向量存储服务
   - 配置向量嵌入生成（OpenAI text-embedding-3-small）
   - 实现相似度搜索算法
 
-- [ ] **T007** API路由和中间件结构
+- [ ] **T007** [FR-009] API路由和中间件结构
   - 创建 `/api/v1/ai/` 路由基础结构
   - 实现认证和授权中间件
   - 配置速率限制和成本控制
@@ -104,27 +117,27 @@ gantt
 
 ### Implementation for User Story 1
 
-- [ ] **T008** [P] [US1] 实现AI分析核心服务
+- [ ] **T008** [P] [US1] [FR-001, FR-008] 实现AI分析核心服务
   - 创建 `src/lib/ai/services/analysis-service.ts`
   - 实现多模型分析和结果合并逻辑
   - 添加分析状态管理和错误处理
 
-- [ ] **T009** [P] [US1] 实现摘要生成功能
+- [ ] **T009** [P] [US1] [FR-001] 实现摘要生成功能
   - 集成OpenAI GPT-4o进行文本摘要
   - 实现摘要长度控制（≤100字）
   - 添加摘要质量评估机制
 
-- [ ] **T010** [P] [US1] 实现情感分析功能
+- [ ] **T010** [P] [US1] [FR-001] 实现情感分析功能
   - 集成情感分析API调用
   - 实现情感类型分类（positive/negative/neutral）
   - 添加置信度计算
 
-- [ ] **T011** [P] [US1] 实现关键概念提取
+- [ ] **T011** [P] [US1] [FR-001] 实现关键概念提取
   - 使用关键词提取算法识别核心概念
   - 实现概念重要性排序
   - 添加概念验证和过滤
 
-- [ ] **T012** [P] [US1] 实现智能触发机制
+- [ ] **T012** [P] [US1] [FR-008] 实现智能触发机制
   - 创建内容变化检测算法（>30%阈值）
   - 实现分析队列管理
   - 添加定时触发和清理机制
@@ -141,17 +154,17 @@ gantt
 
 ### Implementation for User Story 2
 
-- [ ] **T013** [P] [US2] 创建内容分类数据模型
+- [ ] **T013** [P] [US2] [FR-004] 创建内容分类数据模型
   - 扩展 `ContentCategory` 实体
   - 实现20+种预定义分类
   - 添加分类层级和颜色配置
 
-- [ ] **T014** [P] [US2] 实现AI分类服务
+- [ ] **T014** [P] [US2] [FR-004] 实现AI分类服务
   - 创建 `src/lib/ai/services/classification-service.ts`
   - 集成多模型分类分析
   - 实现分类置信度计算
 
-- [ ] **T015** [P] [US2] 实现分类匹配算法
+- [ ] **T015** [P] [US2] [FR-004] 实现分类匹配算法
   - 创建分类相似度计算
   - 实现多分类支持
   - 添加分类历史记录
@@ -341,6 +354,7 @@ Task T032 # 监控配置
 ## 成功标准
 
 ### MVP完成标准（Phase 3-6）
+
 - ✅ 所有P1用户故事功能实现
 - ✅ API响应时间 < 3秒
 - ✅ AI分析准确率 > 85%
@@ -348,6 +362,7 @@ Task T032 # 监控配置
 - ✅ 成本控制在 $0.01/笔记以内
 
 ### 完整功能标准（Phase 7）
+
 - ✅ 单元测试覆盖率 > 90%
 - ✅ 集成测试通过率 100%
 - ✅ 系统可用性 > 99.9%
@@ -357,11 +372,13 @@ Task T032 # 监控配置
 ## 风险缓解
 
 ### 高风险任务
+
 - **T008 (AI分析核心服务)**: 依赖外部AI服务，需要完善fallback机制
 - **T019 (向量存储)**: 向量搜索性能需要调优和监控
 - **T025 (批量分析)**: 并发处理需要队列管理和错误恢复
 
 ### 缓解措施
+
 - 多模型支持和自动切换
 - 性能监控和自动优化
 - 完善的错误处理和重试机制

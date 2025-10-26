@@ -126,15 +126,75 @@ priority**: 自动分类帮助用户快速组织大量笔记，提高信息检�
 ### Functional Requirements
 
 - **FR-001**: System MUST 自动分析笔记内容的语义并生成摘要（不超过100字）
-- **FR-002**: System MUST 支持多种AI模型集成，包括OpenAI GPT、Claude、DeepSeek、Qwen、Kimi、GLM、自定义模型、ollama等
+  - **技术实现**: Vercel AI SDK + OpenAI GPT-4 Turbo + 自定义摘要prompt工程
+  - **核心组件**: `src/lib/ai/summarizer.ts`, `src/lib/ai/prompt-templates.ts`
+  - **数据结构**: 摘要结果存储在AIAnalysis表，包含token使用量和质量评分
+  - **触发机制**: 内容变化超过30%或长度超过100字时自动触发
+  - **缓存策略**: 相同内容摘要缓存24小时，减少重复API调用
+
+- **FR-002**: System MUST 支持多种AI模型集成，包括OpenAI
+  GPT、Claude、DeepSeek、Qwen、Kimi、GLM、自定义模型、ollama等
+  - **技术实现**: Vercel AI SDK统一接口 + 适配器模式 + 环境配置管理
+  - **核心组件**: `src/lib/ai/providers/`, `src/lib/ai/model-router.ts`
+  - **配置管理**: `src/lib/ai/config.ts` 统一管理API密钥和模型参数
+  - **降级策略**: 主模型不可用时自动切换到备用模型
+  - **成本优化**: 根据任务复杂度智能选择最适合的模型
+
 - **FR-003**: System MUST 自动提取3-5个相关标签，准确率 > 85%（基于标签相关性的语义相似度计算）
+  - **技术实现**: OpenAI Embeddings + 余弦相似度计算 + 标签候选库匹配
+  - **核心组件**: `src/lib/ai/tag-extractor.ts`, `src/lib/ai/similarity-calculator.ts`
+  - **算法流程**: 文本向量化 → 与现有标签库计算相似度 → 过滤低相关性标签 → 返回Top 5
+  - **质量保证**: 用户反馈机制持续优化标签提取准确性
+  - **本地缓存**: 常用标签向量本地缓存，提升响应速度
+
 - **FR-004**: System MUST 支持20+种预定义内容分类的自动识别
+  - **技术实现**: 少样本学习 + 分类prompt工程 + 置信度阈值过滤
+  - **核心组件**: `src/lib/ai/classifier.ts`, `src/lib/ai/category-definitions.ts`
+  - **分类体系**: 技术文档、学习笔记、会议记录、创意想法、项目管理等20+类别
+  - **置信度机制**: 分类结果包含置信度分数，低于阈值则建议人工分类
+  - **持续学习**: 用户纠正反馈用于优化分类模型
+
 - **FR-005**: System MUST 将文本内容转换为向量嵌入用于语义搜索（使用PostgreSQL + pgvector扩展）
+  - **技术实现**: OpenAI text-embedding-3-small + pgvector向量存储 + 向量索引优化
+  - **核心组件**: `src/lib/ai/embedding-generator.ts`, `src/lib/vector/search.ts`
+  - **数据库设计**: embeddings表使用1536维向量，创建IVFFlat索引提升查询性能
+  - **批量处理**: 支持向量化批量生成，降低API调用成本
+  - **增量更新**: 内容变化时仅重新计算受影响的向量
+
 - **FR-006**: System MUST 提供AI分析结果的编辑和确认界面
+  - **技术实现**: React组件 + 差异对比显示 + 一键确认功能
+  - **核心组件**: `src/components/ai/analysis-review.tsx`, `src/components/ai/diff-viewer.tsx`
+  - **用户体验**: 高亮显示AI建议的变更，支持部分接受和修改
+  - **版本控制**: 保留AI分析历史版本，支持回滚和对比
+  - **快捷操作**: 提供键盘快捷键快速确认或拒绝建议
+
 - **FR-007**: System MUST 在AI服务不可用时优雅降级
+  - **技术实现**: 断路器模式 + 本地规则引擎 + 缓存降级方案
+  - **核心组件**: `src/lib/ai/circuit-breaker.ts`, `src/lib/ai/fallback-engine.ts`
+  - **降级策略**: AI摘要 → 关键词提取；AI分类 → 基于规则的分类；AI标签 → 关键词匹配
+  - **健康检查**: 实时监控AI服务状态，自动切换降级模式
+  - **用户通知**: 清晰提示用户当前使用降级模式
+
 - **FR-008**: System MUST 支持AI分析结果的重新处理和更新
+  - **技术实现**: 异步任务队列 + 增量更新机制 + 批量重处理
+  - **核心组件**: `src/lib/ai/reprocessor.ts`, `src/lib/ai/task-queue.ts`
+  - **触发条件**: 模型升级、用户反馈、定期质量检查
+  - **优先级管理**: 重要内容优先处理，避免系统过载
+  - **进度通知**: 实时显示重处理进度，支持暂停和恢复
+
 - **FR-009**: System MUST 实现AI请求的速率限制和成本控制（智能控制：根据内容重要性动态分配预算）
+  - **技术实现**: 令牌桶算法 + Redis计数器 + 动态预算分配
+  - **核心组件**: `src/lib/ai/rate-limiter.ts`, `src/lib/ai/budget-manager.ts`
+  - **成本策略**: 根据用户等级、内容重要性、时间优先级动态分配预算
+  - **监控告警**: 成本超限实时告警，自动调整处理策略
+  - **使用报告**: 详细的成本使用报告和分析
+
 - **FR-010**: System MUST 记录AI分析日志用于质量监控
+  - **技术实现**: 结构化日志 + ELK Stack集成 + 质量指标计算
+  - **核心组件**: `src/lib/ai/logger.ts`, `src/lib/ai/quality-monitor.ts`
+  - **日志内容**: 请求响应时间、token使用量、成本、用户反馈、错误信息
+  - **质量指标**: 自动计算摘要质量、分类准确率、标签相关性等KPI
+  - **分析报告**: 定期生成AI服务质量报告，支持趋势分析
 
 ### Key Entities
 
@@ -149,7 +209,8 @@ priority**: 自动分类帮助用户快速组织大量笔记，提高信息检�
 
 ### Session 2025-10-25
 
-- Q: AI模型集成优先级和策略是什么？ → A: 支持OpenAI GPT、Claude、DeepSeek、Qwen、Kimi、GLM、自定义模型、ollama等多种模型
+- Q: AI模型集成优先级和策略是什么？ → A: 支持OpenAI
+  GPT、Claude、DeepSeek、Qwen、Kimi、GLM、自定义模型、ollama等多种模型
 - Q: 标签准确率测试标准是什么？ → A: 基于标签相关性的语义相似度计算
 - Q: 向量存储方案是什么？ → A: PostgreSQL + pgvector扩展
 - Q: AI分析触发时机是什么？ → A: 智能触发：内容变化超过阈值时自动分析
