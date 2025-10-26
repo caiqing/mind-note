@@ -9,7 +9,9 @@ async function testKeywordServiceWithMock() {
   try {
     // 测试导入
     console.log('1️⃣ 测试关键词服务模块导入...');
-    const { createKeywordService } = await import('./src/lib/ai/services/keyword-service');
+    const { createKeywordService } = await import(
+      './src/lib/ai/services/keyword-service'
+    );
     console.log('✅ 关键词服务导入成功');
 
     // 创建模拟提供商
@@ -20,7 +22,7 @@ async function testKeywordServiceWithMock() {
         // 模拟关键词提取逻辑
         const keywords = content.match(/[\u4e00-\u9fa5]{2,6}/g) || [];
         return keywords.slice(0, 8);
-      }
+      },
     };
 
     // 手动创建服务实例并替换提供商
@@ -33,7 +35,8 @@ async function testKeywordServiceWithMock() {
 
     console.log('2️⃣ 测试基础关键词提取...');
     const basicRequest = {
-      content: '人工智能和机器学习是当前技术发展的重要趋势。深度学习作为机器学习的一个重要分支，在图像识别、自然语言处理和推荐系统等领域展现出强大的能力。',
+      content:
+        '人工智能和机器学习是当前技术发展的重要趋势。深度学习作为机器学习的一个重要分支，在图像识别、自然语言处理和推荐系统等领域展现出强大的能力。',
       userId: 'test-user-001',
       priority: 'relevance' as const,
       maxKeywords: 8,
@@ -44,7 +47,9 @@ async function testKeywordServiceWithMock() {
     console.log(`- 提取的关键词数量: ${basicResult.keywords.length}`);
     console.log(`- 提供商: ${basicResult.provider}`);
     console.log(`- 处理时间: ${basicResult.processingTime}ms`);
-    console.log(`- 关键词: ${basicResult.keywords.map(k => k.keyword).join(', ')}`);
+    console.log(
+      `- 关键词: ${basicResult.keywords.map(k => k.keyword).join(', ')}`,
+    );
 
     console.log('\n3️⃣ 测试不同优先级...');
     const priorities = ['relevance', 'frequency', 'importance'] as const;
@@ -58,7 +63,9 @@ async function testKeywordServiceWithMock() {
       };
 
       const result = await service.extractKeywords(request);
-      console.log(`- ${priority} 优先级: ${result.keywords.map(k => k.keyword).join(', ')}`);
+      console.log(
+        `- ${priority} 优先级: ${result.keywords.map(k => k.keyword).join(', ')}`,
+      );
     }
 
     console.log('\n4️⃣ 测试批量处理...');
@@ -102,7 +109,6 @@ async function testKeywordServiceWithMock() {
     console.log('✅ 所有核心功能验证通过');
 
     return true;
-
   } catch (error) {
     console.error('❌ 关键词提取服务模拟测试失败:', error);
     return false;

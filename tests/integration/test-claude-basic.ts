@@ -11,7 +11,9 @@ async function testBasicClaudeIntegration() {
 
     // 测试导入
     console.log('1️⃣ 测试Claude模块导入...');
-    const { createClaudeProvider } = await import('./src/lib/ai/providers/claude-provider');
+    const { createClaudeProvider } = await import(
+      './src/lib/ai/providers/claude-provider'
+    );
     console.log('✅ Claude提供商导入成功');
 
     // 测试实例化
@@ -21,7 +23,14 @@ async function testBasicClaudeIntegration() {
 
     // 测试基础方法存在
     console.log('3️⃣ 测试Claude方法存在性...');
-    const methods = ['generateSummary', 'extractKeywords', 'classifyContent', 'analyzeSentiment', 'extractKeyConcepts', 'generateTags'];
+    const methods = [
+      'generateSummary',
+      'extractKeywords',
+      'classifyContent',
+      'analyzeSentiment',
+      'extractKeyConcepts',
+      'generateTags',
+    ];
 
     for (const method of methods) {
       if (typeof (provider as any)[method] === 'function') {
@@ -45,7 +54,6 @@ async function testBasicClaudeIntegration() {
     }
 
     return true;
-
   } catch (error) {
     console.error('❌ Claude基础集成测试失败:', error);
     return false;

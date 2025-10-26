@@ -8,7 +8,9 @@ async function testBasicOpenAIIntegration() {
   try {
     // 测试导入
     console.log('1️⃣ 测试模块导入...');
-    const { createOpenAIProviderV2 } = await import('./src/lib/ai/providers/openai-provider-v2');
+    const { createOpenAIProviderV2 } = await import(
+      './src/lib/ai/providers/openai-provider-v2'
+    );
     console.log('✅ OpenAI提供商导入成功');
 
     // 测试实例化
@@ -18,7 +20,14 @@ async function testBasicOpenAIIntegration() {
 
     // 测试基础方法存在
     console.log('3️⃣ 测试方法存在性...');
-    const methods = ['generateSummary', 'extractKeywords', 'classifyContent', 'analyzeSentiment', 'extractKeyConcepts', 'generateTags'];
+    const methods = [
+      'generateSummary',
+      'extractKeywords',
+      'classifyContent',
+      'analyzeSentiment',
+      'extractKeyConcepts',
+      'generateTags',
+    ];
 
     for (const method of methods) {
       if (typeof (provider as any)[method] === 'function') {
@@ -42,7 +51,6 @@ async function testBasicOpenAIIntegration() {
     }
 
     return true;
-
   } catch (error) {
     console.error('❌ 基础集成测试失败:', error);
     return false;
