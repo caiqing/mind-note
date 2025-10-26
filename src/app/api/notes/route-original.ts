@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { PrismaClient } from '@prisma/client'
+import { databaseManager } from '@/lib/db/database-manager'
 
 const prisma = new PrismaClient()
 
@@ -19,9 +20,24 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
+    const categoryId = searchParams.get('categoryId')
+    const isFavorite = searchParams.get('isFavorite') === 'true'
+    const isArchived = searchParams.get('isArchived') === 'true'
 
     // 构建查询条件
     const where: any = {}
+
+    if (isArchived) {
+      // 注意：数据库中没有isArchived字段，这个功能暂时不可用
+    }
+
+    if (isFavorite) {
+      // 注意：数据库中没有isFavorite字段，这个功能暂时不可用
+    }
+
+    if (categoryId && parseInt(categoryId) > 0) {
+      where.categoryId = parseInt(categoryId)
+    }
 
     if (search) {
       where.OR = [
@@ -52,15 +68,15 @@ export async function GET(request: Request) {
       content: note.content,
       contentPlain: note.content.replace(/<[^>]*>/g, ''),
       categoryId: note.categoryId,
-      tags: note.tags,
+      tags: note.tags, // 直接使用tags数组
       metadata: note.metadata,
       aiProcessed: note.aiProcessed,
       aiSummary: note.aiSummary,
       aiKeywords: note.aiKeywords,
       version: note.version,
       status: note.status,
-      isFavorite: false,
-      isArchived: false,
+      isFavorite: false, // 数据库中没有这个字段
+      isArchived: false, // 数据库中没有这个字段
       isPublic: note.isPublic,
       viewCount: note.viewCount,
       wordCount: note.content.split(/\s+/).filter(word => word.length > 0).length,
@@ -101,22 +117,22 @@ export async function POST(request: Request) {
 
     // 计算字数和阅读时间
     const wordCount = validatedData.content.split(/\s+/).filter(word => word.length > 0).length
-    const readingTimeMinutes = Math.ceil(wordCount / 200)
+    const readingTimeMinutes = Math.ceil(wordCount / 200) // 假设200字/分钟
 
-    // 生成内容哈希
+    // 生成内容哈希（用于重复检测和版本控制）
     const crypto = require('crypto')
     const contentHash = crypto.createHash('md5').update(validatedData.content).digest('hex')
 
     // 创建笔记
     const newNote = await prisma.note.create({
       data: {
-        id: crypto.randomUUID(),
-        userId: 'demo-user',
+        id: crypto.randomUUID(), // 生成UUID作为主键
+        userId: 'demo-user', // 使用现有的用户ID
         title: validatedData.title,
         content: validatedData.content,
         contentHash,
         categoryId: validatedData.categoryId || null,
-        tags: validatedData.tags,
+        tags: validatedData.tags, // 直接使用tags数组字段
         metadata: {},
         aiProcessed: false,
         aiSummary: null,
@@ -136,15 +152,15 @@ export async function POST(request: Request) {
       content: newNote.content,
       contentPlain: newNote.content.replace(/<[^>]*>/g, ''),
       categoryId: newNote.categoryId,
-      tags: newNote.tags,
+      tags: newNote.tags, // 直接使用tags数组
       metadata: newNote.metadata,
       aiProcessed: newNote.aiProcessed,
       aiSummary: newNote.aiSummary,
       aiKeywords: newNote.aiKeywords,
       version: newNote.version,
       status: newNote.status,
-      isFavorite: false,
-      isArchived: false,
+      isFavorite: false, // 数据库中没有这个字段，设为默认值
+      isArchived: false, // 数据库中没有这个字段，设为默认值
       isPublic: newNote.isPublic,
       viewCount: newNote.viewCount,
       wordCount,
