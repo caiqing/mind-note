@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } }
+        { content: { contains: search, mode: 'insensitive' } },
       ]
     }
 
@@ -55,9 +55,9 @@ export async function GET(request: Request) {
         where,
         orderBy: { updatedAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.note.count({ where })
+      prisma.note.count({ where }),
     ])
 
     // 格式化数据
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       readingTimeMinutes: Math.ceil(note.content.split(/\s+/).filter(word => word.length > 0).length / 200),
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
-      aiProcessedAt: note.aiProcessedAt
+      aiProcessedAt: note.aiProcessedAt,
     }))
 
     const totalPages = Math.ceil(total / limit)
@@ -97,14 +97,14 @@ export async function GET(request: Request) {
         totalPages,
         hasNext: page < totalPages,
         hasPrev: page > 1,
-      }
+      },
     })
 
   } catch (error) {
     console.error('Failed to fetch notes:', error)
     return NextResponse.json(
       { error: 'Failed to fetch notes' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -140,8 +140,8 @@ export async function POST(request: Request) {
         version: 1,
         status: 'DRAFT',
         isPublic: false,
-        viewCount: 0
-      }
+        viewCount: 0,
+      },
     })
 
     // 格式化返回数据
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       readingTimeMinutes,
       createdAt: newNote.createdAt,
       updatedAt: newNote.updatedAt,
-      aiProcessedAt: newNote.aiProcessedAt
+      aiProcessedAt: newNote.aiProcessedAt,
     }
 
     return NextResponse.json(formattedNote, { status: 201 })
@@ -176,14 +176,14 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     console.error('Failed to create note:', error)
     return NextResponse.json(
       { error: 'Failed to create note' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

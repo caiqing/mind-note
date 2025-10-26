@@ -17,7 +17,7 @@ const updateNoteSchema = z.object({
 // GET /api/notes/[id] - 获取单个笔记
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -26,7 +26,7 @@ export async function GET(
     if (isNaN(noteId)) {
       return NextResponse.json(
         { error: 'Invalid note ID' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -35,28 +35,28 @@ export async function GET(
       include: {
         categories: true,
         tags: {
-          include: { tag: true }
-        }
-      }
+          include: { tag: true },
+        },
+      },
     })
 
     if (!note) {
       return NextResponse.json(
         { error: 'Note not found' },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
     // 增加浏览次数
     await prisma.note.update({
       where: { id: noteId },
-      data: { viewCount: { increment: 1 } }
+      data: { viewCount: { increment: 1 } },
     })
 
     // 格式化数据
     const formattedNote = {
       ...note,
-      tags: note.tags.map(nt => nt.tag.name)
+      tags: note.tags.map(nt => nt.tag.name),
     }
 
     return NextResponse.json(formattedNote)
@@ -65,7 +65,7 @@ export async function GET(
     console.error('Failed to fetch note:', error)
     return NextResponse.json(
       { error: 'Failed to fetch note' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -73,7 +73,7 @@ export async function GET(
 // PUT /api/notes/[id] - 更新笔记
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -82,7 +82,7 @@ export async function PUT(
     if (isNaN(noteId)) {
       return NextResponse.json(
         { error: 'Invalid note ID' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -91,20 +91,20 @@ export async function PUT(
 
     // 检查笔记是否存在
     const existingNote = await prisma.note.findUnique({
-      where: { id: noteId }
+      where: { id: noteId },
     })
 
     if (!existingNote) {
       return NextResponse.json(
         { error: 'Note not found' },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
     // 准备更新数据
     const updateData: any = {
       updatedAt: new Date(),
-      version: { increment: 1 }
+      version: { increment: 1 },
     }
 
     if (validatedData.title !== undefined) {
@@ -134,7 +134,7 @@ export async function PUT(
     if (validatedData.tags !== undefined) {
       // 先删除现有关联
       await prisma.noteTag.deleteMany({
-        where: { noteId }
+        where: { noteId },
       })
 
       // 然后创建新关联
@@ -142,8 +142,8 @@ export async function PUT(
         updateData.tags = {
           connectOrCreate: validatedData.tags.map(tagName => ({
             where: { name: tagName },
-            create: { name: tagName }
-          }))
+            create: { name: tagName },
+          })),
         }
       }
     }
@@ -155,15 +155,15 @@ export async function PUT(
       include: {
         categories: true,
         tags: {
-          include: { tag: true }
-        }
-      }
+          include: { tag: true },
+        },
+      },
     })
 
     // 格式化返回数据
     const formattedNote = {
       ...updatedNote,
-      tags: updatedNote.tags.map(nt => nt.tag.name)
+      tags: updatedNote.tags.map(nt => nt.tag.name),
     }
 
     return NextResponse.json(formattedNote)
@@ -172,14 +172,14 @@ export async function PUT(
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     console.error('Failed to update note:', error)
     return NextResponse.json(
       { error: 'Failed to update note' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -187,7 +187,7 @@ export async function PUT(
 // DELETE /api/notes/[id] - 删除笔记（软删除）
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -196,19 +196,19 @@ export async function DELETE(
     if (isNaN(noteId)) {
       return NextResponse.json(
         { error: 'Invalid note ID' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     // 检查笔记是否存在
     const existingNote = await prisma.note.findUnique({
-      where: { id: noteId }
+      where: { id: noteId },
     })
 
     if (!existingNote) {
       return NextResponse.json(
         { error: 'Note not found' },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -217,32 +217,32 @@ export async function DELETE(
       where: { id: noteId },
       data: {
         isArchived: true,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         categories: true,
         tags: {
-          include: { tag: true }
-        }
-      }
+          include: { tag: true },
+        },
+      },
     })
 
     // 格式化返回数据
     const formattedNote = {
       ...deletedNote,
-      tags: deletedNote.tags.map(nt => nt.tag.name)
+      tags: deletedNote.tags.map(nt => nt.tag.name),
     }
 
     return NextResponse.json({
       message: 'Note archived successfully',
-      note: formattedNote
+      note: formattedNote,
     })
 
   } catch (error) {
     console.error('Failed to delete note:', error)
     return NextResponse.json(
       { error: 'Failed to delete note' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
