@@ -48,7 +48,8 @@
       "Bash(pkill:*)",
       "Bash(git push:*)",
       "Bash(git fetch:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
