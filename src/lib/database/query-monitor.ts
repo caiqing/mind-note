@@ -6,7 +6,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { createHash } from 'crypto'
+import { hashContent } from '@/lib/security/enhanced-hash'
 import { connectionPoolManager, ConnectionType } from './connection-pool-manager'
 
 // 查询性能级别
@@ -810,11 +810,17 @@ export class QueryMonitor extends EventEmitter {
   }
 
   /**
-   * 生成查询ID
+   * 生成查询ID (使用增强哈希算法)
    */
   private generateQueryId(query: string, params: any[]): string {
     const content = query + JSON.stringify(params)
-    return createHash('md5').update(content).digest('hex').substring(0, 16)
+    // 使用增强哈希算法替代不安全的MD5
+    const hashResult = hashContent(content, {
+      algorithm: 'sha256',
+      includeTimestamp: false,
+      includeMetadata: false
+    })
+    return hashResult.hash.substring(0, 16)
   }
 
   /**

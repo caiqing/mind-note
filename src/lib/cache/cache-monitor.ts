@@ -7,7 +7,7 @@
 import { EventEmitter } from 'events'
 import { intelligentCacheStrategyManager, DataType } from './intelligent-cache-strategy'
 import { multiLevelCache, CacheLevel } from './multi-level-cache'
-import { createHash } from 'crypto'
+import { hashContent } from '@/lib/security/enhanced-hash'
 
 // 性能阈值配置
 export interface PerformanceThresholds {
@@ -982,10 +982,16 @@ export class CachePerformanceMonitor extends EventEmitter {
   }
 
   /**
-   * 生成告警ID
+   * 生成告警ID (使用增强哈希算法)
    */
   private generateAlertId(type: string, key: string): string {
-    return createHash('md5').update(`${type}:${key}:${Date.now()}`).digest('hex').substring(0, 16)
+    // 使用增强哈希算法替代不安全的MD5
+    const hashResult = hashContent(`${type}:${key}:${Date.now()}`, {
+      algorithm: 'sha256',
+      includeTimestamp: false,
+      includeMetadata: false
+    });
+    return hashResult.hash.substring(0, 16)
   }
 }
 

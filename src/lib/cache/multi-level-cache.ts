@@ -5,7 +5,7 @@
  * 支持智能失效策略和缓存预热
  */
 
-import { createHash } from 'crypto';
+import { hashContent } from '@/lib/security/enhanced-hash';
 
 export interface CacheOptions {
   /** 缓存时间（秒） */
@@ -583,9 +583,14 @@ export class MultiLevelCache {
       }, {} as Record<string, any>);
 
     const paramString = JSON.stringify(sortedParams);
-    const hash = createHash('md5').update(paramString).digest('hex');
+    // 使用增强哈希算法替代不安全的MD5
+    const hashResult = hashContent(paramString, {
+      algorithm: 'sha256',
+      includeTimestamp: false,
+      includeMetadata: false
+    });
 
-    return `${namespace}:${hash}`;
+    return `${namespace}:${hashResult.hash}`;
   }
 
   private initializeStats(): CacheStats {

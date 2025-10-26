@@ -3,6 +3,7 @@
 import { PrismaClient } from '@prisma/client'
 import { aiConfig } from '@/lib/ai/config'
 import { logger } from '@/lib/ai/services'
+import { hashContent } from '@/lib/security/enhanced-hash'
 
 export interface VectorEmbedding {
   id: string
@@ -380,11 +381,16 @@ export class VectorService {
   }
 
   /**
-   * 计算内容校验和
+   * 计算内容校验和 (使用增强哈希算法)
    */
   private calculateChecksum(content: string): string {
-    const crypto = require('crypto')
-    return crypto.createHash('sha256').update(content).digest('hex')
+    // 使用增强哈希算法替代直接的crypto调用
+    const hashResult = hashContent(content, {
+      algorithm: 'sha256',
+      includeTimestamp: false,
+      includeMetadata: false
+    })
+    return hashResult.hash
   }
 
   /**

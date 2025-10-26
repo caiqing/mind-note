@@ -7,7 +7,7 @@
 
 import { EventEmitter } from 'events'
 import { multiLevelCache, CacheLevel, CacheOptions } from './multi-level-cache'
-import { createHash } from 'crypto'
+import { hashContent } from '@/lib/security/enhanced-hash'
 
 // 数据类型枚举
 export enum DataType {
@@ -938,10 +938,16 @@ export class IntelligentCacheStrategyManager extends EventEmitter {
   }
 
   /**
-   * 生成版本号
+   * 生成版本号 (使用增强哈希算法)
    */
   private generateVersion(key: string): string {
-    return createHash('md5').update(`${key}:${Date.now()}`).digest('hex').substring(0, 8)
+    // 使用增强哈希算法替代不安全的MD5
+    const hashResult = hashContent(`${key}:${Date.now()}`, {
+      algorithm: 'sha256',
+      includeTimestamp: false,
+      includeMetadata: false
+    });
+    return hashResult.hash.substring(0, 8)
   }
 
   /**

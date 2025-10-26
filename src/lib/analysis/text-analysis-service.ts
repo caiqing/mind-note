@@ -9,6 +9,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { hashContent } from '@/lib/security/enhanced-hash';
 import {
   TextAnalysisRequest,
   TextAnalysisResult,
@@ -700,7 +701,13 @@ ${content}
 
   private generateCacheKey(request: TextAnalysisRequest): string {
     const content = `${request.title}|${request.content}|${JSON.stringify(request.options)}`;
-    return crypto.createHash('md5').update(content).digest('hex');
+    // 使用增强哈希算法替代不安全的MD5
+    const hashResult = hashContent(content, {
+      algorithm: 'sha256',
+      includeTimestamp: false,
+      includeMetadata: false
+    });
+    return hashResult.hash;
   }
 
   private updateProgress(requestId: string, stage: AnalysisStage, progress: number, message?: string): void {
