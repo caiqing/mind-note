@@ -110,6 +110,9 @@
 - **FR-007**: System MUST 支持笔记的导入导出功能（Markdown格式）
 - **FR-008**: System MUST 提供响应式设计适配不同设备
 - **FR-009**: System MUST 实现用户权限控制（只能访问自己的笔记）
+  - **技术实现**: 基于JWT的身份验证 + 基于用户ID的资源所有权检查
+  - **权限检查点**: API路由中间件 + 数据库查询过滤 + 前端路由守卫
+  - **安全措施**: CSRF防护 + 速率限制 + 权限缓存优化
 - **FR-010**: System MUST 支持笔记的收藏和归档功能
 
 ### Key Entities *(include if feature involves data)*
