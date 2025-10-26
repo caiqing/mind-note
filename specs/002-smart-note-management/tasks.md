@@ -272,8 +272,35 @@ npm pkg set scripts.prepare="husky install"
 - `src/lib/db/error-handler.ts`
 - `src/lib/db/monitor.ts`
 
+### T006.5: 用户权限控制系统
+**Priority**: P1 (Critical) | **Estimated**: 1.5 days | **Dependencies**: T006
+
+**Description**:
+实现全面的用户权限控制系统，确保用户只能访问自己的笔记，包括身份验证、授权检查和权限中间件。
+
+**Acceptance Criteria**:
+- [ ] 用户身份验证系统实现
+- [ ] 笔记所有权验证实现
+- [ ] API路由权限控制实现
+- [ ] 页面访问权限控制实现
+- [ ] 权限缓存和性能优化实现
+
+**Implementation Details**:
+- 实现用户身份验证和授权逻辑
+- 创建笔记所有权检查机制
+- 实现API路由权限中间件
+- 添加页面级权限控制
+- 实现权限缓存提升性能
+
+**Files to Create**:
+- `src/lib/permissions/index.ts`
+- `src/lib/permissions/auth.ts`
+- `src/lib/permissions/note-access.ts`
+- `src/middleware/permissions.ts`
+- `src/types/permissions.ts`
+
 ### T007: API路由基础架构
-**Priority**: P1 (Critical) | **Estimated**: 1.5 days | **Dependencies**: T003, T006
+**Priority**: P1 (Critical) | **Estimated**: 1.5 days | **Dependencies**: T003, T006, T006.5
 
 **Description**:
 建立API路由基础架构，包括请求验证、错误处理、响应格式化和中间件系统。

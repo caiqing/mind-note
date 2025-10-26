@@ -110,17 +110,19 @@ Test**: 用户输入不同类型的内容（如技术笔记、会议记录、学
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow users to create, edit, delete, and view notes
-- **FR-002**: System MUST provide rich text editor with basic formatting (bold, italic, lists,
-  links)
-- **FR-003**: System MUST automatically save user input and prevent data loss
-- **FR-004**: System MUST support category management and tagging system
-- **FR-005**: System MUST provide full-text search and tag filtering capabilities
-- **FR-006**: System MUST record note creation time, modification time, and version history
-- **FR-007**: System MUST support note import/export functionality (Markdown format)
-- **FR-008**: System MUST provide responsive design for different devices
-- **FR-009**: System MUST implement user permission control (access own notes only)
-- **FR-010**: System MUST support note favoriting and archiving functionality
+- **FR-001**: System MUST 允许用户创建、编辑、删除和查看笔记
+- **FR-002**: System MUST 提供富文本编辑器支持基础格式化（粗体、斜体、列表、链接）
+- **FR-003**: System MUST 自动保存用户输入内容并防止数据丢失
+- **FR-004**: System MUST 支持笔记的分类管理和标签系统
+- **FR-005**: System MUST 提供全文搜索和标签过滤功能
+- **FR-006**: System MUST 记录笔记的创建时间、修改时间和版本历史
+- **FR-007**: System MUST 支持笔记的导入导出功能（Markdown格式）
+- **FR-008**: System MUST 提供响应式设计适配不同设备
+- **FR-009**: System MUST 实现用户权限控制（只能访问自己的笔记）
+  - **技术实现**: 基于JWT的身份验证 + 基于用户ID的资源所有权检查
+  - **权限检查点**: API路由中间件 + 数据库查询过滤 + 前端路由守卫
+  - **安全措施**: CSRF防护 + 速率限制 + 权限缓存优化
+- **FR-010**: System MUST 支持笔记的收藏和归档功能
 
 ### Key Entities _(include if feature involves data)_
 
