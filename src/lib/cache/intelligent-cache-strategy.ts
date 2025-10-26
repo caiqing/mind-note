@@ -818,10 +818,10 @@ export class IntelligentCacheStrategyManager extends EventEmitter {
   /**
    * 检查策略是否变化
    */
-  private hasStrategyChanged(old: CacheStrategy, new: CacheStrategy): boolean {
-    return old.baseTTL !== new.baseTTL ||
-           old.priority !== new.priority ||
-           old.compressionEnabled !== new.compressionEnabled
+  private hasStrategyChanged(oldStrategy: CacheStrategy, newStrategy: CacheStrategy): boolean {
+    return oldStrategy.baseTTL !== newStrategy.baseTTL ||
+           oldStrategy.priority !== newStrategy.priority ||
+           oldStrategy.compressionEnabled !== newStrategy.compressionEnabled
   }
 
   /**

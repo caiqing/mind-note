@@ -56,6 +56,11 @@ export interface AuthUser {
   email: string
   name: string
   avatar?: string
+  roles?: string[]
+  permissions?: string[]
+  isActive?: boolean
+  emailVerified?: boolean
+  lastLoginAt?: Date
   createdAt: Date
   updatedAt: Date
 }

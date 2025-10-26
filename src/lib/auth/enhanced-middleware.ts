@@ -56,11 +56,43 @@ async function getUserFromDatabase(userId: string): Promise<AuthUser | null> {
       return null
     }
 
+    // 构建用户角色数组
+    const roles = user.role ? [user.role] : ['user']
+
+    // 基于角色构建权限数组
+    const permissions = new Set<string>()
+    roles.forEach(role => {
+      switch (role) {
+        case 'admin':
+          permissions.add('read:all')
+          permissions.add('write:all')
+          permissions.add('delete:all')
+          permissions.add('manage:users')
+          permissions.add('manage:system')
+          break
+        case 'moderator':
+          permissions.add('read:all')
+          permissions.add('write:content')
+          permissions.add('moderate:content')
+          break
+        case 'user':
+        default:
+          permissions.add('read:own')
+          permissions.add('write:own')
+          break
+      }
+    })
+
     const authUser: AuthUser = {
       id: user.id,
       email: user.email,
       name: user.fullName || user.username,
       avatar: user.avatarUrl || undefined,
+      roles,
+      permissions: Array.from(permissions),
+      isActive: user.isActive,
+      emailVerified: user.emailVerified,
+      lastLoginAt: user.lastLoginAt || undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }

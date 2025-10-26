@@ -83,12 +83,13 @@ export class EncryptionService {
   }
 
   /**
-   * 加密数据
+   * 加密数据 (使用安全的createCipheriv)
    */
   encrypt(plaintext: string): EncryptedData {
     try {
       const iv = crypto.randomBytes(this.config.ivLength)
-      const cipher = crypto.createCipher(this.config.algorithm, this.masterKey)
+      // 使用安全的createCipheriv替代废弃的createCipher
+      const cipher = crypto.createCipheriv(this.config.algorithm, this.masterKey, iv)
       cipher.setAAD(Buffer.from(this.getCurrentKeyId())) // 附加认证数据
 
       let encrypted = cipher.update(plaintext, 'utf8', this.config.encoding)
@@ -118,14 +119,15 @@ export class EncryptionService {
   }
 
   /**
-   * 解密数据
+   * 解密数据 (使用安全的createDecipheriv)
    */
   decrypt(encryptedData: EncryptedData): string {
     try {
       const iv = Buffer.from(encryptedData.iv, this.config.encoding)
       const tag = Buffer.from(encryptedData.tag, this.config.encoding)
 
-      const decipher = crypto.createDecipher(encryptedData.algorithm, this.masterKey)
+      // 使用安全的createDecipheriv替代废弃的createDecipher
+      const decipher = crypto.createDecipheriv(encryptedData.algorithm, this.masterKey, iv)
       decipher.setAAD(Buffer.from(encryptedData.keyId || ''))
       decipher.setAuthTag(tag)
 
